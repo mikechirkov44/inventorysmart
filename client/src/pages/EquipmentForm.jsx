@@ -102,6 +102,12 @@ function EquipmentForm() {
     setLoading(true);
     setError(null);
 
+    if (!formData.roomId) {
+      setError('Выберите помещение');
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitData = new FormData();
       Object.keys(formData).forEach(key => {
@@ -153,9 +159,9 @@ function EquipmentForm() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Помещение</label>
-                <select name="roomId" value={formData.roomId} onChange={handleChange}>
-                  <option value="">— Не выбрано —</option>
+                <label>Помещение *</label>
+                <select name="roomId" value={formData.roomId} onChange={handleChange} required>
+                  <option value="">— Выберите помещение —</option>
                   {rooms.map(r => (
                     <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
                   ))}
