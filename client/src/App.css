@@ -1858,6 +1858,7 @@ input, textarea, select { font-family: inherit; }
 .analytics-summary {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -1874,7 +1875,7 @@ input, textarea, select { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 110px;
+  min-height: 110px;
 }
 
 .summary-card.success { border-top-color: var(--success); }
