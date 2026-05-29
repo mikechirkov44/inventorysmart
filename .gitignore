@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+Thumbs.db
+server/data/equipment.json
+server/data/work-orders.json
+server/data/works.json
+server/data/rooms.json
+server/data/employees.json
+server/uploads/*
+!server/uploads/.gitkeep

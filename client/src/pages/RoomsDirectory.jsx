@@ -1,0 +1,208 @@
+import { useState, useEffect, useMemo } from 'react';
+import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
+
+function RoomsDirectory() {
+  const [rooms, setRooms] = useState([]);
+  const [equipment, setEquipment] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
+  const [filterBuilding, setFilterBuilding] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', description: '', building: '', floor: '', responsibleEmployeeId: ''
+  });
+
+  useEffect(() => { fetchData(); }, []);
+
+  const fetchData = async () => {
+    try {
+      const [roomsRes, equipRes, empRes] = await Promise.all([
+        roomsAPI.getAll(), equipmentAPI.getAll(), employeesAPI.getAll()
+      ]);
+      setRooms(roomsRes.data);
+      setEquipment(equipRes.data);
+      setEmployees(empRes.data);
+      setLoading(false);
+    } catch { setError('Ошибка загрузки'); setLoading(false); }
+  };
+
+  const buildings = useMemo(() => [...new Set(rooms.map(r => r.building).filter(Boolean))].sort(), [rooms]);
+
+  const empMap = useMemo(() => {
+    const m = {};
+    employees.forEach(e => { m[e.id] = `${e.lastName} ${e.firstName}`; });
+    return m;
+  }, [employees]);
+
+  const equipmentCountByRoomId = useMemo(() => {
+    const counts = {};
+    equipment.forEach(e => {
+      if (e.roomId) counts[e.roomId] = (counts[e.roomId] || 0) + 1;
+    });
+    return counts;
+  }, [equipment]);
+
+  const filtered = useMemo(() => {
+    let result = [...rooms];
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(r =>
+        r.name.toLowerCase().includes(s) ||
+        (r.description && r.description.toLowerCase().includes(s)) ||
+        (r.building && r.building.toLowerCase().includes(s))
+      );
+    }
+    if (filterBuilding) result = result.filter(r => r.building === filterBuilding);
+    return result;
+  }, [rooms, search, filterBuilding]);
+
+  const resetForm = () => {
+    setFormData({ name: '', description: '', building: '', floor: '', responsibleEmployeeId: '' });
+    setEditId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (room) => {
+    setFormData({
+      name: room.name,
+      description: room.description || '',
+      building: room.building || '',
+      floor: room.floor || '',
+      responsibleEmployeeId: room.responsibleEmployeeId || ''
+    });
+    setEditId(room.id);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) { setError('Введите название помещения'); return; }
+    try {
+      if (editId) { await roomsAPI.update(editId, formData); setSuccess('Помещение обновлено'); }
+      else { await roomsAPI.create(formData); setSuccess('Помещение добавлено'); }
+      resetForm(); fetchData(); setTimeout(() => setSuccess(''), 3000);
+    } catch { setError('Ошибка сохранения'); }
+  };
+
+  const handleDelete = async (delId) => {
+    if (window.confirm('Удалить помещение?')) {
+      try { await roomsAPI.delete(delId); fetchData(); }
+      catch { setError('Ошибка удаления'); }
+    }
+  };
+
+  if (loading) return <div className="loading">Загрузка...</div>;
+
+  return (
+    <div className="directory-page">
+      <div className="header">
+        <h1>Справочник помещений</h1>
+        <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
+          {showForm ? 'Закрыть' : '+ Добавить помещение'}
+        </button>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+
+      {showForm && (
+        <div className="directory-form-card">
+          <h3>{editId ? 'Редактирование помещения' : 'Новое помещение'}</h3>
+          <form onSubmit={handleSubmit}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Название *</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Например: Цех №1" />
+              </div>
+              <div className="form-group">
+                <label>Здание</label>
+                <input type="text" value={formData.building} onChange={(e) => setFormData({ ...formData, building: e.target.value })} placeholder="Корпус А" list="buildings-list" />
+                <datalist id="buildings-list">
+                  {buildings.map(b => <option key={b} value={b} />)}
+                </datalist>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Этаж</label>
+                <input type="text" value={formData.floor} onChange={(e) => setFormData({ ...formData, floor: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Ответственный</label>
+                <select value={formData.responsibleEmployeeId} onChange={(e) => setFormData({ ...formData, responsibleEmployeeId: e.target.value })}>
+                  <option value="">— Не выбран —</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.lastName} {emp.firstName} {emp.middleName ? emp.middleName : ''}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Описание</label>
+              <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            </div>
+            <div className="form-actions-inline">
+              <button type="submit" className="btn btn-primary">{editId ? 'Обновить' : 'Добавить'}</button>
+              <button type="button" onClick={resetForm} className="btn">Отмена</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="filters-panel">
+        <div className="filter-row">
+          <input type="text" placeholder="Поиск..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
+          <select value={filterBuilding} onChange={(e) => setFilterBuilding(e.target.value)}>
+            <option value="">Все здания</option>
+            {buildings.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {rooms.length}</div>
+      </div>
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Название</th>
+              <th>Здание</th>
+              <th>Этаж</th>
+              <th>Ответственный</th>
+              <th>Оборудование</th>
+              <th>Описание</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan="7" className="no-results-cell">Помещения не найдены</td></tr>
+            ) : (
+              filtered.map(room => (
+                <tr key={room.id}>
+                  <td className="td-bold">{room.name}</td>
+                  <td>{room.building || '—'}</td>
+                  <td>{room.floor || '—'}</td>
+                  <td>{empMap[room.responsibleEmployeeId] || '—'}</td>
+                  <td><span className="equipment-count-badge">{equipmentCountByRoomId[room.id] || 0} ед.</span></td>
+                  <td className="td-muted">{room.description || '—'}</td>
+                  <td>
+                    <div className="table-actions">
+                      <button onClick={() => handleEdit(room)} className="btn btn-small btn-secondary">Ред.</button>
+                      <button onClick={() => handleDelete(room.id)} className="btn btn-small btn-danger">Удал.</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default RoomsDirectory;
