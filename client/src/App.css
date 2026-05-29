@@ -1874,7 +1874,7 @@ input, textarea, select { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
+  height: 110px;
 }
 
 .summary-card.success { border-top-color: var(--success); }
