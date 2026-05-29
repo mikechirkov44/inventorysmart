@@ -21,6 +21,7 @@ import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SchedulePage from './pages/SchedulePage';
+import SetupPage from './pages/SetupPage';
 import './App.css';
 
 function DirDropdown() {
@@ -96,6 +97,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/setup" element={<SetupPage />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
 
       {/* User routes */}

@@ -1,12 +1,33 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 function LoginPage() {
-  const { login } = useAuth();
+  const { login, setupRequired } = useAuth();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (setupRequired) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-header">
+            <h1>InventorySmart</h1>
+            <p>Система учета оборудования</p>
+          </div>
+          <div className="info">
+            Учётные записи ещё не созданы. Необходима первоначальная настройка.
+          </div>
+          <button onClick={() => navigate('/setup')} className="btn btn-primary btn-full">
+            Перейти к настройке
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -16,7 +16,9 @@ User.ensureAdmin();
 
 // Public routes (no auth)
 const authRoutes = require('./routes/auth');
+const setupRoutes = require('./routes/setup');
 app.use('/api/auth', authRoutes);
+app.use('/api/setup', setupRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [setupRequired, setSetupRequired] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -14,7 +15,9 @@ export function AuthProvider({ children }) {
         .then(res => { setUser(res.data); setLoading(false); })
         .catch(() => { logout(); setLoading(false); });
     } else {
-      setLoading(false);
+      api.get('/setup')
+        .then(res => { setSetupRequired(res.data.setupRequired); setLoading(false); })
+        .catch(() => setLoading(false));
     }
   }, [token]);
 
@@ -35,7 +38,7 @@ export function AuthProvider({ children }) {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, loading, setupRequired, login, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

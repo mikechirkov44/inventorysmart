@@ -78,6 +78,68 @@ function QRScanner() {
     <div className="qr-scanner">
       <h1>Сканирование QR-кода</h1>
 
+      {!scanning && (
+        <div className="qr-animated-wrap">
+          <div className="qr-animated">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="10" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
+              <rect x="20" y="20" width="30" height="30" rx="1" fill="var(--gray-800)"/>
+              <rect x="140" y="10" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
+              <rect x="150" y="20" width="30" height="30" rx="1" fill="var(--gray-800)"/>
+              <rect x="10" y="140" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
+              <rect x="20" y="150" width="30" height="30" rx="1" fill="var(--gray-800)"/>
+              <rect x="70" y="10" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="90" y="10" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="110" y="10" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="70" y="30" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="100" y="30" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="70" y="50" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="90" y="50" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="120" y="50" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="10" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="30" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="50" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="80" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="110" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="140" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="170" y="70" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="10" y="90" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="40" y="90" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="70" y="90" width="20" height="20" rx="1" fill="var(--gray-800)"/>
+              <rect x="100" y="90" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="130" y="90" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="160" y="90" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="20" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="50" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="100" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="120" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="150" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="180" y="110" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="70" y="120" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="110" y="130" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="140" y="130" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="170" y="130" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="80" y="140" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="100" y="140" width="20" height="10" fill="var(--gray-800)"/>
+              <rect x="140" y="150" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="160" y="150" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="180" y="150" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="80" y="160" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="110" y="160" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="80" y="180" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="100" y="180" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="130" y="170" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="160" y="180" width="10" height="10" fill="var(--gray-800)"/>
+              <rect x="180" y="180" width="10" height="10" fill="var(--gray-800)"/>
+            </svg>
+            <div className="qr-scan-line"></div>
+            <div className="qr-corners">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="scanner-container">
         <div id="qr-reader"></div>
 

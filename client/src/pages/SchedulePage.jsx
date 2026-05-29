@@ -79,6 +79,8 @@ function SchedulePage() {
 
   if (loading) return <div className="loading">Загрузка...</div>;
 
+  const firstColLabel = { employee: 'ФИО / Оборудование', month: 'Месяц / Оборудование', none: 'Оборудование' };
+
   return (
     <div className="schedule-page">
       <div className="header">
@@ -92,7 +94,6 @@ function SchedulePage() {
             <label>Группировка</label>
             <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
               <option value="employee">По ответственным</option>
-              <option value="equipment">По оборудованию</option>
               <option value="month">По месяцам</option>
               <option value="none">Без группировки</option>
             </select>
@@ -121,53 +122,48 @@ function SchedulePage() {
         </div>
       </div>
 
-      <div className="schedule-groups">
-        {filteredGroups.map((group, gIdx) => (
-          <div key={gIdx} className="schedule-group">
-            <div className={`group-header ${expandedGroups.has(gIdx) ? 'expanded' : ''}`} onClick={() => toggleGroup(gIdx)}>
-              <span className="group-arrow"></span>
-              <span className="group-label">{group.label}</span>
-              <span className="group-count">{group.rows.length} работ</span>
-            </div>
-            {expandedGroups.has(gIdx) && (
-              <div className="group-body">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Оборудование</th>
-                      <th>Инв. номер</th>
-                      <th>Помещение</th>
-                      <th>Работа</th>
-                      <th>Периодичность</th>
-                      <th>План. дата</th>
-                      <th>Последн. выполнение</th>
-                      <th>Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.rows.map(row => {
-                      const st = STATUS_MAP[row.status] || STATUS_MAP.planned;
-                      return (
-                        <tr key={row.id} className={row.status === 'overdue' || row.status === 'never' ? 'row-warning' : ''}>
-                          <td>
-                            <Link to={`/equipment/${row.equipmentId}`} className="table-link">{row.equipmentName}</Link>
-                          </td>
-                          <td>{row.inventoryNumber}</td>
-                          <td>{row.roomName}</td>
-                          <td className="td-bold">{row.workName}</td>
-                          <td><span className="frequency-badge">{getFrequencyLabel(row.frequencyDays)}</span></td>
-                          <td>{row.plannedDate ? new Date(row.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
-                          <td>{row.lastCompleted ? new Date(row.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
-                          <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="schedule-table-wrapper">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{firstColLabel[groupBy]}</th>
+              <th>Инв. номер</th>
+              <th>Помещение</th>
+              <th>Работа</th>
+              <th>Периодичность</th>
+              <th>План. дата</th>
+              <th>Последн. выполнение</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          {filteredGroups.map((group, gIdx) => (
+            <tbody key={gIdx}>
+              <tr className="group-header-row" onClick={() => toggleGroup(gIdx)}>
+                <td colSpan="8">
+                  <span className={`group-arrow ${expandedGroups.has(gIdx) ? 'expanded' : ''}`}></span>
+                  <span className="group-label">{group.label}</span>
+                </td>
+              </tr>
+              {expandedGroups.has(gIdx) && group.rows.map(row => {
+                const st = STATUS_MAP[row.status] || STATUS_MAP.planned;
+                return (
+                  <tr key={row.id} className={row.status === 'overdue' || row.status === 'never' ? 'row-warning' : ''}>
+                    <td>
+                      <Link to={`/equipment/${row.equipmentId}`} className="table-link">{row.equipmentName}</Link>
+                    </td>
+                    <td>{row.inventoryNumber}</td>
+                    <td>{row.roomName}</td>
+                    <td className="td-bold">{row.workName}</td>
+                    <td><span className="frequency-badge">{getFrequencyLabel(row.frequencyDays)}</span></td>
+                    <td>{row.plannedDate ? new Date(row.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
+                    <td>{row.lastCompleted ? new Date(row.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
+                    <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          ))}
+        </table>
         {filteredGroups.length === 0 && (
           <div className="no-results">Нет данных для отображения</div>
         )}

@@ -23,19 +23,13 @@ function writeData(data) {
 function ensureAdmin() {
   const data = readData();
   if (data.length === 0) {
-    const hash = bcrypt.hashSync('admin123', 10);
-    data.push({
-      id: uuidv4(),
-      username: 'admin',
-      passwordHash: hash,
-      fullName: 'Администратор',
-      role: 'admin',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
-    writeData(data);
-    console.log('Default admin created: admin / admin123');
+    console.log('No users found. Use POST /api/setup to create admin account.');
   }
+}
+
+function isSetupRequired() {
+  const data = readData();
+  return data.length === 0;
 }
 
 function findAll() {
@@ -121,5 +115,6 @@ module.exports = {
   create,
   update,
   remove,
-  verifyPassword
+  verifyPassword,
+  isSetupRequired
 };
