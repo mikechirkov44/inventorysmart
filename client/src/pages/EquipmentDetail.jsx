@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI } from '../services/api';
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: 'Ежедневно' },
+  { value: 7, label: '1 раз в неделю' },
+  { value: 10, label: '1 раз в 10 дней' },
+  { value: 14, label: '1 раз в 2 недели' },
+  { value: 30, label: '1 раз в месяц' },
+  { value: 60, label: '1 раз в 2 месяца' },
+  { value: 90, label: '1 раз в 3 месяца' },
+  { value: 180, label: '1 раз в 6 месяцев' },
+  { value: 365, label: '1 раз в год' },
+];
+
+function getFrequencyLabel(days) {
+  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
+  return opt ? opt.label : `каждые ${days} дн.`;
+}
+
 const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
@@ -127,7 +144,7 @@ function EquipmentDetail() {
               {assignedWorks.map(work => (
                 <li key={work.id} className="task-item">
                   <span className="task-name">{work.name}</span>
-                  <span className="task-frequency">каждые {work.frequencyDays} дн.</span>
+                  <span className="task-frequency">{getFrequencyLabel(work.frequencyDays)}</span>
                 </li>
               ))}
               {assignedWorks.length === 0 && <li className="task-item">Нет привязанных работ</li>}

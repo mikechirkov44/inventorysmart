@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: 'Ежедневно' },
+  { value: 7, label: '1 раз в неделю' },
+  { value: 10, label: '1 раз в 10 дней' },
+  { value: 14, label: '1 раз в 2 недели' },
+  { value: 30, label: '1 раз в месяц' },
+  { value: 60, label: '1 раз в 2 месяца' },
+  { value: 90, label: '1 раз в 3 месяца' },
+  { value: 180, label: '1 раз в 6 месяцев' },
+  { value: 365, label: '1 раз в год' },
+];
+
+function getFrequencyLabel(days) {
+  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
+  return opt ? opt.label : `каждые ${days} дн.`;
+}
+
 const STATUS_OPTIONS = [
   { value: 'working', label: 'Работает' },
   { value: 'under_repair', label: 'В ремонте' },
@@ -190,7 +207,7 @@ function EquipmentForm() {
                     />
                     <span className="checkbox-label">
                       {work.name}
-                      <span className="checkbox-hint">каждые {work.frequencyDays} дн.</span>
+                      <span className="checkbox-hint">{getFrequencyLabel(work.frequencyDays)}</span>
                     </span>
                   </label>
                 ))}

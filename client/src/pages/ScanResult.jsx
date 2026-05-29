@@ -3,6 +3,23 @@ import { useParams, Link } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: 'Ежедневно' },
+  { value: 7, label: '1 раз в неделю' },
+  { value: 10, label: '1 раз в 10 дней' },
+  { value: 14, label: '1 раз в 2 недели' },
+  { value: 30, label: '1 раз в месяц' },
+  { value: 60, label: '1 раз в 2 месяца' },
+  { value: 90, label: '1 раз в 3 месяца' },
+  { value: 180, label: '1 раз в 6 месяцев' },
+  { value: 365, label: '1 раз в год' },
+];
+
+function getFrequencyLabel(days) {
+  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
+  return opt ? opt.label : `каждые ${days} дн.`;
+}
+
 function ScanResult() {
   const { qrCode } = useParams();
   const [data, setData] = useState(null);
@@ -153,7 +170,7 @@ function ScanResult() {
                   <div className="today-task-header">
                     <span className="today-task-name">{task.name}</span>
                     <span className={`overdue-badge ${task.isOverdue && task.lastCompleted ? 'overdue' : 'new'}`}>
-                      {task.lastCompleted ? `каждые ${task.frequencyDays} дн.` : 'никогда не выполнялось'}
+                      {task.lastCompleted ? getFrequencyLabel(task.frequencyDays) : 'никогда не выполнялось'}
                     </span>
                   </div>
                   {task.description && <p className="today-task-desc">{task.description}</p>}

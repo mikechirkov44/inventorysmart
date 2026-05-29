@@ -1,6 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import { worksAPI } from '../services/api';
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: 'Ежедневно' },
+  { value: 7, label: '1 раз в неделю' },
+  { value: 10, label: '1 раз в 10 дней' },
+  { value: 14, label: '1 раз в 2 недели' },
+  { value: 30, label: '1 раз в месяц' },
+  { value: 60, label: '1 раз в 2 месяца' },
+  { value: 90, label: '1 раз в 3 месяца' },
+  { value: 180, label: '1 раз в 6 месяцев' },
+  { value: 365, label: '1 раз в год' },
+];
+
+function getFrequencyLabel(days) {
+  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
+  return opt ? opt.label : `каждые ${days} дн.`;
+}
+
 function WorksDirectory() {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,19 +34,14 @@ function WorksDirectory() {
     category: ''
   });
 
-  useEffect(() => {
-    fetchWorks();
-  }, []);
+  useEffect(() => { fetchWorks(); }, []);
 
   const fetchWorks = async () => {
     try {
       const response = await worksAPI.getAll();
       setWorks(response.data);
       setLoading(false);
-    } catch (err) {
-      setError('Ошибка загрузки справочника работ');
-      setLoading(false);
-    }
+    } catch { setError('Ошибка загрузки справочника работ'); setLoading(false); }
   };
 
   const categories = useMemo(() => {
@@ -45,9 +57,7 @@ function WorksDirectory() {
         (w.description && w.description.toLowerCase().includes(s))
       );
     }
-    if (filterCategory) {
-      result = result.filter(w => w.category === filterCategory);
-    }
+    if (filterCategory) result = result.filter(w => w.category === filterCategory);
     return result;
   }, [works, search, filterCategory]);
 
@@ -70,10 +80,7 @@ function WorksDirectory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      setError('Введите название работы');
-      return;
-    }
+    if (!formData.name.trim()) { setError('Введите название работы'); return; }
     try {
       if (editId) {
         await worksAPI.update(editId, formData);
@@ -92,12 +99,8 @@ function WorksDirectory() {
 
   const handleDelete = async (id) => {
     if (window.confirm('Удалить работу из справочника?')) {
-      try {
-        await worksAPI.delete(id);
-        fetchWorks();
-      } catch (err) {
-        setError('Ошибка удаления');
-      }
+      try { await worksAPI.delete(id); fetchWorks(); }
+      catch { setError('Ошибка удаления'); }
     }
   };
 
@@ -122,22 +125,11 @@ function WorksDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Название работы *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Например: Замена масла"
-                />
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Например: Замена масла" />
               </div>
               <div className="form-group">
                 <label>Категория</label>
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Например: ТО"
-                  list="work-categories"
-                />
+                <input type="text" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="Например: ТО" list="work-categories" />
                 <datalist id="work-categories">
                   {categories.map(c => <option key={c} value={c} />)}
                 </datalist>
@@ -145,22 +137,16 @@ function WorksDirectory() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Периодичность (дней)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.frequencyDays}
-                  onChange={(e) => setFormData({ ...formData, frequencyDays: parseInt(e.target.value) || 30 })}
-                />
+                <label>Периодичность *</label>
+                <select value={formData.frequencyDays} onChange={(e) => setFormData({ ...formData, frequencyDays: parseInt(e.target.value) })}>
+                  {FREQUENCY_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group flex-1">
                 <label>Описание</label>
-                <input
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Описание работы"
-                />
+                <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Описание работы" />
               </div>
             </div>
             <div className="form-actions-inline">
@@ -173,21 +159,13 @@ function WorksDirectory() {
 
       <div className="filters-panel">
         <div className="filter-row">
-          <input
-            type="text"
-            placeholder="Поиск по названию или описанию..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="filter-search"
-          />
+          <input type="text" placeholder="Поиск по названию или описанию..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
             <option value="">Все категории</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <div className="filter-summary">
-          Найдено: <strong>{filtered.length}</strong> из {works.length}
-        </div>
+        <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {works.length}</div>
       </div>
 
       <div className="table-container">
@@ -203,19 +181,13 @@ function WorksDirectory() {
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="no-results-cell">Работы не найдены</td>
-              </tr>
+              <tr><td colSpan="5" className="no-results-cell">Работы не найдены</td></tr>
             ) : (
               filtered.map(work => (
                 <tr key={work.id}>
                   <td className="td-bold">{work.name}</td>
                   <td>{work.category || '—'}</td>
-                  <td>
-                    <span className="frequency-badge">
-                      каждые {work.frequencyDays} дн.
-                    </span>
-                  </td>
+                  <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
                   <td className="td-muted">{work.description || '—'}</td>
                   <td>
                     <div className="table-actions">
