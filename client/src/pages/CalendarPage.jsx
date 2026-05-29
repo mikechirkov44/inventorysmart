@@ -74,7 +74,7 @@ function CalendarPage() {
     <div className="calendar-page">
       <div className="header">
         <h1>Календарь обходов</h1>
-        <Link to="/scan" className="btn btn-primary">QR-сканер</Link>
+        <Link to="/schedule" className="btn btn-primary">План-график</Link>
       </div>
 
       <div className="calendar-layout">

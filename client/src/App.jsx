@@ -74,7 +74,6 @@ function AppNav() {
         <DirDropdown />
         <li><NavLink to="/work-orders">Журнал</NavLink></li>
         <li><NavLink to="/scan">QR-сканер</NavLink></li>
-        <li><NavLink to="/calendar">Календарь</NavLink></li>
         <li><NavLink to="/schedule">План-график</NavLink></li>
         {isAdmin && <li><NavLink to="/incidents">Инциденты</NavLink></li>}
         {isAdmin && <li><NavLink to="/analytics">Аналитика</NavLink></li>}
