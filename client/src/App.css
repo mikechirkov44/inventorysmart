@@ -1856,9 +1856,7 @@ input, textarea, select { font-family: inherit; }
 .analytics-page { max-width: 1200px; margin: 0 auto; }
 
 .analytics-summary {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: 1fr;
+  display: flex;
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -1875,6 +1873,7 @@ input, textarea, select { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex: 1;
   min-height: 110px;
 }
 
