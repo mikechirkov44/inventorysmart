@@ -6,6 +6,7 @@ function AnalyticsPage() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [view, setView] = useState('cards');
 
   useEffect(() => {
     Promise.all([api.get('/analytics'), api.get('/analytics/summary')])
@@ -19,6 +20,10 @@ function AnalyticsPage() {
     <div className="analytics-page">
       <div className="header">
         <h1>Аналитика выполнения работ</h1>
+        <div className="header-actions">
+          <button onClick={() => setView('cards')} className={`btn ${view === 'cards' ? 'btn-primary' : ''}`}>Карточки</button>
+          <button onClick={() => setView('table')} className={`btn ${view === 'table' ? 'btn-primary' : ''}`}>Таблица</button>
+        </div>
       </div>
 
       {summary && (
@@ -50,39 +55,85 @@ function AnalyticsPage() {
         </div>
       )}
 
-      <div className="analytics-content">
-        <div className="analytics-sidebar">
-          <h3>Сотрудники</h3>
-          <div className="employee-list">
-            {analytics.map(emp => (
-              <div
-                key={emp.employeeId}
-                className={`employee-item ${selectedEmployee === emp.employeeId ? 'active' : ''}`}
-                onClick={() => setSelectedEmployee(selectedEmployee === emp.employeeId ? null : emp.employeeId)}
-              >
-                <div className="emp-name">{emp.employeeName}</div>
-                <div className="emp-stats">
-                  <span className="emp-rate">{emp.completionRate}%</span>
-                  <span className="emp-done">{emp.totalCompleted}/{emp.totalPlanned}</span>
+      {view === 'cards' ? (
+        <div className="analytics-content">
+          <div className="analytics-sidebar">
+            <h3>Сотрудники</h3>
+            <div className="employee-list">
+              {analytics.map(emp => (
+                <div
+                  key={emp.employeeId}
+                  className={`employee-item ${selectedEmployee === emp.employeeId ? 'active' : ''}`}
+                  onClick={() => setSelectedEmployee(selectedEmployee === emp.employeeId ? null : emp.employeeId)}
+                >
+                  <div className="emp-name">{emp.employeeName}</div>
+                  <div className="emp-stats">
+                    <span className="emp-rate">{emp.completionRate}%</span>
+                    <span className="emp-done">{emp.totalCompleted}/{emp.totalPlanned}</span>
+                  </div>
+                  <div className="emp-bar">
+                    <div className="emp-bar-fill" style={{ width: `${emp.completionRate}%` }} />
+                  </div>
                 </div>
-                <div className="emp-bar">
-                  <div className="emp-bar-fill" style={{ width: `${emp.completionRate}%` }} />
-                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="analytics-main">
+            {selectedEmployee ? (
+              <EmployeeDetail employee={analytics.find(e => e.employeeId === selectedEmployee)} />
+            ) : (
+              <div className="analytics-placeholder">
+                <p>Выберите сотрудника для подробного отчёта</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
-
-        <div className="analytics-main">
-          {selectedEmployee ? (
-            <EmployeeDetail employee={analytics.find(e => e.employeeId === selectedEmployee)} />
-          ) : (
-            <div className="analytics-placeholder">
-              <p>Выберите сотрудника для подробного отчёта</p>
-            </div>
-          )}
+      ) : (
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Сотрудник</th>
+                <th>Должность</th>
+                <th>Запланировано</th>
+                <th>Выполнено</th>
+                <th>% выполнения</th>
+                <th>Вовремя</th>
+                <th>С опозданием</th>
+                <th>Не выполнялось</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analytics.length === 0 ? (
+                <tr><td colSpan="8" className="no-results-cell">Нет данных</td></tr>
+              ) : (
+                analytics.map(emp => (
+                  <tr key={emp.employeeId} className="clickable-row" onClick={() => { setView('cards'); setSelectedEmployee(emp.employeeId); }}>
+                    <td className="td-bold">{emp.employeeName}</td>
+                    <td>{emp.position || '—'}</td>
+                    <td>{emp.totalPlanned}</td>
+                    <td>{emp.totalCompleted}</td>
+                    <td>
+                      <div className="rate-cell">
+                        <span className={`rate-value ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`}>
+                          {emp.completionRate}%
+                        </span>
+                        <div className="rate-bar">
+                          <div className={`rate-bar-fill ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`} style={{ width: `${emp.completionRate}%` }} />
+                        </div>
+                      </div>
+                    </td>
+                    <td><span className="overdue-badge ok">{emp.onTime}</span></td>
+                    <td><span className="overdue-badge overdue">{emp.overdue}</span></td>
+                    <td><span className="overdue-badge new">{emp.neverCompleted}</span></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
