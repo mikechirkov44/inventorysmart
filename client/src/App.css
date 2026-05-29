@@ -1985,20 +1985,24 @@ input, textarea, select { font-family: inherit; }
 .emp-position { color: var(--gray-500); font-size: 14px; margin-bottom: 20px; }
 
 .detail-stats-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
 }
 
 .detail-stat {
-  flex: 1;
-  min-width: 100px;
   padding: 14px;
   border-radius: var(--radius-sm);
   text-align: center;
   background: var(--gray-50);
   border: 1px solid var(--gray-200);
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .detail-stat.success { background: var(--success-light); border-color: #a7f3d0; }
