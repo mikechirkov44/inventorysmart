@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotificationBell from './components/NotificationBell';
@@ -19,6 +20,42 @@ import CalendarPage from './pages/CalendarPage';
 import IncidentsPage from './pages/IncidentsPage';
 import './App.css';
 
+function DirDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms'].some(p => location.pathname === p);
+
+  return (
+    <li className={`nav-dropdown ${open ? 'open' : ''}`} ref={ref}>
+      <button className={`nav-dropdown-trigger ${isActive ? 'active' : ''}`} onClick={() => setOpen(!open)}>
+        Справочники ▾
+      </button>
+      {open && (
+        <ul className="nav-dropdown-menu">
+          <li><NavLink to="/" end>Оборудование (карточки)</NavLink></li>
+          <li><NavLink to="/equipment-table">Оборудование (таблица)</NavLink></li>
+          <li className="nav-dropdown-divider" />
+          <li><NavLink to="/employees">Сотрудники</NavLink></li>
+          <li><NavLink to="/works">Работы</NavLink></li>
+          <li><NavLink to="/rooms">Помещения</NavLink></li>
+        </ul>
+      )}
+    </li>
+  );
+}
+
 function AppNav() {
   const { user, logout, isAdmin } = useAuth();
 
@@ -30,15 +67,11 @@ function AppNav() {
         <Link to="/">InventorySmart</Link>
       </div>
       <ul className="nav-links">
-        <li><NavLink to="/" end>Оборудование</NavLink></li>
-        <li><NavLink to="/equipment-table">Таблица</NavLink></li>
+        <DirDropdown />
         <li><NavLink to="/work-orders">Журнал</NavLink></li>
         <li><NavLink to="/scan">QR-сканер</NavLink></li>
         <li><NavLink to="/calendar">Календарь</NavLink></li>
         {isAdmin && <li><NavLink to="/incidents">Инциденты</NavLink></li>}
-        {isAdmin && <li><NavLink to="/works">Работы</NavLink></li>}
-        {isAdmin && <li><NavLink to="/rooms">Помещения</NavLink></li>}
-        {isAdmin && <li><NavLink to="/employees">Сотрудники</NavLink></li>}
         {isAdmin && <li><NavLink to="/import">Импорт</NavLink></li>}
         {isAdmin && <li><NavLink to="/users">Пользователи</NavLink></li>}
       </ul>
