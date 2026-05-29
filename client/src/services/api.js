@@ -112,6 +112,10 @@ export const analyticsAPI = {
   getSummary: () => api.get('/analytics/summary'),
 };
 
+export const scheduleAPI = {
+  getSchedule: (params) => api.get('/schedule', { params }),
+};
+
 export const importAPI = {
   importExcel: (formData) => api.post('/import/excel', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

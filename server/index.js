@@ -41,6 +41,7 @@ const notificationsRoutes = require('./routes/notifications');
 const incidentsRoutes = require('./routes/incidents');
 const sparePartsRoutes = require('./routes/spareParts');
 const analyticsRoutes = require('./routes/analytics');
+const scheduleRoutes = require('./routes/schedule');
 
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/work-orders', workOrderRoutes);
@@ -55,6 +56,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/incidents', incidentsRoutes);
 app.use('/api/spare-parts', sparePartsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/schedule', scheduleRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
