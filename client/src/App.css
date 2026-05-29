@@ -496,6 +496,10 @@ input, textarea, select { font-family: inherit; }
   font-size: 14px;
 }
 
+.card-status {
+  margin-bottom: 8px;
+}
+
 .location {
   color: var(--gray-500);
   font-size: 13px;

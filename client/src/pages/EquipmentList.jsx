@@ -125,7 +125,7 @@ function EquipmentList() {
                           <div className="card-info">
                             <h3>{item.name}</h3>
                             <p className="inventory-number">{item.inventoryNumber}</p>
-                            <p><span className={`status-badge ${st.className}`}>{st.label}</span></p>
+                            <p className="card-status"><span className={`status-badge ${st.className}`}>{st.label}</span></p>
                             <div className="card-actions">
                               <Link to={`/equipment/${item.id}`} className="btn btn-small">Подробнее</Link>
                               <Link to={`/equipment/${item.id}/edit`} className="btn btn-small btn-secondary">Ред.</Link>
