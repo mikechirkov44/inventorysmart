@@ -1629,7 +1629,9 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 6px;
+  gap: 2px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
@@ -1664,9 +1666,9 @@ input, textarea, select { font-family: inherit; }
 
 .cell-badge {
   position: absolute;
-  bottom: 2px;
-  width: 14px;
-  height: 14px;
+  bottom: 3px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--primary);
   color: white;
@@ -1675,6 +1677,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 
 .has-overdue .cell-badge { background: var(--danger); }
