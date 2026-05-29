@@ -300,13 +300,14 @@ input, textarea, select { font-family: inherit; }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-  color: white;
-  border-color: transparent;
+  background: #4f46e5;
+  color: #ffffff !important;
+  border-color: #4f46e5;
   box-shadow: 0 2px 8px rgba(79,70,229,0.3);
 }
 
 .btn-primary:hover {
+  background: #4338ca;
   box-shadow: 0 4px 16px rgba(79,70,229,0.4);
   transform: translateY(-1px);
 }
