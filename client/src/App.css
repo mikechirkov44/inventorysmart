@@ -153,20 +153,22 @@ input, textarea, select { font-family: inherit; }
 
 .nav-dropdown-menu li a {
   display: block;
-  padding: 8px 12px;
-  color: var(--gray-700);
+  padding: 10px 14px;
+  color: var(--gray-900);
   border-radius: 6px;
   font-size: 14px;
+  font-weight: 500;
   transition: background 0.15s;
 }
 
 .nav-dropdown-menu li a:hover {
-  background: var(--gray-50);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .nav-dropdown-menu li a.active {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: var(--primary);
+  color: white;
 }
 
 .nav-dropdown-divider {
@@ -1208,6 +1210,12 @@ input, textarea, select { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.td-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 /* ===== BADGES ===== */
