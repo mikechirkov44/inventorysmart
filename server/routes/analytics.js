@@ -124,8 +124,8 @@ function getAnalytics() {
       });
     });
 
-    if (equipInfo.tasks.length > 0) {
-      stats.equipment.push(equipInfo);
+    if (equipInfo.tasks.length > 0 && employeeStats[employeeId]) {
+      employeeStats[employeeId].equipment.push(equipInfo);
     }
   });
 
@@ -148,7 +148,8 @@ router.get('/', (req, res) => {
     const analytics = getAnalytics();
     res.json(analytics);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Analytics error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
@@ -172,7 +173,8 @@ router.get('/summary', (req, res) => {
       employees: analytics.length,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Analytics summary error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
