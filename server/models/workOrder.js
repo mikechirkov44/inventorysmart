@@ -29,16 +29,17 @@ function findByEquipmentId(equipmentId) {
 
 function create(workOrderData) {
   const data = readData();
+  const status = workOrderData.status || 'pending';
   const newWorkOrder = {
     id: uuidv4(),
     equipmentId: workOrderData.equipmentId,
     taskId: workOrderData.taskId,
     taskName: workOrderData.taskName || '',
-    status: 'pending',
+    status,
     masterName: workOrderData.masterName || '',
     notes: workOrderData.notes || '',
-    photos: [],
-    completedAt: null,
+    photos: workOrderData.photos || [],
+    completedAt: status === 'completed' ? new Date().toISOString() : null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };

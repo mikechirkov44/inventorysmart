@@ -80,6 +80,25 @@ export const scanAPI = {
   completeTask: (data) => api.post('/scan/complete', data),
 };
 
+export const calendarAPI = {
+  getEvents: (month, year) => api.get('/calendar', { params: { month, year } }),
+};
+
+export const notificationsAPI = {
+  getAll: () => api.get('/notifications'),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+};
+
+export const incidentsAPI = {
+  getAll: (params) => api.get('/incidents', { params }),
+  getById: (id) => api.get(`/incidents/${id}`),
+  create: (data) => api.post('/incidents', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, data) => api.put(`/incidents/${id}`, data),
+  delete: (id) => api.delete(`/incidents/${id}`),
+};
+
 export const importAPI = {
   importExcel: (formData) => api.post('/import/excel', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

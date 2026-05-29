@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import NotificationBell from './components/NotificationBell';
 import LoginPage from './pages/LoginPage';
 import EquipmentList from './pages/EquipmentList';
 import EquipmentTable from './pages/EquipmentTable';
@@ -14,6 +15,8 @@ import RoomsDirectory from './pages/RoomsDirectory';
 import EmployeesDirectory from './pages/EmployeesDirectory';
 import UsersPage from './pages/UsersPage';
 import ImportExcel from './pages/ImportExcel';
+import CalendarPage from './pages/CalendarPage';
+import IncidentsPage from './pages/IncidentsPage';
 import './App.css';
 
 function AppNav() {
@@ -31,6 +34,8 @@ function AppNav() {
         <li><NavLink to="/equipment-table">Таблица</NavLink></li>
         <li><NavLink to="/work-orders">Журнал</NavLink></li>
         <li><NavLink to="/scan">QR-сканер</NavLink></li>
+        <li><NavLink to="/calendar">Календарь</NavLink></li>
+        {isAdmin && <li><NavLink to="/incidents">Инциденты</NavLink></li>}
         {isAdmin && <li><NavLink to="/works">Работы</NavLink></li>}
         {isAdmin && <li><NavLink to="/rooms">Помещения</NavLink></li>}
         {isAdmin && <li><NavLink to="/employees">Сотрудники</NavLink></li>}
@@ -38,6 +43,7 @@ function AppNav() {
         {isAdmin && <li><NavLink to="/users">Пользователи</NavLink></li>}
       </ul>
       <div className="nav-user">
+        <NotificationBell />
         <span className="nav-user-name">{user.fullName || user.username}</span>
         <button onClick={logout} className="btn btn-small nav-logout">Выйти</button>
       </div>
@@ -63,8 +69,10 @@ function AppRoutes() {
       <Route path="/scan" element={<ProtectedRoute><QRScanner /></ProtectedRoute>} />
       <Route path="/scan/:qrCode" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
       <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+      <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
+      <Route path="/incidents" element={<ProtectedRoute adminOnly><IncidentsPage /></ProtectedRoute>} />
       <Route path="/works" element={<ProtectedRoute adminOnly><WorksDirectory /></ProtectedRoute>} />
       <Route path="/rooms" element={<ProtectedRoute adminOnly><RoomsDirectory /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute adminOnly><EmployeesDirectory /></ProtectedRoute>} />

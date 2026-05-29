@@ -36,6 +36,9 @@ const worksRoutes = require('./routes/works');
 const roomsRoutes = require('./routes/rooms');
 const employeesRoutes = require('./routes/employees');
 const usersRoutes = require('./routes/users');
+const calendarRoutes = require('./routes/calendar');
+const notificationsRoutes = require('./routes/notifications');
+const incidentsRoutes = require('./routes/incidents');
 
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/work-orders', workOrderRoutes);
@@ -45,6 +48,9 @@ app.use('/api/works', worksRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/incidents', incidentsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

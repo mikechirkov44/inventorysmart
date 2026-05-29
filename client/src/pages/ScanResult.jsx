@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
+import ReportFailureModal from '../components/ReportFailureModal';
 
 function ScanResult() {
   const { qrCode } = useParams();
@@ -13,6 +14,7 @@ function ScanResult() {
   const [taskComments, setTaskComments] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showFailureModal, setShowFailureModal] = useState(false);
 
   useEffect(() => { fetchData(); }, [qrCode]);
 
@@ -212,8 +214,19 @@ function ScanResult() {
       )}
 
       <div className="equipment-link">
+        <button onClick={() => setShowFailureModal(true)} className="btn btn-danger">
+          ⚠ Сообщить о поломке
+        </button>
         <Link to={`/equipment/${equipment.id}`} className="btn">Полная карточка оборудования</Link>
       </div>
+
+      {showFailureModal && (
+        <ReportFailureModal
+          equipment={equipment}
+          onClose={() => setShowFailureModal(false)}
+          onSuccess={() => { setShowFailureModal(false); setSuccessMessage('Инцидент отправлен'); setTimeout(() => setSuccessMessage(''), 4000); }}
+        />
+      )}
     </div>
   );
 }
