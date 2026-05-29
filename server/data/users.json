@@ -1,0 +1,11 @@
+[
+  {
+    "id": "1a1b7b26-f32f-4f99-bd73-9a5581a263fa",
+    "username": "admin",
+    "passwordHash": "$2b$10$DQJOBaYqjayaDHGzOhkgl.WjaWm7/IVgRi.RoHXTXtNoVtPX1j7yi",
+    "fullName": "Администратор",
+    "role": "admin",
+    "createdAt": "2026-05-29T09:08:06.788Z",
+    "updatedAt": "2026-05-29T09:08:06.789Z"
+  }
+]

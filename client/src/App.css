@@ -107,6 +107,71 @@ input, textarea, select { font-family: inherit; }
   color: white;
 }
 
+.nav-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-user-name {
+  color: var(--gray-300);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.nav-logout {
+  color: var(--gray-400) !important;
+  border-color: var(--gray-600) !important;
+  background: transparent !important;
+}
+
+.nav-logout:hover {
+  color: white !important;
+  border-color: var(--gray-400) !important;
+}
+
+/* ===== LOGIN PAGE ===== */
+.login-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-header h1 {
+  font-size: 1.75rem;
+  color: var(--gray-900);
+  margin-bottom: 6px;
+}
+
+.login-header p {
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.btn-full {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+}
+
 /* ===== MAIN ===== */
 .main-content {
   flex: 1;
@@ -1250,6 +1315,13 @@ input, textarea, select { font-family: inherit; }
   .nav-links a {
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  .nav-user {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--gray-700);
   }
 
   .main-content {
