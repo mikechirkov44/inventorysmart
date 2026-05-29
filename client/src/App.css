@@ -1976,7 +1976,8 @@ input, textarea, select { font-family: inherit; }
 .filter-group-actions {
   display: flex;
   gap: 6px;
-  align-items: flex-end;
+  align-items: center;
+  padding-top: 22px;
 }
 
 .schedule-groups {
@@ -2007,9 +2008,11 @@ input, textarea, select { font-family: inherit; }
 .group-header:hover { background: var(--gray-100); }
 
 .group-arrow {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--gray-500);
-  width: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .group-label {
