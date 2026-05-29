@@ -313,25 +313,26 @@ input, textarea, select { font-family: inherit; }
 
 .btn-danger {
   background: white;
-  color: var(--danger);
-  border-color: #fecaca;
+  color: #b91c1c;
+  border-color: #fca5a5;
 }
 
 .btn-danger:hover {
-  background: var(--danger);
+  background: #dc2626;
   color: white;
-  border-color: var(--danger);
+  border-color: #dc2626;
 }
 
 .btn-secondary {
   background: white;
-  color: var(--gray-600);
-  border-color: var(--gray-200);
+  color: #374151;
+  border-color: #d1d5db;
 }
 
 .btn-secondary:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
 }
 
 .btn-small {
