@@ -11,6 +11,8 @@ function SparePartsDirectory() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [eqSearch, setEqSearch] = useState('');
+  const [wkSearch, setWkSearch] = useState('');
   const [formData, setFormData] = useState({
     name: '', article: '', manufacturer: '', minStock: 0, equipmentIds: [], workIds: []
   });
@@ -29,6 +31,18 @@ function SparePartsDirectory() {
 
   const eqMap = useMemo(() => { const m = {}; equipment.forEach(e => { m[e.id] = e.name; }); return m; }, [equipment]);
   const wkMap = useMemo(() => { const m = {}; works.forEach(w => { m[w.id] = w.name; }); return m; }, [works]);
+
+  const filteredEq = useMemo(() => {
+    if (!eqSearch) return equipment;
+    const s = eqSearch.toLowerCase();
+    return equipment.filter(e => e.name.toLowerCase().includes(s) || (e.inventoryNumber && e.inventoryNumber.toLowerCase().includes(s)));
+  }, [equipment, eqSearch]);
+
+  const filteredWk = useMemo(() => {
+    if (!wkSearch) return works;
+    const s = wkSearch.toLowerCase();
+    return works.filter(w => w.name.toLowerCase().includes(s));
+  }, [works, wkSearch]);
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -126,31 +140,59 @@ function SparePartsDirectory() {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Оборудование</label>
-                <div className="works-checkbox-list">
-                  {equipment.length === 0 && <p className="no-works-hint">Нет оборудования</p>}
-                  {equipment.map(eq => (
-                    <label key={eq.id} className="checkbox-item">
-                      <input type="checkbox" checked={formData.equipmentIds.includes(eq.id)} onChange={() => toggleId('equipmentIds', eq.id)} />
+            <div className="form-group">
+              <label>Оборудование</label>
+              {formData.equipmentIds.length > 0 && (
+                <div className="works-checkbox-list compact selected-list">
+                  {equipment.filter(e => formData.equipmentIds.includes(e.id)).map(eq => (
+                    <label key={eq.id} className="checkbox-item selected">
+                      <input type="checkbox" checked={true} onChange={() => toggleId('equipmentIds', eq.id)} />
                       <span className="checkbox-label">{eq.name}<span className="checkbox-hint">{eq.inventoryNumber}</span></span>
                     </label>
                   ))}
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Работы</label>
-                <div className="works-checkbox-list">
-                  {works.length === 0 && <p className="no-works-hint">Нет работ</p>}
-                  {works.map(w => (
-                    <label key={w.id} className="checkbox-item">
-                      <input type="checkbox" checked={formData.workIds.includes(w.id)} onChange={() => toggleId('workIds', w.id)} />
+              )}
+              <input type="text" placeholder="Найти и добавить оборудование..." value={eqSearch} onChange={(e) => setEqSearch(e.target.value)} className="filter-search-sm" />
+              {eqSearch && (
+                <div className="works-checkbox-list compact search-results">
+                  {filteredEq.filter(e => !formData.equipmentIds.includes(e.id)).length === 0 && (
+                    <p className="no-works-hint">Ничего не найдено</p>
+                  )}
+                  {filteredEq.filter(e => !formData.equipmentIds.includes(e.id)).map(eq => (
+                    <label key={eq.id} className="checkbox-item">
+                      <input type="checkbox" checked={false} onChange={() => { toggleId('equipmentIds', eq.id); setEqSearch(''); }} />
+                      <span className="checkbox-label">{eq.name}<span className="checkbox-hint">{eq.inventoryNumber}</span></span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Работы</label>
+              {formData.workIds.length > 0 && (
+                <div className="works-checkbox-list compact selected-list">
+                  {works.filter(w => formData.workIds.includes(w.id)).map(w => (
+                    <label key={w.id} className="checkbox-item selected">
+                      <input type="checkbox" checked={true} onChange={() => toggleId('workIds', w.id)} />
                       <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
                     </label>
                   ))}
                 </div>
-              </div>
+              )}
+              <input type="text" placeholder="Найти и добавить работы..." value={wkSearch} onChange={(e) => setWkSearch(e.target.value)} className="filter-search-sm" />
+              {wkSearch && (
+                <div className="works-checkbox-list compact search-results">
+                  {filteredWk.filter(w => !formData.workIds.includes(w.id)).length === 0 && (
+                    <p className="no-works-hint">Ничего не найдено</p>
+                  )}
+                  {filteredWk.filter(w => !formData.workIds.includes(w.id)).map(w => (
+                    <label key={w.id} className="checkbox-item">
+                      <input type="checkbox" checked={false} onChange={() => { toggleId('workIds', w.id); setWkSearch(''); }} />
+                      <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-actions-inline">

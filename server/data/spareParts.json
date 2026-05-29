@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "id": "34fd1377-129d-4743-8ed9-5cd2e527d926",
+    "name": "Смазка силиконовая",
+    "article": "WD-40",
+    "manufacturer": "WDW",
+    "minStock": 100,
+    "equipmentIds": [
+      "9bdc3acb-fe85-4d34-aed8-fef77b08b2e2"
+    ],
+    "workIds": [
+      "71844b4c-4535-4cc5-8abe-2167b3c86404"
+    ],
+    "createdAt": "2026-05-29T11:12:39.511Z",
+    "updatedAt": "2026-05-29T11:27:55.459Z"
+  }
+]

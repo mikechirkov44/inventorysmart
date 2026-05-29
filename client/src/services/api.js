@@ -107,6 +107,11 @@ export const sparePartsAPI = {
   delete: (id) => api.delete(`/spare-parts/${id}`),
 };
 
+export const analyticsAPI = {
+  getAnalytics: () => api.get('/analytics'),
+  getSummary: () => api.get('/analytics/summary'),
+};
+
 export const importAPI = {
   importExcel: (formData) => api.post('/import/excel', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

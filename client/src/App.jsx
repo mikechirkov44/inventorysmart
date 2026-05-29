@@ -19,6 +19,7 @@ import ImportExcel from './pages/ImportExcel';
 import CalendarPage from './pages/CalendarPage';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
+import AnalyticsPage from './pages/AnalyticsPage';
 import './App.css';
 
 function DirDropdown() {
@@ -74,6 +75,7 @@ function AppNav() {
         <li><NavLink to="/scan">QR-сканер</NavLink></li>
         <li><NavLink to="/calendar">Календарь</NavLink></li>
         {isAdmin && <li><NavLink to="/incidents">Инциденты</NavLink></li>}
+        {isAdmin && <li><NavLink to="/analytics">Аналитика</NavLink></li>}
         {isAdmin && <li><NavLink to="/import">Импорт</NavLink></li>}
         {isAdmin && <li><NavLink to="/users">Пользователи</NavLink></li>}
       </ul>
@@ -108,6 +110,7 @@ function AppRoutes() {
 
       {/* Admin routes */}
       <Route path="/incidents" element={<ProtectedRoute adminOnly><IncidentsPage /></ProtectedRoute>} />
+      <Route path="/analytics" element={<ProtectedRoute adminOnly><AnalyticsPage /></ProtectedRoute>} />
       <Route path="/works" element={<ProtectedRoute adminOnly><WorksDirectory /></ProtectedRoute>} />
       <Route path="/rooms" element={<ProtectedRoute adminOnly><RoomsDirectory /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute adminOnly><EmployeesDirectory /></ProtectedRoute>} />
