@@ -25,9 +25,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Auth middleware for all API routes below
 const { authenticate } = require('./middleware/auth');
-app.use('/api', authenticate);
+
+app.use('/api', (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  if (req.path === '/setup' || req.path.startsWith('/setup/')) return next();
+  if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
+  if (req.path === '/health') return next();
+  authenticate(req, res, next);
+});
 
 // Protected routes
 const equipmentRoutes = require('./routes/equipment');
