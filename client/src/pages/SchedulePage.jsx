@@ -124,8 +124,8 @@ function SchedulePage() {
       <div className="schedule-groups">
         {filteredGroups.map((group, gIdx) => (
           <div key={gIdx} className="schedule-group">
-            <div className="group-header" onClick={() => toggleGroup(gIdx)}>
-              <span className="group-arrow">{expandedGroups.has(gIdx) ? '▼' : '►'}</span>
+            <div className={`group-header ${expandedGroups.has(gIdx) ? 'expanded' : ''}`} onClick={() => toggleGroup(gIdx)}>
+              <span className="group-arrow"></span>
               <span className="group-label">{group.label}</span>
               <span className="group-count">{group.rows.length} работ</span>
             </div>

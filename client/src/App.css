@@ -2008,12 +2008,26 @@ input, textarea, select { font-family: inherit; }
 .group-header:hover { background: var(--gray-100); }
 
 .group-arrow {
-  font-size: 14px;
-  color: var(--gray-500);
   width: 20px;
-  text-align: center;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.group-arrow::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--gray-500);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+.group-header.expanded .group-arrow {
+  transform: rotate(90deg);
 }
 
 .group-label {
