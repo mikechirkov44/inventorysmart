@@ -78,7 +78,8 @@ router.get('/:id/qr', async (req, res) => {
       return res.status(404).json({ error: 'Equipment not found' });
     }
     
-    const qrUrl = `${req.protocol}://${req.get('host')}/scan/${equipment.qr_code}`;
+    const frontendBase = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const qrUrl = `${frontendBase}/scan/${equipment.qrCode}`;
     const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
       width: 300,
       margin: 2,
@@ -90,7 +91,7 @@ router.get('/:id/qr', async (req, res) => {
     
     res.json({ 
       equipmentId: equipment.id,
-      qrCode: equipment.qr_code,
+      qrCode: equipment.qrCode,
       qrImage: qrCodeDataUrl,
       scanUrl: qrUrl
     });
