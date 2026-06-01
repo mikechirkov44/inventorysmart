@@ -1,0 +1,28 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: inventorysmart-server
+    restart: unless-stopped
+    volumes:
+      - server-data:/app/data
+      - server-uploads:/app/uploads
+    expose:
+      - "3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+
+  client:
+    build: ./client
+    container_name: inventorysmart-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
+volumes:
+  server-data:
+  server-uploads:

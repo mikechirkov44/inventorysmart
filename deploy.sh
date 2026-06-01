@@ -1,102 +1,85 @@
 #!/bin/bash
 
 # ============================================
-# InventorySmart - Автоматический деплой на Ubuntu
+# InventorySmart - Деплой на VPS (Docker)
 # ============================================
 
 set -e
 
 REPO_URL="https://github.com/mikechirkov44/inventorysmart.git"
 APP_DIR="/opt/inventorysmart"
-NODE_VERSION="20"
-PORT=3001
 
 echo "========================================="
-echo "  InventorySmart - Деплой на Ubuntu"
+echo "  InventorySmart - Деплой на VPS"
 echo "========================================="
 
-# 1. Обновление системы
+# 1. Установка Docker
 echo ""
-echo "[1/8] Обновление системы..."
-sudo apt update -y
-sudo apt upgrade -y
-
-# 2. Установка зависимостей
-echo ""
-echo "[2/8] Установка зависимостей..."
-sudo apt install -y curl git build-essential
-
-# 3. Установка Node.js
-echo ""
-echo "[3/8] Установка Node.js $NODE_VERSION..."
-if ! command -v node &> /dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
-  sudo apt install -y nodejs
+echo "[1/5] Проверка Docker..."
+if ! command -v docker &> /dev/null; then
+  echo "Установка Docker..."
+  curl -fsSL https://get.docker.com | sh
+  sudo usermod -aG docker $USER
+  echo "Docker установлен. Может потребоваться перелогин."
 fi
-echo "Node.js $(node -v) установлен"
-echo "npm $(npm -v) установлен"
+echo "Docker $(docker -v | cut -d' ' -f3 | tr -d ',')"
 
-# 4. Установка PM2
+# 2. Установка Docker Compose
 echo ""
-echo "[4/8] Установка PM2..."
-if ! command -v pm2 &> /dev/null; then
-  sudo npm install -g pm2
+echo "[2/5] Проверка Docker Compose..."
+if ! docker compose version &> /dev/null; then
+  echo "Установка Docker Compose plugin..."
+  sudo apt update -y
+  sudo apt install -y docker-compose-plugin
 fi
-echo "PM2 установлен"
+echo "Docker Compose $(docker compose version --short)"
 
-# 5. Клонирование репозитория
+# 3. Клонирование / обновление репозитория
 echo ""
-echo "[5/8] Клонирование репозитория..."
+echo "[3/5] Получение кода..."
 if [ -d "$APP_DIR" ]; then
-  echo "Директория $APP_DIR уже существует, обновляю..."
+  echo "Обновление существующей директории..."
   cd "$APP_DIR"
   git pull
 else
+  echo "Клонирование репозитория..."
   sudo git clone "$REPO_URL" "$APP_DIR"
   sudo chown -R $USER:$USER "$APP_DIR"
   cd "$APP_DIR"
 fi
 
-# 6. Установка зависимостей проекта
+# 4. Сборка и запуск контейнеров
 echo ""
-echo "[6/8] Установка зависимостей..."
-npm install
-cd client
-npm install
-cd ..
+echo "[4/5] Сборка и запуск контейнеров..."
+docker compose down 2>/dev/null || true
+docker compose up -d --build
 
-# 7. Сборка фронтенда
+# 5. Ожидание готовности
 echo ""
-echo "[7/8] Сборка фронтенда..."
-cd client
-npm run build
-cd ..
+echo "[5/5] Проверка здоровья сервера..."
+sleep 3
+for i in 1 2 3 4 5; do
+  if curl -sf http://localhost/api/health > /dev/null 2>&1; then
+    break
+  fi
+  echo "  Ожидание... ($i/5)"
+  sleep 2
+done
 
-# 8. Настройка и запуск PM2
-echo ""
-echo "[8/8] Настройка и запуск сервера..."
-
-# Остановка старого процесса если есть
-pm2 delete inventorysmart 2>/dev/null || true
-
-# Запуск сервера
-cd "$APP_DIR"
-pm2 start server/index.js --name inventorysmart --env production
-pm2 save
-pm2 startup
+IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "========================================="
 echo "  Деплой завершён!"
 echo "========================================="
 echo ""
-echo "Сервер запущен на порту $PORT"
-echo "API: http://$(hostname -I | awk '{print $1}'):$PORT/api/health"
+echo "  Приложение: http://$IP"
+echo "  API:        http://$IP/api/health"
 echo ""
-echo "Команды управления:"
-echo "  pm2 status          - статус процессов"
-echo "  pm2 logs            - логи"
-echo "  pm2 restart all     - перезапуск"
-echo "  pm2 stop all        - остановка"
-echo "  pm2 delete all      - удаление процессов"
+echo "  Управление:"
+echo "    docker compose ps          - статус"
+echo "    docker compose logs -f     - логи"
+echo "    docker compose restart     - перезапуск"
+echo "    docker compose down        - остановка"
+echo "    docker compose up -d       - запуск"
 echo ""
