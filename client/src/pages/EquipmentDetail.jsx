@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI } from '../services/api';
+import EquipmentPassport from '../components/EquipmentPassport';
 
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
@@ -36,6 +37,7 @@ function EquipmentDetail() {
   const [spareParts, setSpareParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPassport, setShowPassport] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -90,108 +92,122 @@ function EquipmentDetail() {
       <div className="detail-header">
         <Link to="/" className="back-link">← Назад к списку</Link>
         <div className="detail-actions">
+          <button onClick={() => setShowPassport(!showPassport)} className="btn btn-secondary">
+            {showPassport ? '← Назад к карточке' : '📄 Паспорт'}
+          </button>
           <Link to={`/equipment/${id}/edit`} className="btn btn-primary">Редактировать</Link>
           <button onClick={handleDelete} className="btn btn-danger">Удалить</button>
         </div>
       </div>
 
-      <div className="detail-content">
-        <div className="detail-main">
-          <div className="detail-photo">
-            {equipment.photo ? (
-              <img src={`/uploads/${equipment.photo}`} alt={equipment.name} />
-            ) : (
-              <div className="no-photo-large">Нет фото</div>
-            )}
-          </div>
+      {showPassport ? (
+        <EquipmentPassport
+          equipment={equipment}
+          room={room}
+          assignedWorks={assignedWorks}
+          spareParts={spareParts}
+          workOrders={workOrders}
+          qrData={qrData}
+        />
+      ) : (<>
+        <div className="detail-content">
+          <div className="detail-main">
+            <div className="detail-photo">
+              {equipment.photo ? (
+                <img src={`/uploads/${equipment.photo}`} alt={equipment.name} />
+              ) : (
+                <div className="no-photo-large">Нет фото</div>
+              )}
+            </div>
 
-          <div className="detail-info">
-            <h1>{equipment.name}</h1>
-            <div className="info-row">
-              <span className="label">Состояние:</span>
-              <span className="value"><span className={`status-badge ${st.className}`}>{st.label}</span></span>
-            </div>
-            <div className="info-row">
-              <span className="label">Инвентарный номер:</span>
-              <span className="value">{equipment.inventoryNumber}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">Помещение:</span>
-              <span className="value">{room ? room.name : '—'}{room && room.building ? ` (${room.building})` : ''}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">Категория:</span>
-              <span className="value">{equipment.category}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">Описание:</span>
-              <span className="value">{equipment.description}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="detail-sidebar">
-          <div className="qr-section">
-            <h3>QR-код</h3>
-            {qrData && (
-              <div className="qr-code">
-                <img src={qrData.qrImage} alt="QR Code" />
-                <p className="scan-url">{qrData.scanUrl}</p>
+            <div className="detail-info">
+              <h1>{equipment.name}</h1>
+              <div className="info-row">
+                <span className="label">Состояние:</span>
+                <span className="value"><span className={`status-badge ${st.className}`}>{st.label}</span></span>
               </div>
-            )}
+              <div className="info-row">
+                <span className="label">Инвентарный номер:</span>
+                <span className="value">{equipment.inventoryNumber}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Помещение:</span>
+                <span className="value">{room ? room.name : '—'}{room && room.building ? ` (${room.building})` : ''}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Категория:</span>
+                <span className="value">{equipment.category}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Описание:</span>
+                <span className="value">{equipment.description}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="tasks-section">
-            <h3>Плановые работы ({assignedWorks.length})</h3>
-            <ul className="task-list">
-              {assignedWorks.map(work => (
-                <li key={work.id} className="task-item">
-                  <span className="task-name">{work.name}</span>
-                  <span className="task-frequency">{getFrequencyLabel(work.frequencyDays)}</span>
-                </li>
-              ))}
-              {assignedWorks.length === 0 && <li className="task-item">Нет привязанных работ</li>}
-            </ul>
-          </div>
+          <div className="detail-sidebar">
+            <div className="qr-section">
+              <h3>QR-код</h3>
+              {qrData && (
+                <div className="qr-code">
+                  <img src={qrData.qrImage} alt="QR Code" />
+                  <p className="scan-url">{qrData.scanUrl}</p>
+                </div>
+              )}
+            </div>
 
-          <div className="spare-parts-section">
-            <h3>ЗИП ({spareParts.length})</h3>
-            {spareParts.length > 0 ? (
-              <div className="spare-parts-list">
-                {spareParts.map(sp => (
-                  <div key={sp.id} className="spare-part-item">
-                    <div className="sp-item-info">
-                      <span className="sp-item-name">{sp.name}</span>
-                      {sp.article && <span className="sp-item-article">{sp.article}</span>}
-                    </div>
-                    <div className="sp-item-stock">
-                      <span className={`sp-quantity ${sp.quantity <= 0 ? 'empty' : sp.quantity <= sp.minStock ? 'low' : ''}`}>
-                        {sp.quantity || 0}
-                      </span>
-                      {sp.minStock > 0 && <span className="sp-min">мин. {sp.minStock}</span>}
-                    </div>
-                  </div>
+            <div className="tasks-section">
+              <h3>Плановые работы ({assignedWorks.length})</h3>
+              <ul className="task-list">
+                {assignedWorks.map(work => (
+                  <li key={work.id} className="task-item">
+                    <span className="task-name">{work.name}</span>
+                    <span className="task-frequency">{getFrequencyLabel(work.frequencyDays)}</span>
+                  </li>
                 ))}
-              </div>
-            ) : (
-              <p className="no-spare-parts">Нет привязанных запчастей</p>
-            )}
-          </div>
+                {assignedWorks.length === 0 && <li className="task-item">Нет привязанных работ</li>}
+              </ul>
+            </div>
 
-          <div className="history-section">
-            <h3>История работ ({workOrders.length})</h3>
-            <ul className="history-list">
-              {workOrders.slice(0, 5).map(wo => (
-                <li key={wo.id} className={`history-item ${wo.status}`}>
-                  <span className="history-date">{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</span>
-                  <span className="history-task">{wo.taskName}</span>
-                  <span className="history-master">{wo.masterName}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="spare-parts-section">
+              <h3>ЗИП ({spareParts.length})</h3>
+              {spareParts.length > 0 ? (
+                <div className="spare-parts-list">
+                  {spareParts.map(sp => (
+                    <div key={sp.id} className="spare-part-item">
+                      <div className="sp-item-info">
+                        <span className="sp-item-name">{sp.name}</span>
+                        {sp.article && <span className="sp-item-article">{sp.article}</span>}
+                      </div>
+                      <div className="sp-item-stock">
+                        <span className={`sp-quantity ${sp.quantity <= 0 ? 'empty' : sp.quantity <= sp.minStock ? 'low' : ''}`}>
+                          {sp.quantity || 0}
+                        </span>
+                        {sp.minStock > 0 && <span className="sp-min">мин. {sp.minStock}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-spare-parts">Нет привязанных запчастей</p>
+              )}
+            </div>
+
+            <div className="history-section">
+              <h3>История работ ({workOrders.length})</h3>
+              <ul className="history-list">
+                {workOrders.slice(0, 5).map(wo => (
+                  <li key={wo.id} className={`history-item ${wo.status}`}>
+                    <span className="history-date">{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</span>
+                    <span className="history-task">{wo.taskName}</span>
+                    <span className="history-master">{wo.masterName}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
+      </>)}
     </div>
   );
 }

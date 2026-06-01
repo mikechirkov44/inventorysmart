@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://inventorysmart:inventorysmart_secret@localhost:5432/inventorysmart'
+  connectionString: process.env.DATABASE_URL || 'postgresql://inventorysmart:inventorysmart_secret@localhost:5433/inventorysmart'
 });
 
 pool.on('error', (err) => {

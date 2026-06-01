@@ -3518,3 +3518,230 @@ input, textarea, select { font-family: inherit; }
   font-size: 13px;
   color: var(--gray-600);
 }
+
+/* ===== EQUIPMENT PASSPORT ===== */
+.passport-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.passport-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: flex-end;
+}
+
+.passport-container {
+  background: white;
+  border-radius: var(--radius);
+  padding: 36px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+}
+
+.passport-header {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--gray-900);
+}
+
+.passport-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 4px;
+}
+
+.passport-header .subtitle {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.passport-header .inv-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-top: 6px;
+}
+
+.passport-body {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.passport-photo {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.passport-photo img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+}
+
+.passport-photo .no-photo {
+  width: 100%;
+  height: 200px;
+  background: var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-400);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.passport-qr {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.passport-qr img {
+  max-width: 120px;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+}
+
+.passport-info {
+  flex: 1;
+}
+
+.passport-info .info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.passport-info .info-table tr {
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.passport-info .info-table td {
+  padding: 9px 0;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.passport-info .info-table td:first-child {
+  font-weight: 600;
+  color: var(--gray-500);
+  width: 160px;
+}
+
+.passport-section {
+  margin-bottom: 24px;
+}
+
+.passport-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 10px;
+  border-bottom: 2px solid var(--gray-200);
+  padding-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.passport-section .works-list,
+.passport-section .spare-parts-list {
+  list-style: none;
+  font-size: 12px;
+}
+
+.passport-section .works-list li,
+.passport-section .spare-parts-list li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--gray-50);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.passport-section .work-name,
+.passport-section .sp-name {
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.passport-section .work-freq,
+.passport-section .sp-qty {
+  color: var(--gray-500);
+  font-size: 11px;
+}
+
+.passport-section .history-list {
+  list-style: none;
+  font-size: 12px;
+}
+
+.passport-section .history-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-50);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.passport-section .h-date {
+  color: var(--gray-500);
+  min-width: 85px;
+}
+
+.passport-section .h-task {
+  flex: 1;
+  color: var(--gray-700);
+}
+
+.passport-section .h-master {
+  color: var(--gray-500);
+  font-size: 11px;
+}
+
+.passport-section .no-data {
+  color: var(--gray-400);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.passport-footer {
+  margin-top: 32px;
+  border-top: 1px solid var(--gray-200);
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .no-print,
+  .sidebar,
+  .top-header,
+  .back-link,
+  .detail-actions {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .passport-container {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+  }
+
+  .passport-wrapper {
+    max-width: 100%;
+  }
+}
