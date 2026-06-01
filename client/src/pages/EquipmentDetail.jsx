@@ -84,6 +84,32 @@ function EquipmentDetail() {
     }
   };
 
+  const handlePrintQR = () => {
+    if (!qrData) return;
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>QR — ${equipment.name}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .qr-card { text-align: center; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .qr-card img { width: 200px; height: 200px; image-rendering: pixelated; }
+        .qr-card h2 { margin-top: 16px; font-size: 16px; font-weight: 600; }
+        .qr-card p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        @media print { body { padding: 0; } .qr-card { border: none; } }
+      </style></head><body>
+        <div class="qr-card">
+          <img src="${qrData.qrImage}" alt="QR" />
+          <h2>${equipment.name}</h2>
+          <p>Инв. номер: ${equipment.inventoryNumber || '—'}</p>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
   if (loading) return <div className="loading">Загрузка...</div>;
   if (error) return <div className="error">{error}</div>;
   if (!equipment) return <div className="error">Оборудование не найдено</div>;
@@ -155,7 +181,12 @@ function EquipmentDetail() {
               {qrData && (
                 <div className="qr-code">
                   <img src={qrData.qrImage} alt="QR Code" />
-                  <p className="scan-url">{qrData.scanUrl}</p>
+                  <div className="qr-label">{equipment.name}</div>
+                  {equipment.inventoryNumber && <div className="qr-inventory">Инв. номер: {equipment.inventoryNumber}</div>}
+                  <button className="qr-print-btn" onClick={handlePrintQR}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Печать
+                  </button>
                 </div>
               )}
             </div>
