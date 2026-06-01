@@ -29,6 +29,7 @@ function ScanResult() {
   const [executorId, setExecutorId] = useState('');
   const [checkedTasks, setCheckedTasks] = useState({});
   const [taskComments, setTaskComments] = useState({});
+  const [taskSpareParts, setTaskSpareParts] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showFailureModal, setShowFailureModal] = useState(false);
@@ -61,6 +62,30 @@ function ScanResult() {
 
   const handleCheck = (workId) => {
     setCheckedTasks(prev => ({ ...prev, [workId]: !prev[workId] }));
+    if (!checkedTasks[workId] && data) {
+      const task = [...(data.dueTasks || []), ...(data.notDueTasks || [])].find(t => t.workId === workId);
+      if (task && task.spareParts && task.spareParts.length > 0) {
+        setTaskSpareParts(prev => ({
+          ...prev,
+          [workId]: task.spareParts.map(sp => ({
+            sparePartId: sp.sparePartId,
+            name: sp.name,
+            unit: sp.unit,
+            quantity: sp.defaultQuantity || 0,
+            inStock: sp.inStock
+          }))
+        }));
+      }
+    }
+  };
+
+  const updateTaskSparePartQty = (workId, sparePartId, qty) => {
+    setTaskSpareParts(prev => ({
+      ...prev,
+      [workId]: (prev[workId] || []).map(sp =>
+        sp.sparePartId === sparePartId ? { ...sp, quantity: parseInt(qty) || 0 } : sp
+      )
+    }));
   };
 
   const handleComment = (workId, text) => {
@@ -87,17 +112,23 @@ function ScanResult() {
 
     try {
       for (const workId of toSubmit) {
+        const spUsed = (taskSpareParts[workId] || [])
+          .filter(sp => sp.quantity > 0)
+          .map(sp => ({ sparePartId: sp.sparePartId, quantity: sp.quantity }));
+
         await scanAPI.completeTask({
           equipmentId: data.equipment.id,
           workId,
           masterName: execName,
           notes: taskComments[workId] || '',
+          sparePartsUsed: spUsed,
         });
       }
 
       setSuccessMessage(`Выполнено работ: ${toSubmit.length}`);
       setCheckedTasks({});
       setTaskComments({});
+      setTaskSpareParts({});
       fetchData();
 
       setTimeout(() => setSuccessMessage(''), 4000);
@@ -179,13 +210,42 @@ function ScanResult() {
                     {task.nextDue && <span>Следующее: {formatDate(task.nextDue)}</span>}
                   </div>
                   {checkedTasks[task.workId] && (
-                    <input
-                      type="text"
-                      className="task-comment-input"
-                      value={taskComments[task.workId] || ''}
-                      onChange={(e) => handleComment(task.workId, e.target.value)}
-                      placeholder="Комментарий к выполнению (необязательно)"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        className="task-comment-input"
+                        value={taskComments[task.workId] || ''}
+                        onChange={(e) => handleComment(task.workId, e.target.value)}
+                        placeholder="Комментарий к выполнению (необязательно)"
+                      />
+                      {task.spareParts && task.spareParts.length > 0 && (
+                        <div className="task-spare-parts-section">
+                          <div className="wo-complete-title">Списание ЗИП:</div>
+                          <div className="wo-sp-select-list">
+                            {(taskSpareParts[task.workId] || task.spareParts.map(sp => ({
+                              sparePartId: sp.sparePartId,
+                              name: sp.name,
+                              unit: sp.unit,
+                              quantity: sp.defaultQuantity || 0,
+                              inStock: sp.inStock
+                            }))).map(sp => (
+                              <div key={sp.sparePartId} className="wo-sp-select-item">
+                                <span className="wo-sp-select-name">{sp.name} ({sp.unit})</span>
+                                <span className="wo-sp-select-stock">на складе: {sp.inStock}</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={sp.inStock}
+                                  value={sp.quantity}
+                                  onChange={(e) => updateTaskSparePartQty(task.workId, sp.sparePartId, e.target.value)}
+                                  className="wo-sp-input"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

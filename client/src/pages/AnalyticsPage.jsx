@@ -63,11 +63,8 @@ function StockReport() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [replenishMode, setReplenishMode] = useState(false);
-  const [replenishData, setReplenishData] = useState({});
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -106,48 +103,11 @@ function StockReport() {
     return { total, empty, low, ok };
   }, [items]);
 
-  const toggleReplenish = () => {
-    if (replenishMode) {
-      setReplenishMode(false);
-      setReplenishData({});
-    } else {
-      const initial = {};
-      items.forEach(i => { initial[i.id] = 0; });
-      setReplenishData(initial);
-      setReplenishMode(true);
-    }
-  };
-
-  const updateReplenishQty = (id, qty) => {
-    setReplenishData(prev => ({ ...prev, [id]: parseInt(qty) || 0 }));
-  };
-
-  const submitReplenish = async () => {
-    const itemsToReplenish = Object.entries(replenishData)
-      .filter(([, qty]) => qty > 0)
-      .map(([sparePartId, quantity]) => ({ sparePartId, quantity }));
-    if (itemsToReplenish.length === 0) {
-      setError('Укажите количество хотя бы для одной позиции');
-      return;
-    }
-    try {
-      await sparePartsAPI.replenish(itemsToReplenish);
-      setSuccess(`Пополнено ${itemsToReplenish.length} позиций`);
-      setReplenishMode(false);
-      setReplenishData({});
-      fetchItems();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch {
-      setError('Ошибка пополнения');
-    }
-  };
-
   if (loading) return <div className="loading">Загрузка...</div>;
 
   return (
     <>
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 0, flex: 1 }}>
@@ -167,11 +127,6 @@ function StockReport() {
             <div className="summary-value">{stats.total}</div>
             <div className="summary-label">Всего единиц</div>
           </div>
-        </div>
-        <div style={{ marginLeft: 16, flexShrink: 0 }}>
-          <button onClick={toggleReplenish} className={`btn ${replenishMode ? 'btn-danger' : 'btn-primary'}`}>
-            {replenishMode ? 'Отмена' : 'Пополнить склад'}
-          </button>
         </div>
       </div>
 
@@ -198,13 +153,12 @@ function StockReport() {
                 <th>Производитель</th>
                 <th>На складе</th>
                 <th>Мин. запас</th>
-                {replenishMode && <th>Пополнить</th>}
                 <th>Статус</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={replenishMode ? 7 : 6} className="no-results-cell">Позиции не найдены</td></tr>
+                <tr><td colSpan="6" className="no-results-cell">Позиции не найдены</td></tr>
               ) : (
                 filtered.map(item => {
                   const qty = item.quantity || 0;
@@ -218,18 +172,6 @@ function StockReport() {
                       <td>{item.manufacturer || '—'}</td>
                       <td><span className={`sp-quantity ${status}`}>{qty}</span></td>
                       <td>{min}</td>
-                      {replenishMode && (
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            value={replenishData[item.id] || ''}
-                            onChange={(e) => updateReplenishQty(item.id, e.target.value)}
-                            className="replenish-input"
-                            placeholder="0"
-                          />
-                        </td>
-                      )}
                       <td>
                         <span className={`overdue-badge ${status === 'ok' ? 'ok' : status === 'low' ? 'new' : 'overdue'}`}>
                           {statusLabel}
@@ -243,13 +185,6 @@ function StockReport() {
           </table>
         </div>
       </div>
-
-      {replenishMode && (
-        <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={submitReplenish} className="btn btn-primary">Подтвердить пополнение</button>
-          <button onClick={toggleReplenish} className="btn">Отмена</button>
-        </div>
-      )}
     </>
   );
 }

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { workOrderAPI, equipmentAPI, sparePartsAPI } from '../services/api';
+import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI } from '../services/api';
 
 function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [allSpareParts, setAllSpareParts] = useState([]);
+  const [allWorks, setAllWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -18,14 +19,16 @@ function WorkOrders() {
 
   const fetchData = async () => {
     try {
-      const [workOrdersRes, equipmentRes, spRes] = await Promise.all([
+      const [workOrdersRes, equipmentRes, spRes, worksRes] = await Promise.all([
         workOrderAPI.getAll(),
         equipmentAPI.getAll(),
-        sparePartsAPI.getAll()
+        sparePartsAPI.getAll(),
+        worksAPI.getAll()
       ]);
       setWorkOrders(workOrdersRes.data);
       setEquipment(equipmentRes.data);
       setAllSpareParts(spRes.data);
+      setAllWorks(worksRes.data);
       setLoading(false);
     } catch (err) {
       setError('Ошибка загрузки данных');
@@ -38,8 +41,22 @@ function WorkOrders() {
     return equip ? equip.name : 'Неизвестное оборудование';
   };
 
-  const getSparePartsForEquipment = (equipmentId) => {
-    return allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipmentId));
+  const getSparePartsForWork = (equipmentId, workId) => {
+    const eqSpareParts = allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipmentId));
+    if (!workId) return eqSpareParts;
+
+    return eqSpareParts
+      .filter(sp => (sp.workLinks || []).some(wl => wl.workId === workId))
+      .map(sp => {
+        const wl = sp.workLinks.find(x => x.workId === workId);
+        return {
+          sparePartId: sp.id,
+          name: sp.name,
+          unit: sp.unit || 'шт',
+          defaultQuantity: wl ? wl.quantity : 0,
+          inStock: sp.quantity || 0
+        };
+      });
   };
 
   const filteredWorkOrders = workOrders.filter(wo => {
@@ -49,8 +66,14 @@ function WorkOrders() {
 
   const startComplete = (wo) => {
     setCompletingId(wo.id);
-    const available = getSparePartsForEquipment(wo.equipmentId);
-    setSparePartsSelection(available.map(sp => ({ sparePartId: sp.id, name: sp.name, quantity: 0, maxQty: sp.quantity || 0 })));
+    const available = getSparePartsForWork(wo.equipmentId, wo.taskId);
+    setSparePartsSelection(available.map(sp => ({
+      sparePartId: sp.sparePartId || sp.id,
+      name: sp.name,
+      unit: sp.unit || 'шт',
+      quantity: sp.defaultQuantity || 0,
+      maxQty: sp.inStock || sp.quantity || 0
+    })));
   };
 
   const updateSparePartQty = (sparePartId, qty) => {
@@ -162,7 +185,7 @@ function WorkOrders() {
                     const spData = allSpareParts.find(s => s.id === sp.sparePartId);
                     return (
                       <span key={i} className="wo-sp-item">
-                        {spData ? spData.name : '—'} × {sp.quantity}
+                        {spData ? spData.name : '—'} × {sp.quantity} {spData ? (spData.unit || 'шт') : ''}
                       </span>
                     );
                   })}
@@ -176,7 +199,7 @@ function WorkOrders() {
                     <div className="wo-sp-select-list">
                       {sparePartsSelection.map(sp => (
                         <div key={sp.sparePartId} className="wo-sp-select-item">
-                          <span className="wo-sp-select-name">{sp.name}</span>
+                          <span className="wo-sp-select-name">{sp.name} ({sp.unit})</span>
                           <span className="wo-sp-select-stock">на складе: {sp.maxQty}</span>
                           <input
                             type="number"
@@ -190,7 +213,7 @@ function WorkOrders() {
                       ))}
                     </div>
                   ) : (
-                    <p className="wo-no-sp">Нет привязанных запчастей для этого оборудования</p>
+                    <p className="wo-no-sp">Нет привязанных запчастей для этой работы</p>
                   )}
                   <div className="wo-complete-actions">
                     <button onClick={confirmComplete} className="btn btn-small btn-primary">Подтвердить</button>

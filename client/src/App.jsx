@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotificationBell from './components/NotificationBell';
@@ -19,6 +19,7 @@ import UsersPage from './pages/UsersPage';
 import ImportExcel from './pages/ImportExcel';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
+import SparePartsReceipts from './pages/SparePartsReceipts';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SchedulePage from './pages/SchedulePage';
 import SetupPage from './pages/SetupPage';
@@ -39,7 +40,7 @@ function DirDropdown() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms'].some(p => location.pathname === p);
+  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts'].some(p => location.pathname === p);
 
   return (
     <li className={`nav-dropdown ${open ? 'open' : ''}`} ref={ref}>
@@ -79,6 +80,7 @@ function AppNav() {
       <ul className="nav-links">
         <DirDropdown />
         <li><NavLink to="/work-orders"><ClipboardList size={18} /><span>Журнал</span></NavLink></li>
+        <li><NavLink to="/spare-parts-receipts"><FileText size={18} /><span>Документы</span></NavLink></li>
         <li><NavLink to="/scan"><ScanLine size={18} /><span>QR-сканер</span></NavLink></li>
         <li><NavLink to="/schedule"><CalendarDays size={18} /><span>План-график</span></NavLink></li>
         {isAdmin && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
@@ -134,6 +136,7 @@ function AppRoutes() {
       <Route path="/rooms" element={<ProtectedRoute adminOnly><RoomsDirectory /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute adminOnly><EmployeesDirectory /></ProtectedRoute>} />
       <Route path="/spare-parts" element={<ProtectedRoute adminOnly><SparePartsDirectory /></ProtectedRoute>} />
+      <Route path="/spare-parts-receipts" element={<ProtectedRoute adminOnly><SparePartsReceipts /></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute adminOnly><ImportExcel /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute adminOnly><UsersPage /></ProtectedRoute>} />
 

@@ -14,7 +14,7 @@ function SparePartsDirectory() {
   const [eqSearch, setEqSearch] = useState('');
   const [wkSearch, setWkSearch] = useState('');
   const [formData, setFormData] = useState({
-    name: '', article: '', manufacturer: '', minStock: 0, quantity: 0, equipmentIds: [], workIds: []
+    name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: []
   });
 
   useEffect(() => { fetchData(); }, []);
@@ -55,7 +55,7 @@ function SparePartsDirectory() {
   }, [items, search]);
 
   const resetForm = () => {
-    setFormData({ name: '', article: '', manufacturer: '', minStock: 0, quantity: 0, equipmentIds: [], workIds: [] });
+    setFormData({ name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: [] });
     setEditId(null);
     setShowForm(false);
   };
@@ -65,10 +65,11 @@ function SparePartsDirectory() {
       name: item.name,
       article: item.article || '',
       manufacturer: item.manufacturer || '',
+      unit: item.unit || 'шт',
       minStock: item.minStock || 0,
       quantity: item.quantity || 0,
       equipmentIds: item.equipmentIds || [],
-      workIds: item.workIds || []
+      workLinks: item.workLinks || []
     });
     setEditId(item.id);
     setShowForm(true);
@@ -79,6 +80,23 @@ function SparePartsDirectory() {
       const ids = prev[field].includes(id) ? prev[field].filter(x => x !== id) : [...prev[field], id];
       return { ...prev, [field]: ids };
     });
+  };
+
+  const toggleWorkLink = (workId) => {
+    setFormData(prev => {
+      const exists = prev.workLinks.find(wl => wl.workId === workId);
+      if (exists) {
+        return { ...prev, workLinks: prev.workLinks.filter(wl => wl.workId !== workId) };
+      }
+      return { ...prev, workLinks: [...prev.workLinks, { workId, quantity: 1 }] };
+    });
+  };
+
+  const updateWorkQuantity = (workId, quantity) => {
+    setFormData(prev => ({
+      ...prev,
+      workLinks: prev.workLinks.map(wl => wl.workId === workId ? { ...wl, quantity: parseInt(quantity) || 0 } : wl)
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -136,6 +154,19 @@ function SparePartsDirectory() {
                 <input type="text" value={formData.manufacturer} onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })} />
               </div>
               <div className="form-group">
+                <label>Ед. изм.</label>
+                <select value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value })}>
+                  <option value="шт">шт</option>
+                  <option value="м">м</option>
+                  <option value="м2">м²</option>
+                  <option value="м3">м³</option>
+                  <option value="кг">кг</option>
+                  <option value="л">л</option>
+                  <option value="компл">компл</option>
+                  <option value="упак">упак</option>
+                </select>
+              </div>
+              <div className="form-group">
                 <label>Кол-во на складе</label>
                 <input type="number" min="0" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })} />
               </div>
@@ -173,26 +204,30 @@ function SparePartsDirectory() {
               )}
             </div>
             <div className="form-group">
-              <label>Работы</label>
-              {formData.workIds.length > 0 && (
+              <label>Работы (расход ЗИП)</label>
+              {formData.workLinks.length > 0 && (
                 <div className="works-checkbox-list compact selected-list">
-                  {works.filter(w => formData.workIds.includes(w.id)).map(w => (
-                    <label key={w.id} className="checkbox-item selected">
-                      <input type="checkbox" checked={true} onChange={() => toggleId('workIds', w.id)} />
-                      <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
-                    </label>
-                  ))}
+                  {works.filter(w => formData.workLinks.some(wl => wl.workId === w.id)).map(w => {
+                    const wl = formData.workLinks.find(x => x.workId === w.id);
+                    return (
+                      <label key={w.id} className="checkbox-item selected">
+                        <input type="checkbox" checked={true} onChange={() => toggleWorkLink(w.id)} />
+                        <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
+                        <input type="number" min="0" value={wl ? wl.quantity : 0} onChange={(e) => updateWorkQuantity(w.id, e.target.value)} className="work-qty-input" title="Расход за 1 работу" />
+                      </label>
+                    );
+                  })}
                 </div>
               )}
               <input type="text" placeholder="Найти и добавить работы..." value={wkSearch} onChange={(e) => setWkSearch(e.target.value)} className="filter-search-sm" />
               {wkSearch && (
                 <div className="works-checkbox-list compact search-results">
-                  {filteredWk.filter(w => !formData.workIds.includes(w.id)).length === 0 && (
+                  {filteredWk.filter(w => !formData.workLinks.some(wl => wl.workId === w.id)).length === 0 && (
                     <p className="no-works-hint">Ничего не найдено</p>
                   )}
-                  {filteredWk.filter(w => !formData.workIds.includes(w.id)).map(w => (
+                  {filteredWk.filter(w => !formData.workLinks.some(wl => wl.workId === w.id)).map(w => (
                     <label key={w.id} className="checkbox-item">
-                      <input type="checkbox" checked={false} onChange={() => { toggleId('workIds', w.id); setWkSearch(''); }} />
+                      <input type="checkbox" checked={false} onChange={() => { toggleWorkLink(w.id); setWkSearch(''); }} />
                       <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
                     </label>
                   ))}
@@ -223,6 +258,7 @@ function SparePartsDirectory() {
                 <th>Наименование</th>
                 <th>Артикул</th>
                 <th>Производитель</th>
+                <th>Ед.</th>
                 <th>Кол-во</th>
                 <th>Мин. запас</th>
                 <th>Оборудование</th>
@@ -232,13 +268,14 @@ function SparePartsDirectory() {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan="8" className="no-results-cell">Позиции не найдены</td></tr>
+                <tr><td colSpan="9" className="no-results-cell">Позиции не найдены</td></tr>
               ) : (
                 filtered.map(item => (
                   <tr key={item.id}>
                     <td className="td-bold">{item.name}</td>
                     <td>{item.article || '—'}</td>
                     <td>{item.manufacturer || '—'}</td>
+                    <td>{item.unit || 'шт'}</td>
                     <td>
                       <span className={`sp-quantity ${(item.quantity || 0) <= 0 ? 'empty' : (item.quantity || 0) <= (item.minStock || 0) ? 'low' : ''}`}>
                         {item.quantity || 0}
@@ -254,9 +291,12 @@ function SparePartsDirectory() {
                     </td>
                     <td>
                       <div className="td-tags">
-                        {(item.workIds || []).map(id => wkMap[id]).filter(Boolean).map(name => (
-                          <span key={name} className="equipment-count-badge">{name}</span>
-                        ))}
+                        {(item.workLinks || []).map(wl => {
+                          const w = works.find(x => x.id === wl.workId);
+                          return w ? (
+                            <span key={wl.workId} className="equipment-count-badge">{w.name}{wl.quantity > 0 ? ` ×${wl.quantity}` : ''}</span>
+                          ) : null;
+                        })}
                       </div>
                     </td>
                     <td>

@@ -109,6 +109,14 @@ export const sparePartsAPI = {
   replenish: (items) => api.post('/spare-parts/replenish', { items }),
 };
 
+export const sparePartsReceiptsAPI = {
+  getAll: () => api.get('/spare-parts-receipts'),
+  getById: (id) => api.get(`/spare-parts-receipts/${id}`),
+  getNextNumber: () => api.get('/spare-parts-receipts/next-number'),
+  create: (data) => api.post('/spare-parts-receipts', data),
+  delete: (id) => api.delete(`/spare-parts-receipts/${id}`),
+};
+
 export const analyticsAPI = {
   getAnalytics: () => api.get('/analytics'),
   getSummary: () => api.get('/analytics/summary'),

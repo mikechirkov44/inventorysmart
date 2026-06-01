@@ -102,6 +102,7 @@ async function migrate() {
         name VARCHAR(255) NOT NULL,
         article VARCHAR(100) DEFAULT '',
         manufacturer VARCHAR(255) DEFAULT '',
+        unit VARCHAR(50) DEFAULT 'шт',
         min_stock INTEGER DEFAULT 0,
         quantity INTEGER DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -117,6 +118,7 @@ async function migrate() {
       CREATE TABLE IF NOT EXISTS spare_parts_works (
         spare_part_id UUID REFERENCES spare_parts(id) ON DELETE CASCADE,
         work_id UUID REFERENCES works(id) ON DELETE CASCADE,
+        quantity INTEGER DEFAULT 0,
         PRIMARY KEY (spare_part_id, work_id)
       );
 
@@ -133,6 +135,25 @@ async function migrate() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS spare_part_receipts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        document_number VARCHAR(50) UNIQUE NOT NULL,
+        date DATE DEFAULT CURRENT_DATE,
+        supplier VARCHAR(255) DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS spare_part_receipt_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        receipt_id UUID REFERENCES spare_part_receipts(id) ON DELETE CASCADE,
+        spare_part_id UUID REFERENCES spare_parts(id) ON DELETE CASCADE,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        unit_price NUMERIC(12,2) DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS notifications (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -146,6 +167,9 @@ async function migrate() {
         read_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      ALTER TABLE spare_parts ADD COLUMN IF NOT EXISTS unit VARCHAR(50) DEFAULT 'шт';
+      ALTER TABLE spare_parts_works ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 0;
     `);
 
     await client.query('COMMIT');

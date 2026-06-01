@@ -53,6 +53,7 @@ async function start() {
   const notificationsRoutes = require('./routes/notifications');
   const incidentsRoutes = require('./routes/incidents');
   const sparePartsRoutes = require('./routes/spareParts');
+  const sparePartsReceiptsRoutes = require('./routes/sparePartsReceipts');
   const analyticsRoutes = require('./routes/analytics');
   const scheduleRoutes = require('./routes/schedule');
 
@@ -68,6 +69,7 @@ async function start() {
   app.use('/api/notifications', notificationsRoutes);
   app.use('/api/incidents', incidentsRoutes);
   app.use('/api/spare-parts', sparePartsRoutes);
+  app.use('/api/spare-parts-receipts', sparePartsReceiptsRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/schedule', scheduleRoutes);
 

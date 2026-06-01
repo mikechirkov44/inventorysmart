@@ -7,6 +7,7 @@ function mapRow(row) {
     name: row.name,
     article: row.article,
     manufacturer: row.manufacturer,
+    unit: row.unit || 'шт',
     minStock: row.min_stock,
     quantity: row.quantity,
     createdAt: row.created_at,
@@ -22,7 +23,7 @@ module.exports = {
     return parts.map(sp => ({
       ...mapRow(sp),
       equipmentIds: spEq.filter(e => e.spare_part_id === sp.id).map(e => e.equipment_id),
-      workIds: spWk.filter(w => w.spare_part_id === sp.id).map(w => w.work_id)
+      workLinks: spWk.filter(w => w.spare_part_id === sp.id).map(w => ({ workId: w.work_id, quantity: w.quantity || 0 }))
     }));
   },
 
@@ -30,31 +31,37 @@ module.exports = {
     const { rows } = await query('SELECT * FROM spare_parts WHERE id = $1', [id]);
     if (!rows[0]) return null;
     const { rows: spEq } = await query('SELECT equipment_id FROM spare_parts_equipment WHERE spare_part_id = $1', [id]);
-    const { rows: spWk } = await query('SELECT work_id FROM spare_parts_works WHERE spare_part_id = $1', [id]);
+    const { rows: spWk } = await query('SELECT work_id, quantity FROM spare_parts_works WHERE spare_part_id = $1', [id]);
     return {
       ...mapRow(rows[0]),
       equipmentIds: spEq.map(e => e.equipment_id),
-      workIds: spWk.map(w => w.work_id)
+      workLinks: spWk.map(w => ({ workId: w.work_id, quantity: w.quantity || 0 }))
     };
   },
 
   create: async (data) => {
     let equipmentIds = data.equipmentIds || [];
-    let workIds = data.workIds || [];
+    let workLinks = data.workLinks || [];
     if (typeof equipmentIds === 'string') { try { equipmentIds = JSON.parse(equipmentIds); } catch (_) { equipmentIds = []; } }
-    if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
+    if (typeof workLinks === 'string') { try { workLinks = JSON.parse(workLinks); } catch (_) { workLinks = []; } }
+    // Backward compat: convert workIds array to workLinks
+    if (data.workIds && workLinks.length === 0) {
+      let workIds = data.workIds;
+      if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
+      workLinks = workIds.map(id => ({ workId: id, quantity: 0 }));
+    }
 
     const { rows } = await query(
-      'INSERT INTO spare_parts (name, article, manufacturer, min_stock, quantity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [data.name || '', data.article || '', data.manufacturer || '', parseInt(data.minStock) || 0, parseInt(data.quantity) || 0]
+      'INSERT INTO spare_parts (name, article, manufacturer, unit, min_stock, quantity) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [data.name || '', data.article || '', data.manufacturer || '', data.unit || 'шт', parseInt(data.minStock) || 0, parseInt(data.quantity) || 0]
     );
     const sp = rows[0];
 
     for (const eid of equipmentIds) {
       await query('INSERT INTO spare_parts_equipment (spare_part_id, equipment_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [sp.id, eid]);
     }
-    for (const wid of workIds) {
-      await query('INSERT INTO spare_parts_works (spare_part_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [sp.id, wid]);
+    for (const wl of workLinks) {
+      await query('INSERT INTO spare_parts_works (spare_part_id, work_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (spare_part_id, work_id) DO UPDATE SET quantity = $3', [sp.id, wl.workId, parseInt(wl.quantity) || 0]);
     }
 
     return await module.exports.findById(sp.id);
@@ -64,7 +71,7 @@ module.exports = {
     const fieldMap = { minStock: 'min_stock' };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
-      if (key === 'id' || key === 'createdAt' || key === 'updatedAt' || key === 'equipmentIds' || key === 'workIds') continue;
+      if (key === 'id' || key === 'createdAt' || key === 'updatedAt' || key === 'equipmentIds' || key === 'workIds' || key === 'workLinks') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       mapped[col] = val;
     }
@@ -86,12 +93,19 @@ module.exports = {
         await query('INSERT INTO spare_parts_equipment (spare_part_id, equipment_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, eid]);
       }
     }
-    if (data.workIds !== undefined) {
+
+    let workLinks = data.workLinks;
+    if (workLinks === undefined && data.workIds !== undefined) {
+      // Backward compat: convert workIds to workLinks
       let ids = data.workIds;
       if (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (_) { ids = []; } }
+      workLinks = ids.map(wid => ({ workId: wid, quantity: 0 }));
+    }
+    if (workLinks !== undefined) {
+      if (typeof workLinks === 'string') { try { workLinks = JSON.parse(workLinks); } catch (_) { workLinks = []; } }
       await query('DELETE FROM spare_parts_works WHERE spare_part_id = $1', [id]);
-      for (const wid of ids) {
-        await query('INSERT INTO spare_parts_works (spare_part_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, wid]);
+      for (const wl of workLinks) {
+        await query('INSERT INTO spare_parts_works (spare_part_id, work_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (spare_part_id, work_id) DO UPDATE SET quantity = $3', [id, wl.workId, parseInt(wl.quantity) || 0]);
       }
     }
 

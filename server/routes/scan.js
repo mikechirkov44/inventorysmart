@@ -5,6 +5,7 @@ const WorkOrder = require('../models/workOrder');
 const Work = require('../models/work');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
+const SparePart = require('../models/sparePart');
 
 router.get('/:code', async (req, res) => {
   try {
@@ -31,6 +32,9 @@ router.get('/:code', async (req, res) => {
     const allWorks = await Work.findAll();
     const workMap = {};
     allWorks.forEach(w => { workMap[w.id] = w; });
+
+    const allSpareParts = await SparePart.findAll();
+    const sparePartsForEquipment = allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipment.id));
 
     const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
 
@@ -69,6 +73,20 @@ router.get('/:code', async (req, res) => {
         isDueToday = true;
       }
 
+      const workSpareParts = sparePartsForEquipment
+        .filter(sp => (sp.workLinks || []).some(wl => wl.workId === wid))
+        .map(sp => {
+          const wl = sp.workLinks.find(x => x.workId === wid);
+          return {
+            sparePartId: sp.id,
+            name: sp.name,
+            article: sp.article,
+            unit: sp.unit || 'шт',
+            defaultQuantity: wl ? wl.quantity : 0,
+            inStock: sp.quantity || 0
+          };
+        });
+
       const entry = {
         workId: work.id,
         name: work.name,
@@ -79,6 +97,7 @@ router.get('/:code', async (req, res) => {
         nextDue: nextDue ? nextDue.toISOString() : null,
         isOverdue,
         completedCount: completedOrders.length,
+        spareParts: workSpareParts,
       };
 
       if (isOverdue) {
@@ -103,7 +122,7 @@ router.get('/:code', async (req, res) => {
 
 router.post('/complete', async (req, res) => {
   try {
-    const { equipmentId, workId, masterName, notes } = req.body;
+    const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;
 
     const equipment = await Equipment.findById(equipmentId);
     if (!equipment) {
@@ -120,10 +139,16 @@ router.post('/complete', async (req, res) => {
       taskName,
       masterName,
       notes,
+      sparePartsUsed: sparePartsUsed || [],
       status: 'completed'
     });
 
-    res.status(201).json(workOrder);
+    let sparePartsDeducted = [];
+    if (sparePartsUsed && sparePartsUsed.length > 0) {
+      sparePartsDeducted = await SparePart.deductStock(sparePartsUsed);
+    }
+
+    res.status(201).json({ workOrder, sparePartsDeducted });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
