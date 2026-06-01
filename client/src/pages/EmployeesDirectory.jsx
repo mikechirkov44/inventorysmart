@@ -162,37 +162,39 @@ function EmployeesDirectory() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ФИО</th>
-              <th>Должность</th>
-              <th>Телефон</th>
-              <th>Email</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan="5" className="no-results-cell">Сотрудники не найдены</td></tr>
-            ) : (
-              filtered.map(emp => (
-                <tr key={emp.id}>
-                  <td className="td-bold">{emp.lastName} {emp.firstName} {emp.middleName}</td>
-                  <td>{emp.position || '—'}</td>
-                  <td>{emp.phone || '—'}</td>
-                  <td>{emp.email || '—'}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button onClick={() => handleEdit(emp)} className="btn btn-small btn-secondary">Ред.</button>
-                      <button onClick={() => handleDelete(emp.id)} className="btn btn-small btn-danger">Удал.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>ФИО</th>
+                <th>Должность</th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan="5" className="no-results-cell">Сотрудники не найдены</td></tr>
+              ) : (
+                filtered.map(emp => (
+                  <tr key={emp.id}>
+                    <td className="td-bold">{emp.lastName} {emp.firstName} {emp.middleName}</td>
+                    <td>{emp.position || '—'}</td>
+                    <td>{emp.phone || '—'}</td>
+                    <td>{emp.email || '—'}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={() => handleEdit(emp)} className="btn btn-small btn-secondary">Ред.</button>
+                        <button onClick={() => handleDelete(emp.id)} className="btn btn-small btn-danger">Удал.</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -125,37 +125,39 @@ function UsersPage() {
       )}
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Логин</th>
-              <th>ФИО</th>
-              <th>Роль</th>
-              <th>Создан</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td className="td-bold">{u.username}</td>
-                <td>{u.fullName || '—'}</td>
-                <td>
-                  <span className={`status-badge ${u.role === 'admin' ? 'status-under-repair' : 'status-working'}`}>
-                    {u.role === 'admin' ? 'Администратор' : 'Пользователь'}
-                  </span>
-                </td>
-                <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
-                <td>
-                  <div className="table-actions">
-                    <button onClick={() => handleEdit(u)} className="btn btn-small btn-secondary">Ред.</button>
-                    <button onClick={() => handleDelete(u.id)} className="btn btn-small btn-danger">Удал.</button>
-                  </div>
-                </td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Логин</th>
+                <th>ФИО</th>
+                <th>Роль</th>
+                <th>Создан</th>
+                <th>Действия</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td className="td-bold">{u.username}</td>
+                  <td>{u.fullName || '—'}</td>
+                  <td>
+                    <span className={`status-badge ${u.role === 'admin' ? 'status-under-repair' : 'status-working'}`}>
+                      {u.role === 'admin' ? 'Администратор' : 'Пользователь'}
+                    </span>
+                  </td>
+                  <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+                  <td>
+                    <div className="table-actions">
+                      <button onClick={() => handleEdit(u)} className="btn btn-small btn-secondary">Ред.</button>
+                      <button onClick={() => handleDelete(u.id)} className="btn btn-small btn-danger">Удал.</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

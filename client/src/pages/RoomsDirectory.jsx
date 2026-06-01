@@ -165,41 +165,43 @@ function RoomsDirectory() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Название</th>
-              <th>Здание</th>
-              <th>Этаж</th>
-              <th>Ответственный</th>
-              <th>Оборудование</th>
-              <th>Описание</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan="7" className="no-results-cell">Помещения не найдены</td></tr>
-            ) : (
-              filtered.map(room => (
-                <tr key={room.id}>
-                  <td className="td-bold">{room.name}</td>
-                  <td>{room.building || '—'}</td>
-                  <td>{room.floor || '—'}</td>
-                  <td>{empMap[room.responsibleEmployeeId] || '—'}</td>
-                  <td><span className="equipment-count-badge">{equipmentCountByRoomId[room.id] || 0} ед.</span></td>
-                  <td className="td-muted">{room.description || '—'}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button onClick={() => handleEdit(room)} className="btn btn-small btn-secondary">Ред.</button>
-                      <button onClick={() => handleDelete(room.id)} className="btn btn-small btn-danger">Удал.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Здание</th>
+                <th>Этаж</th>
+                <th>Ответственный</th>
+                <th>Оборудование</th>
+                <th>Описание</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan="7" className="no-results-cell">Помещения не найдены</td></tr>
+              ) : (
+                filtered.map(room => (
+                  <tr key={room.id}>
+                    <td className="td-bold">{room.name}</td>
+                    <td>{room.building || '—'}</td>
+                    <td>{room.floor || '—'}</td>
+                    <td>{empMap[room.responsibleEmployeeId] || '—'}</td>
+                    <td><span className="equipment-count-badge">{equipmentCountByRoomId[room.id] || 0} ед.</span></td>
+                    <td className="td-muted">{room.description || '—'}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={() => handleEdit(room)} className="btn btn-small btn-secondary">Ред.</button>
+                        <button onClick={() => handleDelete(room.id)} className="btn btn-small btn-danger">Удал.</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

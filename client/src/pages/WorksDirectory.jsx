@@ -169,37 +169,39 @@ function WorksDirectory() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Название</th>
-              <th>Категория</th>
-              <th>Периодичность</th>
-              <th>Описание</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan="5" className="no-results-cell">Работы не найдены</td></tr>
-            ) : (
-              filtered.map(work => (
-                <tr key={work.id}>
-                  <td className="td-bold">{work.name}</td>
-                  <td>{work.category || '—'}</td>
-                  <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
-                  <td className="td-muted">{work.description || '—'}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button onClick={() => handleEdit(work)} className="btn btn-small btn-secondary">Ред.</button>
-                      <button onClick={() => handleDelete(work.id)} className="btn btn-small btn-danger">Удал.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Категория</th>
+                <th>Периодичность</th>
+                <th>Описание</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan="5" className="no-results-cell">Работы не найдены</td></tr>
+              ) : (
+                filtered.map(work => (
+                  <tr key={work.id}>
+                    <td className="td-bold">{work.name}</td>
+                    <td>{work.category || '—'}</td>
+                    <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
+                    <td className="td-muted">{work.description || '—'}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={() => handleEdit(work)} className="btn btn-small btn-secondary">Ред.</button>
+                        <button onClick={() => handleDelete(work.id)} className="btn btn-small btn-danger">Удал.</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -88,9 +88,6 @@ function NotificationBell() {
               ))
             )}
           </div>
-          <div className="notif-footer">
-            <Link to="/calendar" onClick={() => setOpen(false)}>Календарь обходов</Link>
-          </div>
         </div>
       )}
     </div>

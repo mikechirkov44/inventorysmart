@@ -211,53 +211,55 @@ function SparePartsDirectory() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Наименование</th>
-              <th>Артикул</th>
-              <th>Производитель</th>
-              <th>Мин. запас</th>
-              <th>Оборудование</th>
-              <th>Работы</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan="7" className="no-results-cell">Позиции не найдены</td></tr>
-            ) : (
-              filtered.map(item => (
-                <tr key={item.id}>
-                  <td className="td-bold">{item.name}</td>
-                  <td>{item.article || '—'}</td>
-                  <td>{item.manufacturer || '—'}</td>
-                  <td>{item.minStock}</td>
-                  <td>
-                    <div className="td-tags">
-                      {(item.equipmentIds || []).map(id => eqMap[id]).filter(Boolean).map(name => (
-                        <span key={name} className="frequency-badge">{name}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="td-tags">
-                      {(item.workIds || []).map(id => wkMap[id]).filter(Boolean).map(name => (
-                        <span key={name} className="equipment-count-badge">{name}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <button onClick={() => handleEdit(item)} className="btn btn-small btn-secondary">Ред.</button>
-                      <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Артикул</th>
+                <th>Производитель</th>
+                <th>Мин. запас</th>
+                <th>Оборудование</th>
+                <th>Работы</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan="7" className="no-results-cell">Позиции не найдены</td></tr>
+              ) : (
+                filtered.map(item => (
+                  <tr key={item.id}>
+                    <td className="td-bold">{item.name}</td>
+                    <td>{item.article || '—'}</td>
+                    <td>{item.manufacturer || '—'}</td>
+                    <td>{item.minStock}</td>
+                    <td>
+                      <div className="td-tags">
+                        {(item.equipmentIds || []).map(id => eqMap[id]).filter(Boolean).map(name => (
+                          <span key={name} className="frequency-badge">{name}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="td-tags">
+                        {(item.workIds || []).map(id => wkMap[id]).filter(Boolean).map(name => (
+                          <span key={name} className="equipment-count-badge">{name}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={() => handleEdit(item)} className="btn btn-small btn-secondary">Ред.</button>
+                        <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

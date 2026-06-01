@@ -1,5 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+
+function PerformanceChart({ data }) {
+  const [animated, setAnimated] = useState(false);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const sorted = [...data]
+    .filter(e => e.totalPlanned > 0)
+    .sort((a, b) => b.completionRate - a.completionRate);
+
+  if (sorted.length === 0) return null;
+
+  const maxRate = 100;
+
+  return (
+    <div className="perf-chart" ref={chartRef}>
+      <div className="perf-chart-header">
+        <h3>Процент выполнения по сотрудникам</h3>
+        <div className="perf-chart-legend">
+          <span className="legend-item"><span className="legend-dot good" /> ≥ 80%</span>
+          <span className="legend-item"><span className="legend-dot warn" /> 50–79%</span>
+          <span className="legend-item"><span className="legend-dot bad" /> &lt; 50%</span>
+        </div>
+      </div>
+      <div className="perf-chart-body">
+        {sorted.map((emp, i) => {
+          const rate = emp.completionRate;
+          const color = rate >= 80 ? 'good' : rate >= 50 ? 'warn' : 'bad';
+          return (
+            <div key={emp.employeeId} className="perf-row">
+              <div className="perf-label" title={emp.employeeName}>
+                <span className="perf-name">{emp.employeeName}</span>
+                <span className="perf-position">{emp.position || ''}</span>
+              </div>
+              <div className="perf-bar-track">
+                <div
+                  className={`perf-bar-fill ${color} ${animated ? 'animated' : ''}`}
+                  style={{ width: animated ? `${(rate / maxRate) * 100}%` : '0%' }}
+                />
+              </div>
+              <div className="perf-counts">
+                <span className={`perf-rate ${color}`}>{rate}%</span>
+                <span className="perf-done">{emp.totalCompleted}</span>
+                <span className="perf-sep">/</span>
+                <span className="perf-total">{emp.totalPlanned}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function AnalyticsPage() {
   const [analytics, setAnalytics] = useState([]);
@@ -54,6 +111,8 @@ function AnalyticsPage() {
           </div>
         </div>
       )}
+
+      <PerformanceChart data={analytics} />
 
       {view === 'cards' ? (
         <div className="analytics-content">

@@ -65,49 +65,51 @@ function IncidentsPage() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Оборудование</th>
-              <th>Проблема</th>
-              <th>Сотрудник</th>
-              <th>Статус</th>
-              <th>Фото</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incidents.length === 0 ? (
-              <tr><td colSpan="7" className="no-results-cell">Инцидентов нет</td></tr>
-            ) : (
-              incidents.map(inc => {
-                const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
-                return (
-                  <tr key={inc.id}>
-                    <td>{new Date(inc.createdAt).toLocaleDateString('ru-RU')}</td>
-                    <td>
-                      <Link to={`/equipment/${inc.equipmentId}`} className="table-link">
-                        {inc.equipmentName || '—'}
-                      </Link>
-                      <div className="td-muted">{inc.inventoryNumber}</div>
-                    </td>
-                    <td className="td-muted">{inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}</td>
-                    <td>{inc.employeeName || '—'}</td>
-                    <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                    <td>{inc.photos?.length || 0} шт.</td>
-                    <td>
-                      <div className="table-actions">
-                        <button onClick={() => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); }} className="btn btn-small btn-secondary">Подробнее</button>
-                        <button onClick={() => handleDelete(inc.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Оборудование</th>
+                <th>Проблема</th>
+                <th>Сотрудник</th>
+                <th>Статус</th>
+                <th>Фото</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incidents.length === 0 ? (
+                <tr><td colSpan="7" className="no-results-cell">Инцидентов нет</td></tr>
+              ) : (
+                incidents.map(inc => {
+                  const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
+                  return (
+                    <tr key={inc.id}>
+                      <td>{new Date(inc.createdAt).toLocaleDateString('ru-RU')}</td>
+                      <td>
+                        <Link to={`/equipment/${inc.equipmentId}`} className="table-link">
+                          {inc.equipmentName || '—'}
+                        </Link>
+                        <div className="td-muted">{inc.inventoryNumber}</div>
+                      </td>
+                      <td className="td-muted">{inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}</td>
+                      <td>{inc.employeeName || '—'}</td>
+                      <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                      <td>{inc.photos?.length || 0} шт.</td>
+                      <td>
+                        <div className="table-actions">
+                          <button onClick={() => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); }} className="btn btn-small btn-secondary">Подробнее</button>
+                          <button onClick={() => handleDelete(inc.id)} className="btn btn-small btn-danger">Удал.</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {selectedIncident && (

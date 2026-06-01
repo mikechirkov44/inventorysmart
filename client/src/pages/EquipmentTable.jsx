@@ -78,8 +78,13 @@ function EquipmentTable() {
   };
 
   const sortIcon = (field) => {
-    if (sortField !== field) return ' ↕';
-    return sortDir === 'asc' ? ' ↑' : ' ↓';
+    if (sortField !== field) return '';
+    return '';
+  };
+
+  const sortClass = (field) => {
+    if (sortField !== field) return 'sortable';
+    return `sortable sorted-${sortDir}`;
   };
 
   const handleDelete = async (delId) => {
@@ -128,19 +133,20 @@ function EquipmentTable() {
       </div>
 
       <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th onClick={() => handleSort('name')} className="sortable">Наименование{sortIcon('name')}</th>
-              <th onClick={() => handleSort('inventoryNumber')} className="sortable">Инв. номер{sortIcon('inventoryNumber')}</th>
-              <th onClick={() => handleSort('status')} className="sortable">Состояние{sortIcon('status')}</th>
-              <th onClick={() => handleSort('category')} className="sortable">Категория{sortIcon('category')}</th>
-              <th onClick={() => handleSort('roomName')} className="sortable">Помещение{sortIcon('roomName')}</th>
-              <th>Работы</th>
-              <th>Фото</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSort('name')} className={sortClass('name')}>Наименование</th>
+                <th onClick={() => handleSort('inventoryNumber')} className={sortClass('inventoryNumber')}>Инв. номер</th>
+                <th onClick={() => handleSort('status')} className={sortClass('status')}>Состояние</th>
+                <th onClick={() => handleSort('category')} className={sortClass('category')}>Категория</th>
+                <th onClick={() => handleSort('roomName')} className={sortClass('roomName')}>Помещение</th>
+                <th>Работы</th>
+                <th>Фото</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan="8" className="no-results-cell">Оборудование не найдено</td></tr>
@@ -170,7 +176,8 @@ function EquipmentTable() {
               })
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   );

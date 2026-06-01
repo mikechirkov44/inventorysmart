@@ -16,7 +16,6 @@ import RoomsDirectory from './pages/RoomsDirectory';
 import EmployeesDirectory from './pages/EmployeesDirectory';
 import UsersPage from './pages/UsersPage';
 import ImportExcel from './pages/ImportExcel';
-import CalendarPage from './pages/CalendarPage';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -67,9 +66,12 @@ function AppNav() {
   if (!user) return null;
 
   return (
-    <nav className="navbar">
+    <nav className="sidebar">
       <div className="nav-brand">
-        <Link to="/">InventorySmart</Link>
+        <Link to="/">
+          <img src="/logo.svg" alt="InventorySmart" className="nav-logo" />
+          InventorySmart
+        </Link>
       </div>
       <ul className="nav-links">
         <DirDropdown />
@@ -81,12 +83,23 @@ function AppNav() {
         {isAdmin && <li><NavLink to="/import">Импорт</NavLink></li>}
         {isAdmin && <li><NavLink to="/users">Пользователи</NavLink></li>}
       </ul>
-      <div className="nav-user">
-        <NotificationBell />
-        <span className="nav-user-name">{user.fullName || user.username}</span>
-        <button onClick={logout} className="btn btn-small nav-logout">Выйти</button>
-      </div>
     </nav>
+  );
+}
+
+function TopHeader() {
+  const { user, logout } = useAuth();
+  if (!user) return null;
+
+  return (
+    <header className="top-header">
+      <div className="top-header-spacer" />
+      <div className="top-header-user">
+        <NotificationBell />
+        <span className="top-header-name">{user.fullName || user.username}</span>
+        <button onClick={logout} className="btn btn-small top-header-logout">Выйти</button>
+      </div>
+    </header>
   );
 }
 
@@ -109,7 +122,6 @@ function AppRoutes() {
       <Route path="/scan" element={<ProtectedRoute><QRScanner /></ProtectedRoute>} />
       <Route path="/scan/:qrCode" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
       <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
-      <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/incidents" element={<ProtectedRoute adminOnly><IncidentsPage /></ProtectedRoute>} />
@@ -133,9 +145,12 @@ function App() {
       <AuthProvider>
         <div className="app">
           <AppNav />
-          <main className="main-content">
-            <AppRoutes />
-          </main>
+          <div className="main-area">
+            <TopHeader />
+            <main className="main-content">
+              <AppRoutes />
+            </main>
+          </div>
         </div>
       </AuthProvider>
     </Router>

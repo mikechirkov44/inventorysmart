@@ -26,6 +26,36 @@ const STATUS_MAP = {
   never: { label: 'Не выполнялось', className: 'status-needs-repair' },
 };
 
+const COLUMNS = [
+  { key: 'equipmentName', label: 'Оборудование', sortable: true },
+  { key: 'inventoryNumber', label: 'Инв. номер', sortable: true },
+  { key: 'roomName', label: 'Помещение', sortable: true },
+  { key: 'workName', label: 'Работа', sortable: true },
+  { key: 'frequencyDays', label: 'Периодичность', sortable: true },
+  { key: 'plannedDate', label: 'План. дата', sortable: true },
+  { key: 'lastCompleted', label: 'Последн. выполнение', sortable: true },
+  { key: 'status', label: 'Статус', sortable: true },
+];
+
+const TOTAL_COLS = COLUMNS.length;
+
+const QUICK_PERIODS = [
+  { label: 'Текущая неделя', days: 7 },
+  { label: 'Текущий месяц', days: 30 },
+  { label: 'Текущий квартал', days: 90 },
+  { label: 'Текущий год', days: 365 },
+];
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dateOffsetStr(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function SchedulePage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +63,16 @@ function SchedulePage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  const [sortField, setSortField] = useState('plannedDate');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const [filterEquipment, setFilterEquipment] = useState('');
+  const [filterRoom, setFilterRoom] = useState('');
+  const [filterWork, setFilterWork] = useState('');
+  const [filterFrequency, setFilterFrequency] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => { fetchSchedule(); }, [groupBy]);
 
@@ -47,23 +87,97 @@ function SchedulePage() {
     setLoading(false);
   };
 
+  const uniqueRooms = useMemo(() => {
+    if (!data) return [];
+    const set = new Set();
+    data.groups.forEach(g => g.rows.forEach(r => { if (r.roomName) set.add(r.roomName); }));
+    return [...set].sort();
+  }, [data]);
+
+  const uniqueWorks = useMemo(() => {
+    if (!data) return [];
+    const set = new Set();
+    data.groups.forEach(g => g.rows.forEach(r => { if (r.workName) set.add(r.workName); }));
+    return [...set].sort();
+  }, [data]);
+
+  const uniqueEquipment = useMemo(() => {
+    if (!data) return [];
+    const set = new Set();
+    data.groups.forEach(g => g.rows.forEach(r => { if (r.equipmentName) set.add(r.equipmentName); }));
+    return [...set].sort();
+  }, [data]);
+
+  const allFilteredRows = useMemo(() => {
+    if (!data) return [];
+    let rows = [];
+    data.groups.forEach(g => rows = rows.concat(g.rows));
+
+    if (filterStatus) rows = rows.filter(r => r.status === filterStatus);
+    if (filterEquipment) rows = rows.filter(r => r.equipmentName === filterEquipment);
+    if (filterRoom) rows = rows.filter(r => r.roomName === filterRoom);
+    if (filterWork) rows = rows.filter(r => r.workName === filterWork);
+    if (filterFrequency) rows = rows.filter(r => r.frequencyDays === parseInt(filterFrequency));
+
+    if (dateFrom) {
+      const from = new Date(dateFrom).getTime();
+      rows = rows.filter(r => r.plannedDate && new Date(r.plannedDate).getTime() >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo).getTime() + 86400000;
+      rows = rows.filter(r => r.plannedDate && new Date(r.plannedDate).getTime() <= to);
+    }
+
+    if (search) {
+      const s = search.toLowerCase();
+      rows = rows.filter(r =>
+        r.equipmentName.toLowerCase().includes(s) ||
+        r.workName.toLowerCase().includes(s) ||
+        r.employeeName.toLowerCase().includes(s) ||
+        r.roomName.toLowerCase().includes(s) ||
+        r.inventoryNumber.toLowerCase().includes(s)
+      );
+    }
+
+    rows.sort((a, b) => {
+      let valA = a[sortField] ?? '';
+      let valB = b[sortField] ?? '';
+      if (sortField === 'plannedDate' || sortField === 'lastCompleted') {
+        valA = valA ? new Date(valA).getTime() : 0;
+        valB = valB ? new Date(valB).getTime() : 0;
+      } else if (sortField === 'frequencyDays') {
+        valA = Number(valA) || 0;
+        valB = Number(valB) || 0;
+      } else {
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+      }
+      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return rows;
+  }, [data, filterStatus, filterEquipment, filterRoom, filterWork, filterFrequency, dateFrom, dateTo, search, sortField, sortDir]);
+
   const filteredGroups = useMemo(() => {
     if (!data) return [];
+    const rowSet = new Set(allFilteredRows.map(r => r.id));
     return data.groups.map(group => {
-      let rows = group.rows;
-      if (filterStatus) rows = rows.filter(r => r.status === filterStatus);
-      if (search) {
-        const s = search.toLowerCase();
-        rows = rows.filter(r =>
-          r.equipmentName.toLowerCase().includes(s) ||
-          r.workName.toLowerCase().includes(s) ||
-          r.employeeName.toLowerCase().includes(s) ||
-          r.roomName.toLowerCase().includes(s)
-        );
-      }
+      let rows = group.rows.filter(r => rowSet.has(r.id));
       return { ...group, rows };
     }).filter(g => g.rows.length > 0);
-  }, [data, filterStatus, search]);
+  }, [data, allFilteredRows]);
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
+
+  const sortClass = (field) => {
+    if (sortField !== field) return 'sortable';
+    return `sortable sorted-${sortDir}`;
+  };
 
   const toggleGroup = (idx) => {
     setExpandedGroups(prev => {
@@ -77,15 +191,30 @@ function SchedulePage() {
   const expandAll = () => setExpandedGroups(new Set(filteredGroups.map((_, i) => i)));
   const collapseAll = () => setExpandedGroups(new Set());
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  const applyQuickPeriod = (days) => {
+    setDateFrom(todayStr());
+    setDateTo(dateOffsetStr(days));
+  };
 
-  const firstColLabel = { employee: 'ФИО / Оборудование', month: 'Месяц / Оборудование', none: 'Оборудование' };
+  const clearFilters = () => {
+    setSearch('');
+    setFilterStatus('');
+    setFilterEquipment('');
+    setFilterRoom('');
+    setFilterWork('');
+    setFilterFrequency('');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasActiveFilters = search || filterStatus || filterEquipment || filterRoom || filterWork || filterFrequency || dateFrom || dateTo;
+
+  if (loading) return <div className="loading">Загрузка...</div>;
 
   return (
     <div className="schedule-page">
       <div className="header">
         <h1>План-график ремонтов</h1>
-        <Link to="/calendar" className="btn">Календарь</Link>
       </div>
 
       <div className="filters-panel">
@@ -113,57 +242,125 @@ function SchedulePage() {
             <input type="text" placeholder="Оборудование, работа, сотрудник..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="filter-group-actions">
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="btn btn-small btn-secondary">Сбросить фильтры</button>
+            )}
             <button onClick={expandAll} className="btn btn-small">Развернуть</button>
             <button onClick={collapseAll} className="btn btn-small">Свернуть</button>
           </div>
         </div>
+
+        <div className="filter-row" style={{ marginTop: '10px' }}>
+          <div className="filter-group">
+            <label>Оборудование</label>
+            <select value={filterEquipment} onChange={(e) => setFilterEquipment(e.target.value)}>
+              <option value="">Все</option>
+              {uniqueEquipment.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Помещение</label>
+            <select value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
+              <option value="">Все</option>
+              {uniqueRooms.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Работа</label>
+            <select value={filterWork} onChange={(e) => setFilterWork(e.target.value)}>
+              <option value="">Все</option>
+              {uniqueWorks.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Периодичность</label>
+            <select value={filterFrequency} onChange={(e) => setFilterFrequency(e.target.value)}>
+              <option value="">Все</option>
+              {FREQUENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="filter-row" style={{ marginTop: '10px' }}>
+          <div className="filter-group">
+            <label>Период с</label>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label>Период по</label>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label>Быстрый выбор</label>
+            <div className="quick-periods">
+              {QUICK_PERIODS.map(p => (
+                <button
+                  key={p.days}
+                  className={`btn btn-small ${dateFrom && dateTo ? 'btn-secondary' : ''}`}
+                  onClick={() => applyQuickPeriod(p.days)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="filter-summary">
-          Найдено: <strong>{filteredGroups.reduce((s, g) => s + g.rows.length, 0)}</strong> записей
+          Найдено: <strong>{allFilteredRows.length}</strong> записей
+          {hasActiveFilters && <span style={{ color: 'var(--primary)', marginLeft: 8, fontSize: 12 }}>(фильтры активны)</span>}
         </div>
       </div>
 
       <div className="schedule-table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>{firstColLabel[groupBy]}</th>
-              <th>Инв. номер</th>
-              <th>Помещение</th>
-              <th>Работа</th>
-              <th>Периодичность</th>
-              <th>План. дата</th>
-              <th>Последн. выполнение</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          {filteredGroups.map((group, gIdx) => (
-            <tbody key={gIdx}>
-              <tr className="group-header-row" onClick={() => toggleGroup(gIdx)}>
-                <td colSpan="8">
-                  <span className={`group-arrow ${expandedGroups.has(gIdx) ? 'expanded' : ''}`}></span>
-                  <span className="group-label">{group.label}</span>
-                </td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                {COLUMNS.map(col => (
+                  <th
+                    key={col.key}
+                    onClick={() => col.sortable && handleSort(col.key)}
+                    className={col.sortable ? sortClass(col.key) : ''}
+                  >
+                    {col.label}
+                  </th>
+                ))}
               </tr>
-              {expandedGroups.has(gIdx) && group.rows.map(row => {
-                const st = STATUS_MAP[row.status] || STATUS_MAP.planned;
-                return (
-                  <tr key={row.id} className={row.status === 'overdue' || row.status === 'never' ? 'row-warning' : ''}>
-                    <td>
-                      <Link to={`/equipment/${row.equipmentId}`} className="table-link">{row.equipmentName}</Link>
+            </thead>
+            {filteredGroups.map((group, gIdx) => (
+              <tbody key={gIdx}>
+                {groupBy !== 'none' && (
+                  <tr className="group-header-row" onClick={() => toggleGroup(gIdx)}>
+                    <td colSpan={TOTAL_COLS}>
+                      <span className={`group-arrow ${expandedGroups.has(gIdx) ? 'expanded' : ''}`}></span>
+                      <span className="group-label">{group.label}</span>
+                      <span className="group-count">{group.rows.length}</span>
                     </td>
-                    <td>{row.inventoryNumber}</td>
-                    <td>{row.roomName}</td>
-                    <td className="td-bold">{row.workName}</td>
-                    <td><span className="frequency-badge">{getFrequencyLabel(row.frequencyDays)}</span></td>
-                    <td>{row.plannedDate ? new Date(row.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
-                    <td>{row.lastCompleted ? new Date(row.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
-                    <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
                   </tr>
-                );
-              })}
-            </tbody>
-          ))}
-        </table>
+                )}
+                {expandedGroups.has(gIdx) && group.rows.map(row => {
+                  const st = STATUS_MAP[row.status] || STATUS_MAP.planned;
+                  return (
+                    <tr key={row.id} className={row.status === 'overdue' || row.status === 'never' ? 'row-warning' : ''}>
+                      <td>
+                        {groupBy !== 'none' && <div className="td-group-label">{group.label}</div>}
+                        <Link to={`/equipment/${row.equipmentId}`} className="table-link">{row.equipmentName}</Link>
+                      </td>
+                      <td>{row.inventoryNumber}</td>
+                      <td>{row.roomName}</td>
+                      <td className="td-bold">{row.workName}</td>
+                      <td><span className="frequency-badge">{getFrequencyLabel(row.frequencyDays)}</span></td>
+                      <td>{row.plannedDate ? new Date(row.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
+                      <td>{row.lastCompleted ? new Date(row.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
+                      <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            ))}
+          </table>
+        </div>
         {filteredGroups.length === 0 && (
           <div className="no-results">Нет данных для отображения</div>
         )}
