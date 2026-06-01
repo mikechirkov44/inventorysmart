@@ -10,12 +10,14 @@ const SparePart = require('../models/sparePart');
 router.get('/:code', async (req, res) => {
   try {
     const code = req.params.code;
-    let equipment = await Equipment.findByQrCode(code);
-    if (!equipment) equipment = await Equipment.findById(code);
-    if (!equipment) {
-      const all = await Equipment.findAll();
-      equipment = all.find(e => e.inventoryNumber === code);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let equipment = null;
+
+    if (uuidRegex.test(code)) {
+      equipment = await Equipment.findByQrCode(code);
+      if (!equipment) equipment = await Equipment.findById(code);
     }
+    if (!equipment) equipment = await Equipment.findByInventoryNumber(code);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -116,6 +118,7 @@ router.get('/:code', async (req, res) => {
       completedTotal: workOrders.filter(wo => wo.status === 'completed').length,
     });
   } catch (error) {
+    console.error('SCAN ERROR:', error.message, error.stack);
     res.status(500).json({ error: error.message });
   }
 });

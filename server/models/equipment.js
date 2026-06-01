@@ -41,6 +41,13 @@ module.exports = {
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
   },
 
+  findByInventoryNumber: async (inventoryNumber) => {
+    const { rows } = await query('SELECT * FROM equipment WHERE inventory_number = $1', [inventoryNumber]);
+    if (!rows[0]) return null;
+    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
+    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+  },
+
   create: async (data) => {
     let workIds = data.workIds || [];
     if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }

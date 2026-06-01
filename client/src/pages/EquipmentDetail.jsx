@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI } from '../services/api';
+import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI } from '../services/api';
 import EquipmentPassport from '../components/EquipmentPassport';
 
 const FREQUENCY_OPTIONS = [
@@ -35,6 +35,7 @@ function EquipmentDetail() {
   const [room, setRoom] = useState(null);
   const [assignedWorks, setAssignedWorks] = useState([]);
   const [spareParts, setSpareParts] = useState([]);
+  const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPassport, setShowPassport] = useState(false);
@@ -45,17 +46,19 @@ function EquipmentDetail() {
 
   const fetchData = async () => {
     try {
-      const [equipRes, workOrdersRes, qrRes, spRes] = await Promise.all([
+      const [equipRes, workOrdersRes, qrRes, spRes, incRes] = await Promise.all([
         equipmentAPI.getById(id),
         workOrderAPI.getByEquipment(id),
         equipmentAPI.getQR(id),
-        sparePartsAPI.getByEquipment(id)
+        sparePartsAPI.getByEquipment(id),
+        incidentsAPI.getAll({ equipmentId: id }).catch(() => ({ data: [] }))
       ]);
       const equip = equipRes.data;
       setEquipment(equip);
       setWorkOrders(workOrdersRes.data);
       setQrData(qrRes.data);
       setSpareParts(spRes.data);
+      setIncidents(incRes.data || []);
 
       if (equip.roomId) {
         roomsAPI.getById(equip.roomId).then(r => setRoom(r.data)).catch(() => {});
@@ -107,6 +110,7 @@ function EquipmentDetail() {
           assignedWorks={assignedWorks}
           spareParts={spareParts}
           workOrders={workOrders}
+          incidents={incidents}
           qrData={qrData}
         />
       ) : (<>

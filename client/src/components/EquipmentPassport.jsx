@@ -30,7 +30,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('ru-RU');
 }
 
-function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrders, qrData }) {
+function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrders, incidents, qrData }) {
   const passportRef = useRef(null);
   const [generating, setGenerating] = useState(false);
 
@@ -57,7 +57,7 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
           .passport-photo img { width: 100%; height: 200px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 6px; }
           .passport-photo .no-photo { width: 100%; height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; border-radius: 6px; font-size: 13px; }
           .passport-qr { text-align: center; margin-top: 10px; }
-          .passport-qr img { max-width: 120px; border: 1px solid #e5e7eb; border-radius: 4px; }
+          .passport-qr img { width: 120px; height: 120px; display: block; margin: 0 auto; image-rendering: pixelated; border: 1px solid #e5e7eb; border-radius: 4px; }
           .passport-info { flex: 1; }
           .info-table { width: 100%; border-collapse: collapse; }
           .info-table tr { border-bottom: 1px solid #f3f4f6; }
@@ -199,14 +199,15 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
           </div>
         )}
 
-        {spareParts && spareParts.length > 0 && (
+        {incidents && incidents.length > 0 && (
           <div className="passport-section">
-            <h3>Запасные части (ЗИП)</h3>
-            <ul className="spare-parts-list">
-              {spareParts.map(sp => (
-                <li key={sp.id}>
-                  <span className="sp-name">{sp.name}{sp.article ? ` (${sp.article})` : ''}</span>
-                  <span className="sp-qty">на складе: {sp.quantity || 0} {sp.unit || 'шт'}</span>
+            <h3>Инциденты</h3>
+            <ul className="history-list">
+              {incidents.slice(0, 20).map(inc => (
+                <li key={inc.id}>
+                  <span className="h-date">{formatDate(inc.createdAt)}</span>
+                  <span className="h-task">{inc.description || 'Инцидент'}</span>
+                  <span className="h-master">{inc.employeeName || inc.adminNotes || ''}</span>
                 </li>
               ))}
             </ul>
@@ -215,9 +216,9 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
 
         {workOrders && workOrders.length > 0 && (
           <div className="passport-section">
-            <h3>История выполненных работ</h3>
+            <h3>История ремонтов</h3>
             <ul className="history-list">
-              {workOrders.filter(wo => wo.status === 'completed').slice(0, 20).map(wo => (
+              {workOrders.slice(0, 20).map(wo => (
                 <li key={wo.id}>
                   <span className="h-date">{formatDate(wo.completedAt || wo.createdAt)}</span>
                   <span className="h-task">{wo.taskName}</span>

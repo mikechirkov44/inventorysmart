@@ -95,6 +95,7 @@ function SchedulePage() {
   const [dateTo, setDateTo] = useState('');
 
   const [chartMonths, setChartMonths] = useState(6);
+  const [expandedEquipment, setExpandedEquipment] = useState(new Set());
 
   useEffect(() => { fetchSchedule(); }, [groupBy]);
 
@@ -143,11 +144,11 @@ function SchedulePage() {
 
     if (dateFrom) {
       const from = new Date(dateFrom).getTime();
-      rows = rows.filter(r => r.plannedDate && new Date(r.plannedDate).getTime() >= from);
+      rows = rows.filter(r => !r.plannedDate || new Date(r.plannedDate).getTime() >= from);
     }
     if (dateTo) {
       const to = new Date(dateTo).getTime() + 86400000;
-      rows = rows.filter(r => r.plannedDate && new Date(r.plannedDate).getTime() <= to);
+      rows = rows.filter(r => !r.plannedDate || new Date(r.plannedDate).getTime() <= to);
     }
 
     if (search) {
@@ -213,7 +214,7 @@ function SchedulePage() {
 
     const totalDays = days.length;
 
-    const rows = allFilteredRows.map(row => {
+    const enrichRow = (row) => {
       const completedDays = new Set();
       if (row.lastCompleted) {
         const lc = new Date(row.lastCompleted);
@@ -260,7 +261,20 @@ function SchedulePage() {
       }
 
       return { ...row, completedDays, plannedDays };
+    };
+
+    const enrichedRows = allFilteredRows.map(enrichRow);
+
+    const equipmentMap = new Map();
+    enrichedRows.forEach(row => {
+      const key = row.equipmentName || '';
+      if (!equipmentMap.has(key)) {
+        equipmentMap.set(key, { equipmentName: key, equipmentId: row.equipmentId, works: [] });
+      }
+      equipmentMap.get(key).works.push(row);
     });
+
+    const equipmentGroups = [...equipmentMap.values()];
 
     const months = [];
     const seen = new Set();
@@ -283,7 +297,7 @@ function SchedulePage() {
       }
     });
 
-    return { days, months, rows, startDate, endDate, totalDays };
+    return { days, months, equipmentGroups, startDate, endDate, totalDays };
   }, [allFilteredRows, chartMonths, dateFrom, dateTo]);
 
   const handleSort = (field) => {
@@ -307,6 +321,17 @@ function SchedulePage() {
 
   const expandAll = () => setExpandedGroups(new Set(filteredGroups.map((_, i) => i)));
   const collapseAll = () => setExpandedGroups(new Set());
+
+  const toggleEquipment = (name) => {
+    setExpandedEquipment(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+  const expandAllEquipment = () => setExpandedEquipment(new Set(chartData.equipmentGroups.map(g => g.equipmentName)));
+  const collapseAllEquipment = () => setExpandedEquipment(new Set());
 
   const applyQuickPeriod = (days, months) => {
     setDateFrom(todayStr());
@@ -508,6 +533,8 @@ function SchedulePage() {
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="btn btn-small btn-secondary">Сбросить</button>
                 )}
+                <button onClick={expandAllEquipment} className="btn btn-small">Все</button>
+                <button onClick={collapseAllEquipment} className="btn btn-small">Свернуть</button>
               </div>
             </div>
             <div className="filter-row compact">
@@ -553,34 +580,54 @@ function SchedulePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {chartData.rows.map(row => (
-                    <tr key={row.id}>
-                      <td className="gantt-label-cell">
-                        <div className="gantt-label-main">{row.equipmentName}</div>
-                        <div className="gantt-label-sub">{row.workName}</div>
-                      </td>
-                      {chartData.days.map(day => {
-                        const dateKey = formatDateShort(day.toISOString());
-                        const isCompleted = row.completedDays.has(dateKey);
-                        const isPlanned = row.plannedDays.has(dateKey);
-                        const isToday = sameDay(day, today);
-                        const dow = day.getDay();
-                        const isWeekend = dow === 0 || dow === 6;
+                  {chartData.equipmentGroups.map(group => {
+                    const isExpanded = expandedEquipment.has(group.equipmentName);
+                    return [
+                      <tr key={`eq-${group.equipmentName}`} className={`gantt-equipment-row ${isExpanded ? 'expanded' : ''}`} onClick={() => toggleEquipment(group.equipmentName)}>
+                        <td className="gantt-label-cell gantt-equipment-cell">
+                          <div className="gantt-equipment-content">
+                            <svg className={`gantt-chevron ${isExpanded ? 'rotated' : ''}`} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <div className="gantt-equipment-text">
+                              <div className="gantt-label-main">{group.equipmentName}</div>
+                              <div className="gantt-label-sub">{group.works.length} {group.works.length === 1 ? 'работа' : 'работ'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        {chartData.days.map(day => <td key={day.toISOString().slice(0, 10)} className="gantt-cell"></td>)}
+                      </tr>,
+                      isExpanded && group.works.map(row => (
+                        <tr key={`work-${row.id}`} className="gantt-work-row">
+                          <td className="gantt-label-cell gantt-work-cell">
+                            <div className="gantt-work-content">
+                              <div className="gantt-label-sub">{row.workName}</div>
+                            </div>
+                          </td>
+                          {chartData.days.map(day => {
+                            const dateKey = formatDateShort(day.toISOString());
+                            const isCompleted = row.completedDays.has(dateKey);
+                            const isPlanned = row.plannedDays.has(dateKey);
+                            const isToday = sameDay(day, today);
+                            const dow = day.getDay();
+                            const isWeekend = dow === 0 || dow === 6;
 
-                        let cellClass = 'gantt-cell';
-                        if (isCompleted) cellClass += ' completed';
-                        else if (isPlanned) cellClass += ' planned';
-                        if (isToday) cellClass += ' today-col';
-                        if (isWeekend) cellClass += ' weekend';
+                            let cellClass = 'gantt-cell';
+                            if (isCompleted) cellClass += ' completed';
+                            else if (isPlanned) cellClass += ' planned';
+                            if (isToday) cellClass += ' today-col';
+                            if (isWeekend) cellClass += ' weekend';
 
-                        return <td key={day.toISOString().slice(0, 10)} className={cellClass} title={isCompleted ? 'Выполнено' : isPlanned ? 'Запланировано' : ''}></td>;
-                      })}
-                    </tr>
-                  ))}
+                            return <td key={day.toISOString().slice(0, 10)} className={cellClass} title={isCompleted ? 'Выполнено' : isPlanned ? 'Запланировано' : ''}></td>;
+                          })}
+                        </tr>
+                      )),
+                    ].filter(Boolean);
+                  })}
                 </tbody>
               </table>
             </div>
-            {chartData.rows.length === 0 && (
+            {chartData.equipmentGroups.length === 0 && (
               <div className="no-results">Нет данных для отображения</div>
             )}
             <div className="gantt-legend">
