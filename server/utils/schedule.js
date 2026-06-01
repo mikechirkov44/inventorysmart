@@ -4,22 +4,19 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
-function getWorkMap() {
-  const allWorks = Work.findAll();
+async function getWorkMap() {
+  const allWorks = await Work.findAll();
   const map = {};
   allWorks.forEach(w => { map[w.id] = w; });
   return map;
 }
 
-function getEquipmentSchedule(equipment, workMap) {
-  const workOrders = WorkOrder.findByEquipmentId(equipment.id);
+async function getEquipmentSchedule(equipment, workMap) {
+  const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   let workIds = equipment.workIds || [];
-  if (typeof workIds === 'string') {
-    try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; }
-  }
   if (!Array.isArray(workIds)) workIds = [];
 
   const tasks = [];
@@ -29,15 +26,15 @@ function getEquipmentSchedule(equipment, workMap) {
     if (!work) return;
 
     const completedOrders = workOrders
-      .filter(wo => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
-      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+      .filter(wo => wo.task_id === wid && wo.status === 'completed' && wo.completed_at)
+      .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
 
-    const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+    const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completed_at) : null;
 
     let nextDue = null;
     if (lastCompleted) {
       nextDue = new Date(lastCompleted);
-      nextDue.setDate(nextDue.getDate() + (work.frequencyDays || 30));
+      nextDue.setDate(nextDue.getDate() + (work.frequency_days || 30));
       nextDue.setHours(0, 0, 0, 0);
     }
 
@@ -47,7 +44,7 @@ function getEquipmentSchedule(equipment, workMap) {
       workId: work.id,
       workName: work.name,
       description: work.description,
-      frequencyDays: work.frequencyDays,
+      frequencyDays: work.frequency_days,
       category: work.category,
       lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
       nextDue: nextDue ? nextDue.toISOString() : null,
@@ -58,11 +55,11 @@ function getEquipmentSchedule(equipment, workMap) {
   return tasks;
 }
 
-function getCalendarEvents(year, month) {
-  const allEquipment = Equipment.findAll();
-  const workMap = getWorkMap();
-  const allRooms = Room.findAll();
-  const allEmployees = Employee.findAll();
+async function getCalendarEvents(year, month) {
+  const allEquipment = await Equipment.findAll();
+  const workMap = await getWorkMap();
+  const allRooms = await Room.findAll();
+  const allEmployees = await Employee.findAll();
 
   const roomMap = {};
   allRooms.forEach(r => { roomMap[r.id] = r; });
@@ -71,10 +68,10 @@ function getCalendarEvents(year, month) {
 
   const events = {};
 
-  allEquipment.forEach(equip => {
-    const tasks = getEquipmentSchedule(equip, workMap);
-    const room = equip.roomId ? roomMap[equip.roomId] : null;
-    const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
+  for (const equip of allEquipment) {
+    const tasks = await getEquipmentSchedule(equip, workMap);
+    const room = equip.room_id ? roomMap[equip.room_id] : null;
+    const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
 
     tasks.forEach(task => {
       if (!task.nextDue) return;
@@ -88,26 +85,26 @@ function getCalendarEvents(year, month) {
       events[key].push({
         equipmentId: equip.id,
         equipmentName: equip.name,
-        inventoryNumber: equip.inventoryNumber,
+        inventoryNumber: equip.inventory_number,
         workId: task.workId,
         workName: task.workName,
         frequencyDays: task.frequencyDays,
         isOverdue: task.isOverdue,
         lastCompleted: task.lastCompleted,
         roomName: room ? room.name : null,
-        employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
+        employeeName: employee ? `${employee.last_name} ${employee.first_name}` : null,
       });
     });
-  });
+  }
 
   return events;
 }
 
-function getUpcomingTasks(daysAhead = 7) {
-  const allEquipment = Equipment.findAll();
-  const workMap = getWorkMap();
-  const allRooms = Room.findAll();
-  const allEmployees = Employee.findAll();
+async function getUpcomingTasks(daysAhead = 7) {
+  const allEquipment = await Equipment.findAll();
+  const workMap = await getWorkMap();
+  const allRooms = await Room.findAll();
+  const allEmployees = await Employee.findAll();
 
   const roomMap = {};
   allRooms.forEach(r => { roomMap[r.id] = r; });
@@ -121,10 +118,10 @@ function getUpcomingTasks(daysAhead = 7) {
 
   const upcoming = [];
 
-  allEquipment.forEach(equip => {
-    const tasks = getEquipmentSchedule(equip, workMap);
-    const room = equip.roomId ? roomMap[equip.roomId] : null;
-    const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
+  for (const equip of allEquipment) {
+    const tasks = await getEquipmentSchedule(equip, workMap);
+    const room = equip.room_id ? roomMap[equip.room_id] : null;
+    const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
 
     tasks.forEach(task => {
       if (!task.nextDue) return;
@@ -133,15 +130,15 @@ function getUpcomingTasks(daysAhead = 7) {
         upcoming.push({
           equipmentId: equip.id,
           equipmentName: equip.name,
-          inventoryNumber: equip.inventoryNumber,
+          inventoryNumber: equip.inventory_number,
           ...task,
           roomName: room ? room.name : null,
           employeeId: employee ? employee.id : null,
-          employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
+          employeeName: employee ? `${employee.last_name} ${employee.first_name}` : null,
         });
       }
     });
-  });
+  }
 
   return upcoming.sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
 }

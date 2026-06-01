@@ -7,7 +7,7 @@ RUN npm install --omit=dev
 
 COPY server/ ./server/
 
-RUN mkdir -p server/data server/uploads
+RUN mkdir -p server/uploads
 
 EXPOSE 3001
 

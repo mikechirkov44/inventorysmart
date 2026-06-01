@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 import api from '../services/api';
 
 function NotificationBell() {
@@ -48,19 +48,20 @@ function NotificationBell() {
   };
 
   const icon = (type) => {
+    const size = 16;
     switch (type) {
-      case 'incident': return '⚠️';
-      case 'overdue_work': return '🔴';
-      case 'upcoming_work': return '🟡';
-      case 'incident_resolved': return '✅';
-      default: return 'ℹ️';
+      case 'incident': return <AlertTriangle size={size} className="notif-type-icon incident" />;
+      case 'overdue_work': return <AlertCircle size={size} className="notif-type-icon overdue" />;
+      case 'upcoming_work': return <Clock size={size} className="notif-type-icon upcoming" />;
+      case 'incident_resolved': return <CheckCircle size={size} className="notif-type-icon resolved" />;
+      default: return <Info size={size} className="notif-type-icon info" />;
     }
   };
 
   return (
     <div className="notification-bell" ref={ref}>
       <button className="bell-button" onClick={() => setOpen(!open)}>
-        🔔
+        <Bell size={20} />
         {unreadCount > 0 && <span className="bell-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
       </button>
 

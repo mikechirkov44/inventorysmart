@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Employee = require('../models/employee');
 
-// GET all employees with optional filtering
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    let employees = Employee.findAll();
+    let employees = await Employee.findAll();
     const { lastName, position, search } = req.query;
 
     if (search) {
@@ -29,10 +28,9 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET employee by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const employee = Employee.findById(req.params.id);
+    const employee = await Employee.findById(req.params.id);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
@@ -42,20 +40,18 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST create employee
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const employee = Employee.create(req.body);
+    const employee = await Employee.create(req.body);
     res.status(201).json(employee);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update employee
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const employee = Employee.update(req.params.id, req.body);
+    const employee = await Employee.update(req.params.id, req.body);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
@@ -65,10 +61,9 @@ router.put('/:id', (req, res) => {
   }
 });
 
-// DELETE employee
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = Employee.remove(req.params.id);
+    const deleted = await Employee.remove(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Employee not found' });
     }

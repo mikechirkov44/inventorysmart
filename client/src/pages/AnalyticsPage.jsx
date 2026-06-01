@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '../services/api';
+import { sparePartsAPI } from '../services/api';
 
 function PerformanceChart({ data }) {
   const [animated, setAnimated] = useState(false);
@@ -29,7 +30,7 @@ function PerformanceChart({ data }) {
         </div>
       </div>
       <div className="perf-chart-body">
-        {sorted.map((emp, i) => {
+        {sorted.map((emp) => {
           const rate = emp.completionRate;
           const color = rate >= 80 ? 'good' : rate >= 50 ? 'warn' : 'bad';
           return (
@@ -58,12 +59,206 @@ function PerformanceChart({ data }) {
   );
 }
 
+function StockReport() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [replenishMode, setReplenishMode] = useState(false);
+  const [replenishData, setReplenishData] = useState({});
+
+  useEffect(() => { fetchItems(); }, []);
+
+  const fetchItems = async () => {
+    try {
+      const res = await sparePartsAPI.getAll();
+      setItems(res.data);
+      setLoading(false);
+    } catch {
+      setError('Ошибка загрузки');
+      setLoading(false);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    let result = [...items];
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(i =>
+        i.name.toLowerCase().includes(s) ||
+        (i.article && i.article.toLowerCase().includes(s)) ||
+        (i.manufacturer && i.manufacturer.toLowerCase().includes(s))
+      );
+    }
+    if (filterStatus === 'ok') result = result.filter(i => (i.quantity || 0) > (i.minStock || 0));
+    else if (filterStatus === 'low') result = result.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0));
+    else if (filterStatus === 'empty') result = result.filter(i => (i.quantity || 0) === 0);
+    return result;
+  }, [items, search, filterStatus]);
+
+  const stats = useMemo(() => {
+    const total = items.reduce((s, i) => s + (i.quantity || 0), 0);
+    const empty = items.filter(i => (i.quantity || 0) === 0).length;
+    const low = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0)).length;
+    const ok = items.filter(i => (i.quantity || 0) > (i.minStock || 0)).length;
+    return { total, empty, low, ok };
+  }, [items]);
+
+  const toggleReplenish = () => {
+    if (replenishMode) {
+      setReplenishMode(false);
+      setReplenishData({});
+    } else {
+      const initial = {};
+      items.forEach(i => { initial[i.id] = 0; });
+      setReplenishData(initial);
+      setReplenishMode(true);
+    }
+  };
+
+  const updateReplenishQty = (id, qty) => {
+    setReplenishData(prev => ({ ...prev, [id]: parseInt(qty) || 0 }));
+  };
+
+  const submitReplenish = async () => {
+    const itemsToReplenish = Object.entries(replenishData)
+      .filter(([, qty]) => qty > 0)
+      .map(([sparePartId, quantity]) => ({ sparePartId, quantity }));
+    if (itemsToReplenish.length === 0) {
+      setError('Укажите количество хотя бы для одной позиции');
+      return;
+    }
+    try {
+      await sparePartsAPI.replenish(itemsToReplenish);
+      setSuccess(`Пополнено ${itemsToReplenish.length} позиций`);
+      setReplenishMode(false);
+      setReplenishData({});
+      fetchItems();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch {
+      setError('Ошибка пополнения');
+    }
+  };
+
+  if (loading) return <div className="loading">Загрузка...</div>;
+
+  return (
+    <>
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 0, flex: 1 }}>
+          <div className="summary-card success">
+            <div className="summary-value">{stats.ok}</div>
+            <div className="summary-label">В норме</div>
+          </div>
+          <div className="summary-card" style={{ borderTopColor: 'var(--warning)' }}>
+            <div className="summary-value" style={{ color: 'var(--warning)' }}>{stats.low}</div>
+            <div className="summary-label">Мало</div>
+          </div>
+          <div className="summary-card danger">
+            <div className="summary-value">{stats.empty}</div>
+            <div className="summary-label">Нет на складе</div>
+          </div>
+          <div className="summary-card primary">
+            <div className="summary-value">{stats.total}</div>
+            <div className="summary-label">Всего единиц</div>
+          </div>
+        </div>
+        <div style={{ marginLeft: 16, flexShrink: 0 }}>
+          <button onClick={toggleReplenish} className={`btn ${replenishMode ? 'btn-danger' : 'btn-primary'}`}>
+            {replenishMode ? 'Отмена' : 'Пополнить склад'}
+          </button>
+        </div>
+      </div>
+
+      <div className="filters-panel">
+        <div className="filter-row">
+          <input type="text" placeholder="Поиск по наименованию, артикулу..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="">Все</option>
+            <option value="ok">В норме</option>
+            <option value="low">Мало</option>
+            <option value="empty">Нет на складе</option>
+          </select>
+        </div>
+        <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {items.length}</div>
+      </div>
+
+      <div className="table-container">
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Артикул</th>
+                <th>Производитель</th>
+                <th>На складе</th>
+                <th>Мин. запас</th>
+                {replenishMode && <th>Пополнить</th>}
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={replenishMode ? 7 : 6} className="no-results-cell">Позиции не найдены</td></tr>
+              ) : (
+                filtered.map(item => {
+                  const qty = item.quantity || 0;
+                  const min = item.minStock || 0;
+                  const status = qty === 0 ? 'empty' : qty <= min ? 'low' : 'ok';
+                  const statusLabel = qty === 0 ? 'Нет' : qty <= min ? 'Мало' : 'В норме';
+                  return (
+                    <tr key={item.id} className={status === 'empty' ? 'row-warning' : ''}>
+                      <td className="td-bold">{item.name}</td>
+                      <td>{item.article || '—'}</td>
+                      <td>{item.manufacturer || '—'}</td>
+                      <td><span className={`sp-quantity ${status}`}>{qty}</span></td>
+                      <td>{min}</td>
+                      {replenishMode && (
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            value={replenishData[item.id] || ''}
+                            onChange={(e) => updateReplenishQty(item.id, e.target.value)}
+                            className="replenish-input"
+                            placeholder="0"
+                          />
+                        </td>
+                      )}
+                      <td>
+                        <span className={`overdue-badge ${status === 'ok' ? 'ok' : status === 'low' ? 'new' : 'overdue'}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {replenishMode && (
+        <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={submitReplenish} className="btn btn-primary">Подтвердить пополнение</button>
+          <button onClick={toggleReplenish} className="btn">Отмена</button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function AnalyticsPage() {
   const [analytics, setAnalytics] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [view, setView] = useState('cards');
+  const [view, setView] = useState('employees');
 
   useEffect(() => {
     Promise.all([api.get('/analytics'), api.get('/analytics/summary')])
@@ -76,206 +271,95 @@ function AnalyticsPage() {
   return (
     <div className="analytics-page">
       <div className="header">
-        <h1>Аналитика выполнения работ</h1>
+        <h1>Аналитика</h1>
         <div className="header-actions">
-          <button onClick={() => setView('cards')} className={`btn ${view === 'cards' ? 'btn-primary' : ''}`}>Карточки</button>
-          <button onClick={() => setView('table')} className={`btn ${view === 'table' ? 'btn-primary' : ''}`}>Таблица</button>
+          <button onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
+          <button onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
         </div>
       </div>
 
-      {summary && (
-        <div className="analytics-summary">
-          <div className="summary-card">
-            <div className="summary-value">{summary.totalPlanned}</div>
-            <div className="summary-label">Запланировано</div>
-          </div>
-          <div className="summary-card success">
-            <div className="summary-value">{summary.totalCompleted}</div>
-            <div className="summary-label">Выполнено</div>
-          </div>
-          <div className="summary-card primary">
-            <div className="summary-value">{summary.completionRate}%</div>
-            <div className="summary-label">Процент выполнения</div>
-          </div>
-          <div className="summary-card ok">
-            <div className="summary-value">{summary.totalOnTime}</div>
-            <div className="summary-label">Вовремя</div>
-          </div>
-          <div className="summary-card danger">
-            <div className="summary-value">{summary.totalOverdue}</div>
-            <div className="summary-label">Просрочено</div>
-          </div>
-          <div className="summary-card muted">
-            <div className="summary-value">{summary.totalNever}</div>
-            <div className="summary-label">Не выполнялось</div>
-          </div>
-        </div>
-      )}
-
-      <PerformanceChart data={analytics} />
-
-      {view === 'cards' ? (
-        <div className="analytics-content">
-          <div className="analytics-sidebar">
-            <h3>Сотрудники</h3>
-            <div className="employee-list">
-              {analytics.map(emp => (
-                <div
-                  key={emp.employeeId}
-                  className={`employee-item ${selectedEmployee === emp.employeeId ? 'active' : ''}`}
-                  onClick={() => setSelectedEmployee(selectedEmployee === emp.employeeId ? null : emp.employeeId)}
-                >
-                  <div className="emp-name">{emp.employeeName}</div>
-                  <div className="emp-stats">
-                    <span className="emp-rate">{emp.completionRate}%</span>
-                    <span className="emp-done">{emp.totalCompleted}/{emp.totalPlanned}</span>
-                  </div>
-                  <div className="emp-bar">
-                    <div className="emp-bar-fill" style={{ width: `${emp.completionRate}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="analytics-main">
-            {selectedEmployee ? (
-              <EmployeeDetail employee={analytics.find(e => e.employeeId === selectedEmployee)} />
-            ) : (
-              <div className="analytics-placeholder">
-                <p>Выберите сотрудника для подробного отчёта</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {view === 'stock' ? (
+        <StockReport />
       ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Сотрудник</th>
-                <th>Должность</th>
-                <th>Запланировано</th>
-                <th>Выполнено</th>
-                <th>% выполнения</th>
-                <th>Вовремя</th>
-                <th>С опозданием</th>
-                <th>Не выполнялось</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analytics.length === 0 ? (
-                <tr><td colSpan="8" className="no-results-cell">Нет данных</td></tr>
-              ) : (
-                analytics.map(emp => (
-                  <tr key={emp.employeeId} className="clickable-row" onClick={() => { setView('cards'); setSelectedEmployee(emp.employeeId); }}>
-                    <td className="td-bold">{emp.employeeName}</td>
-                    <td>{emp.position || '—'}</td>
-                    <td>{emp.totalPlanned}</td>
-                    <td>{emp.totalCompleted}</td>
-                    <td>
-                      <div className="rate-cell">
-                        <span className={`rate-value ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`}>
-                          {emp.completionRate}%
-                        </span>
-                        <div className="rate-bar">
-                          <div className={`rate-bar-fill ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`} style={{ width: `${emp.completionRate}%` }} />
-                        </div>
-                      </div>
-                    </td>
-                    <td><span className="overdue-badge ok">{emp.onTime}</span></td>
-                    <td><span className="overdue-badge overdue">{emp.overdue}</span></td>
-                    <td><span className="overdue-badge new">{emp.neverCompleted}</span></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EmployeeDetail({ employee }) {
-  const [expanded, setExpanded] = useState(null);
-
-  if (!employee) return null;
-
-  return (
-    <div className="employee-detail">
-      <h2>{employee.employeeName}</h2>
-      <p className="emp-position">{employee.position}</p>
-
-      <div className="detail-stats-row">
-        <div className="detail-stat">
-          <span className="detail-stat-value">{employee.totalPlanned}</span>
-          <span className="detail-stat-label">Запланировано</span>
-        </div>
-        <div className="detail-stat success">
-          <span className="detail-stat-value">{employee.totalCompleted}</span>
-          <span className="detail-stat-label">Выполнено</span>
-        </div>
-        <div className="detail-stat ok">
-          <span className="detail-stat-value">{employee.onTime}</span>
-          <span className="detail-stat-label">Вовремя</span>
-        </div>
-        <div className="detail-stat danger">
-          <span className="detail-stat-value">{employee.overdue}</span>
-          <span className="detail-stat-label">С опозданием</span>
-        </div>
-      </div>
-
-      <div className="equipment-reports">
-        {employee.equipment.map(eq => (
-          <div key={eq.equipmentId} className="equipment-report-card">
-            <div className="eq-report-header" onClick={() => setExpanded(expanded === eq.equipmentId ? null : eq.equipmentId)}>
-              <span className="eq-report-name">{eq.equipmentName}</span>
-              <span className="eq-report-inv">{eq.inventoryNumber}</span>
-              <span className="eq-report-arrow">{expanded === eq.equipmentId ? '▲' : '▼'}</span>
-            </div>
-            {expanded === eq.equipmentId && (
-              <div className="eq-report-tasks">
-                <table className="mini-table">
-                  <thead>
-                    <tr>
-                      <th>Работа</th>
-                      <th>Период</th>
-                      <th>План</th>
-                      <th>Факт</th>
-                      <th>Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eq.tasks.map(task => (
-                      <tr key={task.workId}>
-                        <td>{task.workName}</td>
-                        <td>каждые {task.frequencyDays} дн.</td>
-                        <td>{task.plannedDate ? new Date(task.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
-                        <td>{task.lastCompleted ? new Date(task.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
-                        <td>
-                          {task.completedCount === 0 ? (
-                            <span className="overdue-badge new">не выполнялось</span>
-                          ) : task.daysDiff !== null && task.daysDiff > 0 ? (
-                            <span className="overdue-badge overdue">+{task.daysDiff} дн. опоздание</span>
-                          ) : task.daysDiff !== null && task.daysDiff <= 0 ? (
-                            <span className="overdue-badge ok">{task.daysDiff === 0 ? 'вовремя' : `${Math.abs(task.daysDiff)} дн. раньше`}</span>
-                          ) : (
-                            <span className="overdue-badge ok">выполнено</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        <>
+          {summary && (
+            <div className="analytics-summary">
+              <div className="summary-card">
+                <div className="summary-value">{summary.totalPlanned}</div>
+                <div className="summary-label">Запланировано</div>
               </div>
-            )}
+              <div className="summary-card success">
+                <div className="summary-value">{summary.totalCompleted}</div>
+                <div className="summary-label">Выполнено</div>
+              </div>
+              <div className="summary-card primary">
+                <div className="summary-value">{summary.completionRate}%</div>
+                <div className="summary-label">Процент выполнения</div>
+              </div>
+              <div className="summary-card ok">
+                <div className="summary-value">{summary.totalOnTime}</div>
+                <div className="summary-label">Вовремя</div>
+              </div>
+              <div className="summary-card danger">
+                <div className="summary-value">{summary.totalOverdue}</div>
+                <div className="summary-label">Просрочено</div>
+              </div>
+              <div className="summary-card muted">
+                <div className="summary-value">{summary.totalNever}</div>
+                <div className="summary-label">Не выполнялось</div>
+              </div>
+            </div>
+          )}
+
+          <PerformanceChart data={analytics} />
+
+          <div className="table-container">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Сотрудник</th>
+                    <th>Должность</th>
+                    <th>Запланировано</th>
+                    <th>Выполнено</th>
+                    <th>% выполнения</th>
+                    <th>Вовремя</th>
+                    <th>С опозданием</th>
+                    <th>Не выполнялось</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analytics.length === 0 ? (
+                    <tr><td colSpan="8" className="no-results-cell">Нет данных</td></tr>
+                  ) : (
+                    analytics.map(emp => (
+                      <tr key={emp.employeeId}>
+                        <td className="td-bold">{emp.employeeName}</td>
+                        <td>{emp.position || '—'}</td>
+                        <td>{emp.totalPlanned}</td>
+                        <td>{emp.totalCompleted}</td>
+                        <td>
+                          <div className="rate-cell">
+                            <span className={`rate-value ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`}>
+                              {emp.completionRate}%
+                            </span>
+                            <div className="rate-bar">
+                              <div className={`rate-bar-fill ${emp.completionRate >= 80 ? 'good' : emp.completionRate >= 50 ? 'warn' : 'bad'}`} style={{ width: `${emp.completionRate}%` }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td><span className="overdue-badge ok">{emp.onTime}</span></td>
+                        <td><span className="overdue-badge overdue">{emp.overdue}</span></td>
+                        <td><span className="overdue-badge new">{emp.neverCompleted}</span></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        ))}
-        {employee.equipment.length === 0 && (
-          <div className="no-data">Нет привязанного оборудования</div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

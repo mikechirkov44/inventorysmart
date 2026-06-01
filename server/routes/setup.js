@@ -3,20 +3,18 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-// GET /api/setup - check if setup is required
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const required = User.isSetupRequired();
+    const required = await User.isSetupRequired();
     res.json({ setupRequired: required });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// POST /api/setup - create first admin account
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    if (!User.isSetupRequired()) {
+    if (!(await User.isSetupRequired())) {
       return res.status(400).json({ error: 'Admin account already exists' });
     }
 
@@ -28,7 +26,7 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    const user = User.create({
+    const user = await User.create({
       username,
       password,
       fullName: fullName || 'Администратор',
@@ -40,7 +38,7 @@ router.post('/', (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, fullName: user.fullName },
+      { id: user.id, username: user.username, role: user.role, fullName: user.full_name },
       User.JWT_SECRET,
       { expiresIn: User.JWT_EXPIRES }
     );

@@ -1,86 +1,64 @@
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { query } = require('../db');
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'works.json');
+function mapRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    frequencyDays: row.frequency_days,
+    category: row.category,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
 
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, '[]', 'utf8');
-    return [];
+module.exports = {
+  findAll: async () => {
+    const { rows } = await query('SELECT * FROM works ORDER BY name');
+    return rows.map(mapRow);
+  },
+
+  findById: async (id) => {
+    const { rows } = await query('SELECT * FROM works WHERE id = $1', [id]);
+    return mapRow(rows[0]);
+  },
+
+  create: async (data) => {
+    const { rows } = await query(
+      'INSERT INTO works (name, description, frequency_days, category) VALUES ($1, $2, $3, $4) RETURNING *',
+      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '']
+    );
+    return mapRow(rows[0]);
+  },
+
+  update: async (id, data) => {
+    const fieldMap = { frequencyDays: 'frequency_days' };
+    const fields = [];
+    const values = [];
+    let i = 1;
+    for (const [key, val] of Object.entries(data)) {
+      if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
+      const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      fields.push(`${col} = $${i}`);
+      values.push(val);
+      i++;
+    }
+    if (fields.length === 0) return null;
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+    const { rows } = await query(`UPDATE works SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values);
+    return mapRow(rows[0]);
+  },
+
+  remove: async (id) => {
+    const { rowCount } = await query('DELETE FROM works WHERE id = $1', [id]);
+    return rowCount > 0;
+  },
+
+  createMany: async (items) => {
+    const results = [];
+    for (const item of items) { results.push(await module.exports.create(item)); }
+    return results;
   }
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
-  return JSON.parse(data);
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function findAll() {
-  return readData();
-}
-
-function findById(id) {
-  const data = readData();
-  return data.find(item => item.id === id);
-}
-
-function create(workData) {
-  const data = readData();
-  const newWork = {
-    id: uuidv4(),
-    name: workData.name,
-    description: workData.description || '',
-    frequencyDays: parseInt(workData.frequencyDays) || 30,
-    category: workData.category || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  data.push(newWork);
-  writeData(data);
-  return newWork;
-}
-
-function update(id, workData) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return null;
-
-  data[index] = {
-    ...data[index],
-    ...workData,
-    id: data[index].id,
-    createdAt: data[index].createdAt,
-    updatedAt: new Date().toISOString()
-  };
-  writeData(data);
-  return data[index];
-}
-
-function remove(id) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return false;
-  data.splice(index, 1);
-  writeData(data);
-  return true;
-}
-
-function createMany(worksArray) {
-  const data = readData();
-  const newItems = worksArray.map(item => ({
-    id: uuidv4(),
-    name: item.name || '',
-    description: item.description || '',
-    frequencyDays: parseInt(item.frequencyDays) || 30,
-    category: item.category || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }));
-  data.push(...newItems);
-  writeData(data);
-  return newItems;
-}
-
-module.exports = { findAll, findById, create, update, remove, createMany };
+};

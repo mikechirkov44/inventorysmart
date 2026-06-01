@@ -1,91 +1,68 @@
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { query } = require('../db');
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'notifications.json');
-
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, '[]', 'utf8');
-    return [];
-  }
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function findAll() { return readData(); }
-
-function findById(id) {
-  return readData().find(n => n.id === id);
-}
-
-function findByUser(userId) {
-  return readData().filter(n => n.userId === userId);
-}
-
-function findUnread(userId) {
-  return readData().filter(n => n.userId === userId && !n.read);
-}
-
-function create(notifData) {
-  const data = readData();
-  const existing = data.find(n =>
-    n.userId === notifData.userId &&
-    n.type === notifData.type &&
-    n.equipmentId === notifData.equipmentId &&
-    n.workId === notifData.workId &&
-    !n.read
-  );
-  if (existing) return existing;
-
-  const notif = {
-    id: uuidv4(),
-    userId: notifData.userId,
-    type: notifData.type || 'info',
-    title: notifData.title || '',
-    message: notifData.message || '',
-    equipmentId: notifData.equipmentId || null,
-    workId: notifData.workId || null,
-    incidentId: notifData.incidentId || null,
-    read: false,
-    createdAt: new Date().toISOString()
+function mapRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    title: row.title,
+    message: row.message,
+    equipmentId: row.equipment_id,
+    workId: row.work_id,
+    incidentId: row.incident_id,
+    read: row.read,
+    readAt: row.read_at,
+    createdAt: row.created_at
   };
-  data.unshift(notif);
-  writeData(data);
-  return notif;
 }
 
-function markRead(id) {
-  const data = readData();
-  const index = data.findIndex(n => n.id === id);
-  if (index === -1) return null;
-  data[index].read = true;
-  data[index].readAt = new Date().toISOString();
-  writeData(data);
-  return data[index];
-}
+module.exports = {
+  findAll: async () => {
+    const { rows } = await query('SELECT * FROM notifications ORDER BY created_at DESC');
+    return rows.map(mapRow);
+  },
 
-function markAllRead(userId) {
-  const data = readData();
-  data.forEach(n => {
-    if (n.userId === userId && !n.read) {
-      n.read = true;
-      n.readAt = new Date().toISOString();
-    }
-  });
-  writeData(data);
-}
+  findById: async (id) => {
+    const { rows } = await query('SELECT * FROM notifications WHERE id = $1', [id]);
+    return mapRow(rows[0]);
+  },
 
-function remove(id) {
-  const data = readData();
-  const index = data.findIndex(n => n.id === id);
-  if (index === -1) return false;
-  data.splice(index, 1);
-  writeData(data);
-  return true;
-}
+  findByUser: async (userId) => {
+    const { rows } = await query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    return rows.map(mapRow);
+  },
 
-module.exports = { findAll, findById, findByUser, findUnread, create, markRead, markAllRead, remove };
+  findUnread: async (userId) => {
+    const { rows } = await query('SELECT * FROM notifications WHERE user_id = $1 AND read = false ORDER BY created_at DESC', [userId]);
+    return rows.map(mapRow);
+  },
+
+  create: async (data) => {
+    const existing = await query(
+      'SELECT id FROM notifications WHERE user_id = $1 AND type = $2 AND equipment_id = $3 AND work_id = $4 AND read = false',
+      [data.userId, data.type || 'info', data.equipmentId || null, data.workId || null]
+    );
+    if (existing.rows[0]) return mapRow(existing.rows[0]);
+
+    const { rows } = await query(
+      'INSERT INTO notifications (user_id, type, title, message, equipment_id, work_id, incident_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.userId, data.type || 'info', data.title || '', data.message || '', data.equipmentId || null, data.workId || null, data.incidentId || null]
+    );
+    return mapRow(rows[0]);
+  },
+
+  markRead: async (id) => {
+    const { rows } = await query('UPDATE notifications SET read = true, read_at = NOW() WHERE id = $1 RETURNING *', [id]);
+    return mapRow(rows[0]);
+  },
+
+  markAllRead: async (userId) => {
+    await query('UPDATE notifications SET read = true, read_at = NOW() WHERE user_id = $1 AND read = false', [userId]);
+  },
+
+  remove: async (id) => {
+    const { rowCount } = await query('DELETE FROM notifications WHERE id = $1', [id]);
+    return rowCount > 0;
+  }
+};

@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { workOrderAPI, equipmentAPI } from '../services/api';
+import { workOrderAPI, equipmentAPI, sparePartsAPI } from '../services/api';
 
 function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);
   const [equipment, setEquipment] = useState([]);
+  const [allSpareParts, setAllSpareParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [completingId, setCompletingId] = useState(null);
+  const [sparePartsSelection, setSparePartsSelection] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -15,12 +18,14 @@ function WorkOrders() {
 
   const fetchData = async () => {
     try {
-      const [workOrdersRes, equipmentRes] = await Promise.all([
+      const [workOrdersRes, equipmentRes, spRes] = await Promise.all([
         workOrderAPI.getAll(),
-        equipmentAPI.getAll()
+        equipmentAPI.getAll(),
+        sparePartsAPI.getAll()
       ]);
       setWorkOrders(workOrdersRes.data);
       setEquipment(equipmentRes.data);
+      setAllSpareParts(spRes.data);
       setLoading(false);
     } catch (err) {
       setError('Ошибка загрузки данных');
@@ -33,18 +38,61 @@ function WorkOrders() {
     return equip ? equip.name : 'Неизвестное оборудование';
   };
 
+  const getSparePartsForEquipment = (equipmentId) => {
+    return allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipmentId));
+  };
+
   const filteredWorkOrders = workOrders.filter(wo => {
     if (filter === 'all') return true;
     return wo.status === filter;
   });
 
+  const startComplete = (wo) => {
+    setCompletingId(wo.id);
+    const available = getSparePartsForEquipment(wo.equipmentId);
+    setSparePartsSelection(available.map(sp => ({ sparePartId: sp.id, name: sp.name, quantity: 0, maxQty: sp.quantity || 0 })));
+  };
+
+  const updateSparePartQty = (sparePartId, qty) => {
+    setSparePartsSelection(prev =>
+      prev.map(sp => sp.sparePartId === sparePartId ? { ...sp, quantity: parseInt(qty) || 0 } : sp)
+    );
+  };
+
   const handleStatusChange = async (id, newStatus) => {
+    if (newStatus === 'completed') {
+      const wo = workOrders.find(w => w.id === id);
+      if (wo) {
+        startComplete(wo);
+        return;
+      }
+    }
     try {
       await workOrderAPI.update(id, { status: newStatus });
       fetchData();
     } catch (err) {
       setError('Ошибка обновления статуса');
     }
+  };
+
+  const confirmComplete = async () => {
+    const used = sparePartsSelection.filter(sp => sp.quantity > 0).map(sp => ({
+      sparePartId: sp.sparePartId,
+      quantity: sp.quantity
+    }));
+    try {
+      await workOrderAPI.update(completingId, { status: 'completed', sparePartsUsed: JSON.stringify(used) });
+      setCompletingId(null);
+      setSparePartsSelection([]);
+      fetchData();
+    } catch (err) {
+      setError('Ошибка обновления статуса');
+    }
+  };
+
+  const cancelComplete = () => {
+    setCompletingId(null);
+    setSparePartsSelection([]);
   };
 
   const handleDelete = async (id) => {
@@ -106,23 +154,67 @@ function WorkOrders() {
                 </div>
               </div>
               <div className="wo-notes">{wo.notes}</div>
-              <div className="wo-actions">
-                <select
-                  value={wo.status}
-                  onChange={(e) => handleStatusChange(wo.id, e.target.value)}
-                  className="status-select"
-                >
-                  <option value="pending">В ожидании</option>
-                  <option value="completed">Выполнено</option>
-                  <option value="failed">Не выполнено</option>
-                </select>
-                <button
-                  onClick={() => handleDelete(wo.id)}
-                  className="btn btn-small btn-danger"
-                >
-                  Удалить
-                </button>
-              </div>
+
+              {wo.sparePartsUsed && wo.sparePartsUsed.length > 0 && (
+                <div className="wo-spare-parts-used">
+                  <span className="wo-sp-label">Использовано ЗИП:</span>
+                  {wo.sparePartsUsed.map((sp, i) => {
+                    const spData = allSpareParts.find(s => s.id === sp.sparePartId);
+                    return (
+                      <span key={i} className="wo-sp-item">
+                        {spData ? spData.name : '—'} × {sp.quantity}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {completingId === wo.id ? (
+                <div className="wo-complete-form">
+                  <div className="wo-complete-title">Списание ЗИП:</div>
+                  {sparePartsSelection.length > 0 ? (
+                    <div className="wo-sp-select-list">
+                      {sparePartsSelection.map(sp => (
+                        <div key={sp.sparePartId} className="wo-sp-select-item">
+                          <span className="wo-sp-select-name">{sp.name}</span>
+                          <span className="wo-sp-select-stock">на складе: {sp.maxQty}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max={sp.maxQty}
+                            value={sp.quantity}
+                            onChange={(e) => updateSparePartQty(sp.sparePartId, e.target.value)}
+                            className="wo-sp-input"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="wo-no-sp">Нет привязанных запчастей для этого оборудования</p>
+                  )}
+                  <div className="wo-complete-actions">
+                    <button onClick={confirmComplete} className="btn btn-small btn-primary">Подтвердить</button>
+                    <button onClick={cancelComplete} className="btn btn-small">Отмена</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="wo-actions">
+                  {wo.status === 'pending' && (
+                    <button
+                      onClick={() => handleStatusChange(wo.id, 'completed')}
+                      className="btn btn-small btn-primary"
+                    >
+                      Выполнено
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(wo.id)}
+                    className="btn btn-small btn-danger"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}

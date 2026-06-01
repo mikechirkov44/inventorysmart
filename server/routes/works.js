@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Work = require('../models/work');
 
-// GET all works with optional filtering
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    let works = Work.findAll();
+    let works = await Work.findAll();
     const { name, category, search } = req.query;
 
     if (search) {
@@ -28,10 +27,9 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET work by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const work = Work.findById(req.params.id);
+    const work = await Work.findById(req.params.id);
     if (!work) {
       return res.status(404).json({ error: 'Work not found' });
     }
@@ -41,20 +39,18 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST create work
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const work = Work.create(req.body);
+    const work = await Work.create(req.body);
     res.status(201).json(work);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update work
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const work = Work.update(req.params.id, req.body);
+    const work = await Work.update(req.params.id, req.body);
     if (!work) {
       return res.status(404).json({ error: 'Work not found' });
     }
@@ -64,10 +60,9 @@ router.put('/:id', (req, res) => {
   }
 });
 
-// DELETE work
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = Work.remove(req.params.id);
+    const deleted = await Work.remove(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Work not found' });
     }

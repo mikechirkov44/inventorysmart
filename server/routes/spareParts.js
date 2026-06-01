@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const SparePart = require('../models/sparePart');
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    let items = SparePart.findAll();
-    const { search } = req.query;
+    let items = await SparePart.findAll();
+    const { search, equipmentId } = req.query;
     if (search) {
       const s = search.toLowerCase();
       items = items.filter(i =>
@@ -14,15 +14,18 @@ router.get('/', (req, res) => {
         (i.manufacturer && i.manufacturer.toLowerCase().includes(s))
       );
     }
+    if (equipmentId) {
+      items = items.filter(i => (i.equipmentIds || []).includes(equipmentId));
+    }
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const item = SparePart.findById(req.params.id);
+    const item = await SparePart.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
@@ -30,18 +33,18 @@ router.get('/:id', (req, res) => {
   }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const item = SparePart.create(req.body);
+    const item = await SparePart.create(req.body);
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const item = SparePart.update(req.params.id, req.body);
+    const item = await SparePart.update(req.params.id, req.body);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
@@ -49,11 +52,24 @@ router.put('/:id', (req, res) => {
   }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = SparePart.remove(req.params.id);
+    const deleted = await SparePart.remove(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/replenish', async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array is required' });
+    }
+    const updated = await SparePart.replenishStock(items);
+    res.json({ updated });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

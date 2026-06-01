@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Room = require('../models/room');
 
-// GET all rooms with optional filtering
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    let rooms = Room.findAll();
+    let rooms = await Room.findAll();
     const { name, building, search } = req.query;
 
     if (search) {
@@ -29,10 +28,9 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET room by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const room = Room.findById(req.params.id);
+    const room = await Room.findById(req.params.id);
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
@@ -42,20 +40,18 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST create room
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const room = Room.create(req.body);
+    const room = await Room.create(req.body);
     res.status(201).json(room);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update room
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const room = Room.update(req.params.id, req.body);
+    const room = await Room.update(req.params.id, req.body);
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
@@ -65,10 +61,9 @@ router.put('/:id', (req, res) => {
   }
 });
 
-// DELETE room
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = Room.remove(req.params.id);
+    const deleted = await Room.remove(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Room not found' });
     }

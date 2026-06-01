@@ -4,36 +4,34 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { authenticate } = require('../middleware/auth');
 
-// POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const user = User.findByUsername(username);
-    if (!user || !User.verifyPassword(password, user.passwordHash)) {
+    const user = await User.findByUsername(username);
+    if (!user || !User.verifyPassword(password, user.password_hash)) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, fullName: user.fullName },
+      { id: user.id, username: user.username, role: user.role, fullName: user.full_name },
       User.JWT_SECRET,
       { expiresIn: User.JWT_EXPIRES }
     );
 
-    const { passwordHash, ...userInfo } = user;
+    const { password_hash, ...userInfo } = user;
     res.json({ token, user: userInfo });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET /api/auth/me
-router.get('/me', authenticate, (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = User.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

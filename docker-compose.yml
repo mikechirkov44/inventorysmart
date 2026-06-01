@@ -1,4 +1,22 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: inventorysmart-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventorysmart
+      POSTGRES_USER: inventorysmart
+      POSTGRES_PASSWORD: inventorysmart_secret
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventorysmart"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   server:
     build:
       context: .
@@ -6,13 +24,16 @@ services:
     container_name: inventorysmart-server
     restart: unless-stopped
     volumes:
-      - server-data:/app/data
       - server-uploads:/app/uploads
     expose:
       - "3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - DATABASE_URL=postgresql://inventorysmart:inventorysmart_secret@db:5432/inventorysmart
+    depends_on:
+      db:
+        condition: service_healthy
 
   client:
     build: ./client
@@ -24,5 +45,5 @@ services:
       - server
 
 volumes:
-  server-data:
+  pg-data:
   server-uploads:

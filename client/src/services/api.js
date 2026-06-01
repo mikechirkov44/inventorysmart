@@ -102,9 +102,11 @@ export const incidentsAPI = {
 export const sparePartsAPI = {
   getAll: (params) => api.get('/spare-parts', { params }),
   getById: (id) => api.get(`/spare-parts/${id}`),
+  getByEquipment: (equipmentId) => api.get('/spare-parts', { params: { equipmentId } }),
   create: (data) => api.post('/spare-parts', data),
   update: (id, data) => api.put(`/spare-parts/${id}`, data),
   delete: (id) => api.delete(`/spare-parts/${id}`),
+  replenish: (items) => api.post('/spare-parts/replenish', { items }),
 };
 
 export const analyticsAPI = {

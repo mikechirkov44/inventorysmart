@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotificationBell from './components/NotificationBell';
@@ -43,7 +44,9 @@ function DirDropdown() {
   return (
     <li className={`nav-dropdown ${open ? 'open' : ''}`} ref={ref}>
       <button className={`nav-dropdown-trigger ${isActive ? 'active' : ''}`} onClick={() => setOpen(!open)}>
-        Справочники ▾
+        <FolderTree size={18} />
+        <span>Справочники</span>
+        <ChevronDown size={14} className={`dropdown-arrow ${open ? 'open' : ''}`} />
       </button>
       {open && (
         <ul className="nav-dropdown-menu">
@@ -75,13 +78,13 @@ function AppNav() {
       </div>
       <ul className="nav-links">
         <DirDropdown />
-        <li><NavLink to="/work-orders">Журнал</NavLink></li>
-        <li><NavLink to="/scan">QR-сканер</NavLink></li>
-        <li><NavLink to="/schedule">План-график</NavLink></li>
-        {isAdmin && <li><NavLink to="/incidents">Инциденты</NavLink></li>}
-        {isAdmin && <li><NavLink to="/analytics">Аналитика</NavLink></li>}
-        {isAdmin && <li><NavLink to="/import">Импорт</NavLink></li>}
-        {isAdmin && <li><NavLink to="/users">Пользователи</NavLink></li>}
+        <li><NavLink to="/work-orders"><ClipboardList size={18} /><span>Журнал</span></NavLink></li>
+        <li><NavLink to="/scan"><ScanLine size={18} /><span>QR-сканер</span></NavLink></li>
+        <li><NavLink to="/schedule"><CalendarDays size={18} /><span>План-график</span></NavLink></li>
+        {isAdmin && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
+        {isAdmin && <li><NavLink to="/analytics"><BarChart3 size={18} /><span>Аналитика</span></NavLink></li>}
+        {isAdmin && <li><NavLink to="/import"><Upload size={18} /><span>Импорт</span></NavLink></li>}
+        {isAdmin && <li><NavLink to="/users"><Users size={18} /><span>Пользователи</span></NavLink></li>}
       </ul>
     </nav>
   );

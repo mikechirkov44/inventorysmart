@@ -1,122 +1,101 @@
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { query } = require('../db');
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'equipment.json');
-
-function readData() {
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
-  return JSON.parse(data);
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function findAll() {
-  return readData();
-}
-
-function findById(id) {
-  const data = readData();
-  return data.find(item => item.id === id);
-}
-
-function findByQrCode(qrCode) {
-  const data = readData();
-  return data.find(item => item.qrCode === qrCode);
-}
-
-function create(equipmentData) {
-  const data = readData();
-
-  let workIds = equipmentData.workIds || [];
-  if (typeof workIds === 'string') {
-    try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; }
-  }
-  if (!Array.isArray(workIds)) workIds = [];
-
-  const newEquipment = {
-    id: uuidv4(),
-    qrCode: uuidv4(),
-    name: equipmentData.name,
-    inventoryNumber: equipmentData.inventoryNumber || '',
-    description: equipmentData.description || '',
-    photo: equipmentData.photo || null,
-    roomId: equipmentData.roomId || '',
-    category: equipmentData.category || '',
-    status: equipmentData.status || 'working',
-    workIds,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+function mapRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    qrCode: row.qr_code,
+    name: row.name,
+    inventoryNumber: row.inventory_number,
+    description: row.description,
+    photo: row.photo,
+    roomId: row.room_id,
+    category: row.category,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
-  data.push(newEquipment);
-  writeData(data);
-  return newEquipment;
-}
-
-function update(id, equipmentData) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return null;
-
-  data[index] = {
-    ...data[index],
-    ...equipmentData,
-    id: data[index].id,
-    qrCode: data[index].qrCode,
-    createdAt: data[index].createdAt,
-    updatedAt: new Date().toISOString()
-  };
-  writeData(data);
-  return data[index];
-}
-
-function remove(id) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return false;
-
-  const equipment = data[index];
-  if (equipment.photo) {
-    const photoPath = path.join(__dirname, '..', 'uploads', equipment.photo);
-    if (fs.existsSync(photoPath)) {
-      fs.unlinkSync(photoPath);
-    }
-  }
-
-  data.splice(index, 1);
-  writeData(data);
-  return true;
-}
-
-function createMany(equipmentArray) {
-  const data = readData();
-  const newItems = equipmentArray.map(item => ({
-    id: uuidv4(),
-    qrCode: uuidv4(),
-    name: item.name || '',
-    inventoryNumber: item.inventoryNumber || '',
-    description: item.description || '',
-    photo: item.photo || null,
-    roomId: item.roomId || '',
-    category: item.category || '',
-    status: item.status || 'working',
-    workIds: item.workIds || [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }));
-  data.push(...newItems);
-  writeData(data);
-  return newItems;
 }
 
 module.exports = {
-  findAll,
-  findById,
-  findByQrCode,
-  create,
-  update,
-  remove,
-  createMany
+  findAll: async () => {
+    const { rows: equipment } = await query('SELECT * FROM equipment ORDER BY name');
+    const { rows: eqWorks } = await query('SELECT * FROM equipment_works');
+    return equipment.map(eq => ({
+      ...mapRow(eq),
+      workIds: eqWorks.filter(ew => ew.equipment_id === eq.id).map(ew => ew.work_id)
+    }));
+  },
+
+  findById: async (id) => {
+    const { rows } = await query('SELECT * FROM equipment WHERE id = $1', [id]);
+    if (!rows[0]) return null;
+    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [id]);
+    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+  },
+
+  findByQrCode: async (qrCode) => {
+    const { rows } = await query('SELECT * FROM equipment WHERE qr_code = $1', [qrCode]);
+    if (!rows[0]) return null;
+    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
+    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+  },
+
+  create: async (data) => {
+    let workIds = data.workIds || [];
+    if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
+
+    const { rows } = await query(
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.name, data.inventoryNumber || '', data.description || '', data.photo || null, data.roomId || null, data.category || '', data.status || 'working']
+    );
+    const eq = rows[0];
+
+    for (const wid of workIds) {
+      await query('INSERT INTO equipment_works (equipment_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [eq.id, wid]);
+    }
+
+    return { ...mapRow(eq), workIds };
+  },
+
+  update: async (id, data) => {
+    const fieldMap = { inventoryNumber: 'inventory_number', roomId: 'room_id' };
+    const mapped = {};
+    for (const [key, val] of Object.entries(data)) {
+      if (key === 'id' || key === 'qrCode' || key === 'createdAt' || key === 'updatedAt' || key === 'workIds') continue;
+      const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      mapped[col] = val;
+    }
+    mapped.updated_at = new Date();
+
+    if (Object.keys(mapped).length > 1) {
+      const keys = Object.keys(mapped);
+      const sets = keys.map((k, i) => `${k} = $${i + 1}`);
+      const vals = keys.map(k => mapped[k]);
+      vals.push(id);
+      await query(`UPDATE equipment SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
+    }
+
+    if (data.workIds !== undefined) {
+      let ids = data.workIds;
+      if (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (_) { ids = []; } }
+      await query('DELETE FROM equipment_works WHERE equipment_id = $1', [id]);
+      for (const wid of ids) {
+        await query('INSERT INTO equipment_works (equipment_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, wid]);
+      }
+    }
+
+    return await module.exports.findById(id);
+  },
+
+  remove: async (id) => {
+    const { rowCount } = await query('DELETE FROM equipment WHERE id = $1', [id]);
+    return rowCount > 0;
+  },
+
+  createMany: async (items) => {
+    const results = [];
+    for (const item of items) { results.push(await module.exports.create(item)); }
+    return results;
+  }
 };

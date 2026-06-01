@@ -6,15 +6,14 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
-// GET /api/schedule?group=employee|equipment|month
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const groupBy = req.query.group || 'employee';
-    const allEquipment = Equipment.findAll();
-    const allWorks = Work.findAll();
-    const allWorkOrders = WorkOrder.findAll();
-    const allRooms = Room.findAll();
-    const allEmployees = Employee.findAll();
+    const allEquipment = await Equipment.findAll();
+    const allWorks = await Work.findAll();
+    const allWorkOrders = await WorkOrder.findAll();
+    const allRooms = await Room.findAll();
+    const allEmployees = await Employee.findAll();
 
     const workMap = {};
     allWorks.forEach(w => { workMap[w.id] = w; });
@@ -35,7 +34,6 @@ router.get('/', (req, res) => {
       const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 
       let workIds = equip.workIds || [];
-      if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
       if (!Array.isArray(workIds)) workIds = [];
 
       const equipOrders = allWorkOrders.filter(wo => wo.equipmentId === equip.id);

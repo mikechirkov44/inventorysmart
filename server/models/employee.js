@@ -1,72 +1,60 @@
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { query } = require('../db');
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'employees.json');
+function mapRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    middleName: row.middle_name,
+    position: row.position,
+    phone: row.phone,
+    email: row.email,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
 
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, '[]', 'utf8');
-    return [];
+module.exports = {
+  findAll: async () => {
+    const { rows } = await query('SELECT * FROM employees ORDER BY last_name, first_name');
+    return rows.map(mapRow);
+  },
+
+  findById: async (id) => {
+    const { rows } = await query('SELECT * FROM employees WHERE id = $1', [id]);
+    return mapRow(rows[0]);
+  },
+
+  create: async (data) => {
+    const { rows } = await query(
+      'INSERT INTO employees (first_name, last_name, middle_name, position, phone, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [data.firstName || '', data.lastName || '', data.middleName || '', data.position || '', data.phone || '', data.email || '']
+    );
+    return mapRow(rows[0]);
+  },
+
+  update: async (id, data) => {
+    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name' };
+    const fields = [];
+    const values = [];
+    let i = 1;
+    for (const [key, val] of Object.entries(data)) {
+      if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
+      const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      fields.push(`${col} = $${i}`);
+      values.push(val);
+      i++;
+    }
+    if (fields.length === 0) return null;
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+    const { rows } = await query(`UPDATE employees SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values);
+    return mapRow(rows[0]);
+  },
+
+  remove: async (id) => {
+    const { rowCount } = await query('DELETE FROM employees WHERE id = $1', [id]);
+    return rowCount > 0;
   }
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
-  return JSON.parse(data);
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function findAll() {
-  return readData();
-}
-
-function findById(id) {
-  const data = readData();
-  return data.find(item => item.id === id);
-}
-
-function create(employeeData) {
-  const data = readData();
-  const newEmployee = {
-    id: uuidv4(),
-    firstName: employeeData.firstName || '',
-    lastName: employeeData.lastName || '',
-    middleName: employeeData.middleName || '',
-    position: employeeData.position || '',
-    phone: employeeData.phone || '',
-    email: employeeData.email || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  data.push(newEmployee);
-  writeData(data);
-  return newEmployee;
-}
-
-function update(id, employeeData) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return null;
-
-  data[index] = {
-    ...data[index],
-    ...employeeData,
-    id: data[index].id,
-    createdAt: data[index].createdAt,
-    updatedAt: new Date().toISOString()
-  };
-  writeData(data);
-  return data[index];
-}
-
-function remove(id) {
-  const data = readData();
-  const index = data.findIndex(item => item.id === id);
-  if (index === -1) return false;
-  data.splice(index, 1);
-  writeData(data);
-  return true;
-}
-
-module.exports = { findAll, findById, create, update, remove };
+};

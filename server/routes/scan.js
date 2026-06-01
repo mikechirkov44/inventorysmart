@@ -6,46 +6,38 @@ const Work = require('../models/work');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
-// GET scan - find equipment and calculate tasks due today
-router.get('/:code', (req, res) => {
+router.get('/:code', async (req, res) => {
   try {
     const code = req.params.code;
-    let equipment = Equipment.findByQrCode(code);
-    if (!equipment) equipment = Equipment.findById(code);
+    let equipment = await Equipment.findByQrCode(code);
+    if (!equipment) equipment = await Equipment.findById(code);
     if (!equipment) {
-      const all = Equipment.findAll();
+      const all = await Equipment.findAll();
       equipment = all.find(e => e.inventoryNumber === code);
     }
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
-    // Room & responsible employee
     let room = null;
     let responsibleEmployee = null;
     if (equipment.roomId) {
-      room = Room.findById(equipment.roomId);
+      room = await Room.findById(equipment.roomId);
       if (room && room.responsibleEmployeeId) {
-        responsibleEmployee = Employee.findById(room.responsibleEmployeeId);
+        responsibleEmployee = await Employee.findById(room.responsibleEmployeeId);
       }
     }
 
-    // All works from directory
-    const allWorks = Work.findAll();
+    const allWorks = await Work.findAll();
     const workMap = {};
     allWorks.forEach(w => { workMap[w.id] = w; });
 
-    // Work orders for this equipment
-    const workOrders = WorkOrder.findByEquipmentId(equipment.id);
+    const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
 
-    // Calculate due tasks
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     let workIds = equipment.workIds || [];
-    if (typeof workIds === 'string') {
-      try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; }
-    }
     if (!Array.isArray(workIds)) workIds = [];
     const dueTasks = [];
     const notDueTasks = [];
@@ -54,14 +46,12 @@ router.get('/:code', (req, res) => {
       const work = workMap[wid];
       if (!work) return;
 
-      // Find last completion for this work+equipment
       const completedOrders = workOrders
         .filter(wo => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
         .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
 
-      // Calculate next due date
       let nextDue = null;
       let isOverdue = false;
       let isDueToday = false;
@@ -75,7 +65,6 @@ router.get('/:code', (req, res) => {
         isDueToday = today.getTime() === nextDue.getTime() ||
           (today > nextDue && today.getTime() - nextDue.getTime() < 86400000);
       } else {
-        // Never completed — always due
         isOverdue = true;
         isDueToday = true;
       }
@@ -112,21 +101,20 @@ router.get('/:code', (req, res) => {
   }
 });
 
-// POST complete a task
-router.post('/complete', (req, res) => {
+router.post('/complete', async (req, res) => {
   try {
     const { equipmentId, workId, masterName, notes } = req.body;
 
-    const equipment = Equipment.findById(equipmentId);
+    const equipment = await Equipment.findById(equipmentId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
-    const allWorks = Work.findAll();
+    const allWorks = await Work.findAll();
     const work = allWorks.find(w => w.id === workId);
     const taskName = work ? work.name : workId;
 
-    const workOrder = WorkOrder.create({
+    const workOrder = await WorkOrder.create({
       equipmentId,
       taskId: workId,
       taskName,

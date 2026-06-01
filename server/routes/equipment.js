@@ -5,7 +5,6 @@ const path = require('path');
 const QRCode = require('qrcode');
 const Equipment = require('../models/equipment');
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '..', 'uploads'));
@@ -31,10 +30,9 @@ const upload = multer({
   }
 });
 
-// GET all equipment with optional filtering
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    let equipment = Equipment.findAll();
+    let equipment = await Equipment.findAll();
     const { name, category, location, search } = req.query;
 
     if (search) {
@@ -61,10 +59,9 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET equipment by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const equipment = Equipment.findById(req.params.id);
+    const equipment = await Equipment.findById(req.params.id);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -74,15 +71,14 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// GET QR code for equipment
 router.get('/:id/qr', async (req, res) => {
   try {
-    const equipment = Equipment.findById(req.params.id);
+    const equipment = await Equipment.findById(req.params.id);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
     
-    const qrUrl = `${req.protocol}://${req.get('host')}/scan/${equipment.qrCode}`;
+    const qrUrl = `${req.protocol}://${req.get('host')}/scan/${equipment.qr_code}`;
     const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
       width: 300,
       margin: 2,
@@ -94,7 +90,7 @@ router.get('/:id/qr', async (req, res) => {
     
     res.json({ 
       equipmentId: equipment.id,
-      qrCode: equipment.qrCode,
+      qrCode: equipment.qr_code,
       qrImage: qrCodeDataUrl,
       scanUrl: qrUrl
     });
@@ -103,8 +99,7 @@ router.get('/:id/qr', async (req, res) => {
   }
 });
 
-// POST create equipment
-router.post('/', upload.single('photo'), (req, res) => {
+router.post('/', upload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -115,15 +110,14 @@ router.post('/', upload.single('photo'), (req, res) => {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
     }
     
-    const equipment = Equipment.create(equipmentData);
+    const equipment = await Equipment.create(equipmentData);
     res.status(201).json(equipment);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update equipment
-router.put('/:id', upload.single('photo'), (req, res) => {
+router.put('/:id', upload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -134,7 +128,7 @@ router.put('/:id', upload.single('photo'), (req, res) => {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
     }
     
-    const equipment = Equipment.update(req.params.id, equipmentData);
+    const equipment = await Equipment.update(req.params.id, equipmentData);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -144,10 +138,9 @@ router.put('/:id', upload.single('photo'), (req, res) => {
   }
 });
 
-// DELETE equipment
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = Equipment.remove(req.params.id);
+    const deleted = await Equipment.remove(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Equipment not found' });
     }

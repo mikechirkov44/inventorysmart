@@ -6,26 +6,25 @@ const Employee = require('../models/employee');
 const Room = require('../models/room');
 const Equipment = require('../models/equipment');
 
-// GET /api/notifications - get notifications for current user + generate upcoming
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
 
     if (userRole === 'admin') {
-      const all = Notification.findAll();
+      const all = await Notification.findAll();
       return res.json(all);
     }
 
-    const employee = Employee.findById(userId);
+    const employee = await Employee.findById(userId);
     if (!employee) {
-      return res.json(Notification.findByUser(userId));
+      return res.json(await Notification.findByUser(userId));
     }
 
-    const upcoming = getUpcomingTasks(7);
+    const upcoming = await getUpcomingTasks(7);
     const myTasks = upcoming.filter(t => t.employeeId === employee.id);
 
-    myTasks.forEach(task => {
+    for (const task of myTasks) {
       const dueDate = new Date(task.nextDue);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -41,7 +40,7 @@ router.get('/', (req, res) => {
         title = 'Работа через ' + daysUntil + ' дн.';
       }
 
-      Notification.create({
+      await Notification.create({
         userId,
         type,
         title,
@@ -49,38 +48,36 @@ router.get('/', (req, res) => {
         equipmentId: task.equipmentId,
         workId: task.workId,
       });
-    });
+    }
 
-    const notifications = Notification.findByUser(userId);
+    const notifications = await Notification.findByUser(userId);
     res.json(notifications);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET /api/notifications/unread-count
-router.get('/unread-count', (req, res) => {
+router.get('/unread-count', async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
 
     if (userRole === 'admin') {
-      const all = Notification.findAll();
+      const all = await Notification.findAll();
       const count = all.filter(n => !n.read).length;
       return res.json({ count });
     }
 
-    const unread = Notification.findUnread(userId);
+    const unread = await Notification.findUnread(userId);
     res.json({ count: unread.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT /api/notifications/:id/read
-router.put('/:id/read', (req, res) => {
+router.put('/:id/read', async (req, res) => {
   try {
-    const notif = Notification.markRead(req.params.id);
+    const notif = await Notification.markRead(req.params.id);
     if (!notif) return res.status(404).json({ error: 'Not found' });
     res.json(notif);
   } catch (error) {
@@ -88,20 +85,18 @@ router.put('/:id/read', (req, res) => {
   }
 });
 
-// PUT /api/notifications/read-all
-router.put('/read-all', (req, res) => {
+router.put('/read-all', async (req, res) => {
   try {
-    Notification.markAllRead(req.user.id);
+    await Notification.markAllRead(req.user.id);
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE /api/notifications/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const deleted = Notification.remove(req.params.id);
+    const deleted = await Notification.remove(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {

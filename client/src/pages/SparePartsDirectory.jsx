@@ -14,7 +14,7 @@ function SparePartsDirectory() {
   const [eqSearch, setEqSearch] = useState('');
   const [wkSearch, setWkSearch] = useState('');
   const [formData, setFormData] = useState({
-    name: '', article: '', manufacturer: '', minStock: 0, equipmentIds: [], workIds: []
+    name: '', article: '', manufacturer: '', minStock: 0, quantity: 0, equipmentIds: [], workIds: []
   });
 
   useEffect(() => { fetchData(); }, []);
@@ -55,7 +55,7 @@ function SparePartsDirectory() {
   }, [items, search]);
 
   const resetForm = () => {
-    setFormData({ name: '', article: '', manufacturer: '', minStock: 0, equipmentIds: [], workIds: [] });
+    setFormData({ name: '', article: '', manufacturer: '', minStock: 0, quantity: 0, equipmentIds: [], workIds: [] });
     setEditId(null);
     setShowForm(false);
   };
@@ -66,6 +66,7 @@ function SparePartsDirectory() {
       article: item.article || '',
       manufacturer: item.manufacturer || '',
       minStock: item.minStock || 0,
+      quantity: item.quantity || 0,
       equipmentIds: item.equipmentIds || [],
       workIds: item.workIds || []
     });
@@ -133,6 +134,10 @@ function SparePartsDirectory() {
               <div className="form-group">
                 <label>Производитель</label>
                 <input type="text" value={formData.manufacturer} onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Кол-во на складе</label>
+                <input type="number" min="0" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })} />
               </div>
               <div className="form-group">
                 <label>Минимальный запас</label>
@@ -218,6 +223,7 @@ function SparePartsDirectory() {
                 <th>Наименование</th>
                 <th>Артикул</th>
                 <th>Производитель</th>
+                <th>Кол-во</th>
                 <th>Мин. запас</th>
                 <th>Оборудование</th>
                 <th>Работы</th>
@@ -226,13 +232,18 @@ function SparePartsDirectory() {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan="7" className="no-results-cell">Позиции не найдены</td></tr>
+                <tr><td colSpan="8" className="no-results-cell">Позиции не найдены</td></tr>
               ) : (
                 filtered.map(item => (
                   <tr key={item.id}>
                     <td className="td-bold">{item.name}</td>
                     <td>{item.article || '—'}</td>
                     <td>{item.manufacturer || '—'}</td>
+                    <td>
+                      <span className={`sp-quantity ${(item.quantity || 0) <= 0 ? 'empty' : (item.quantity || 0) <= (item.minStock || 0) ? 'low' : ''}`}>
+                        {item.quantity || 0}
+                      </span>
+                    </td>
                     <td>{item.minStock}</td>
                     <td>
                       <div className="td-tags">

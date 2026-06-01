@@ -6,12 +6,12 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
-function getAnalytics() {
-  const allEquipment = Equipment.findAll();
-  const allWorks = Work.findAll();
-  const allWorkOrders = WorkOrder.findAll();
-  const allRooms = Room.findAll();
-  const allEmployees = Employee.findAll();
+async function getAnalytics() {
+  const allEquipment = await Equipment.findAll();
+  const allWorks = await Work.findAll();
+  const allWorkOrders = await WorkOrder.findAll();
+  const allRooms = await Room.findAll();
+  const allEmployees = await Employee.findAll();
 
   const workMap = {};
   allWorks.forEach(w => { workMap[w.id] = w; });
@@ -49,7 +49,6 @@ function getAnalytics() {
     if (!employeeId || !employeeStats[employeeId]) return;
 
     let workIds = equip.workIds || [];
-    if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
     if (!Array.isArray(workIds)) workIds = [];
 
     const equipOrders = allWorkOrders.filter(wo => wo.equipmentId === equip.id);
@@ -66,8 +65,8 @@ function getAnalytics() {
       if (!work) return;
 
       const completedOrders = equipOrders
-        .filter(wo => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
-        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+          .filter(wo => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
+          .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
 
@@ -142,10 +141,9 @@ function getAnalytics() {
   return Object.values(employeeStats);
 }
 
-// GET /api/analytics
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const analytics = getAnalytics();
+    const analytics = await getAnalytics();
     res.json(analytics);
   } catch (error) {
     console.error('Analytics error:', error);
@@ -153,10 +151,9 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /api/analytics/summary
-router.get('/summary', (req, res) => {
+router.get('/summary', async (req, res) => {
   try {
-    const analytics = getAnalytics();
+    const analytics = await getAnalytics();
     const totalPlanned = analytics.reduce((s, e) => s + e.totalPlanned, 0);
     const totalCompleted = analytics.reduce((s, e) => s + e.totalCompleted, 0);
     const totalOnTime = analytics.reduce((s, e) => s + e.onTime, 0);

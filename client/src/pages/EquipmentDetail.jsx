@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI } from '../services/api';
+import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI } from '../services/api';
 
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
@@ -33,6 +33,7 @@ function EquipmentDetail() {
   const [qrData, setQrData] = useState(null);
   const [room, setRoom] = useState(null);
   const [assignedWorks, setAssignedWorks] = useState([]);
+  const [spareParts, setSpareParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -42,15 +43,17 @@ function EquipmentDetail() {
 
   const fetchData = async () => {
     try {
-      const [equipRes, workOrdersRes, qrRes] = await Promise.all([
+      const [equipRes, workOrdersRes, qrRes, spRes] = await Promise.all([
         equipmentAPI.getById(id),
         workOrderAPI.getByEquipment(id),
-        equipmentAPI.getQR(id)
+        equipmentAPI.getQR(id),
+        sparePartsAPI.getByEquipment(id)
       ]);
       const equip = equipRes.data;
       setEquipment(equip);
       setWorkOrders(workOrdersRes.data);
       setQrData(qrRes.data);
+      setSpareParts(spRes.data);
 
       if (equip.roomId) {
         roomsAPI.getById(equip.roomId).then(r => setRoom(r.data)).catch(() => {});
@@ -149,6 +152,30 @@ function EquipmentDetail() {
               ))}
               {assignedWorks.length === 0 && <li className="task-item">Нет привязанных работ</li>}
             </ul>
+          </div>
+
+          <div className="spare-parts-section">
+            <h3>ЗИП ({spareParts.length})</h3>
+            {spareParts.length > 0 ? (
+              <div className="spare-parts-list">
+                {spareParts.map(sp => (
+                  <div key={sp.id} className="spare-part-item">
+                    <div className="sp-item-info">
+                      <span className="sp-item-name">{sp.name}</span>
+                      {sp.article && <span className="sp-item-article">{sp.article}</span>}
+                    </div>
+                    <div className="sp-item-stock">
+                      <span className={`sp-quantity ${sp.quantity <= 0 ? 'empty' : sp.quantity <= sp.minStock ? 'low' : ''}`}>
+                        {sp.quantity || 0}
+                      </span>
+                      {sp.minStock > 0 && <span className="sp-min">мин. {sp.minStock}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-spare-parts">Нет привязанных запчастей</p>
+            )}
           </div>
 
           <div className="history-section">

@@ -5,7 +5,6 @@ const path = require('path');
 const XLSX = require('xlsx');
 const Equipment = require('../models/equipment');
 
-// Configure multer for Excel file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '..', 'uploads'));
@@ -30,8 +29,7 @@ const upload = multer({
   }
 });
 
-// POST import from Excel
-router.post('/excel', upload.single('file'), (req, res) => {
+router.post('/excel', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -42,7 +40,6 @@ router.post('/excel', upload.single('file'), (req, res) => {
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
     
-    // Map Excel columns to equipment fields
     const equipmentData = jsonData.map(row => {
       const tasks = [];
       if (row['Работы'] || row['maintenanceTasks']) {
@@ -69,9 +66,8 @@ router.post('/excel', upload.single('file'), (req, res) => {
       };
     });
     
-    const created = Equipment.createMany(equipmentData);
+    const created = await Equipment.createMany(equipmentData);
     
-    // Clean up uploaded file
     const fs = require('fs');
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
@@ -86,7 +82,6 @@ router.post('/excel', upload.single('file'), (req, res) => {
   }
 });
 
-// GET template download
 router.get('/template', (req, res) => {
   try {
     const wb = XLSX.utils.book_new();
