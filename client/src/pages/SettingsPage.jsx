@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload } from 'lucide-react';
+import { Upload, Server, CheckCircle, XCircle } from 'lucide-react';
 
 const TIMEZONES = [
   { value: 'Europe/Kaliningrad', label: '(GMT+2:00) Kaliningrad' },
@@ -24,6 +24,114 @@ const TABS = [
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
+
+function IntegrationsTab() {
+  const [apiUrl, setApiUrl] = useState('');
+  const [savedUrl, setSavedUrl] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('inventorysmart_api_url') || '';
+    setApiUrl(stored);
+    setSavedUrl(stored);
+  }, []);
+
+  const handleTest = async () => {
+    if (!apiUrl.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`${apiUrl.replace(/\/+$/, '')}/api/health`, { signal: AbortSignal.timeout(8000) });
+      const data = await res.json();
+      setTestResult({ ok: true, message: `Сервер доступен (${data.status || 'ok'})` });
+    } catch (e) {
+      setTestResult({ ok: false, message: `Ошибка: ${e.name === 'TimeoutError' ? 'Таймаут' : e.message}` });
+    }
+    setTesting(false);
+  };
+
+  const handleSave = () => {
+    const url = apiUrl.trim();
+    if (url && !url.startsWith('http')) {
+      alert('URL должен начинаться с http:// или https://');
+      return;
+    }
+    if (url) {
+      localStorage.setItem('inventorysmart_api_url', url);
+    } else {
+      localStorage.removeItem('inventorysmart_api_url');
+    }
+    setSavedUrl(url);
+    setSuccess('Настройки API сохранены. Перезагрузите страницу для применения.');
+    setTimeout(() => setSuccess(''), 5000);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem('inventorysmart_api_url');
+    setApiUrl('');
+    setSavedUrl('');
+    setTestResult(null);
+    setSuccess('URL сброшен на значение по умолчанию. Перезагрузите страницу.');
+    setTimeout(() => setSuccess(''), 5000);
+  };
+
+  return (
+    <div className="settings-section">
+      <h2 className="settings-section-title">Подключение к серверу</h2>
+      <p className="settings-section-desc">Укажите адрес API сервера для подключения к базе данных. По умолчанию используется текущий сервер (/api).</p>
+
+      {success && <div className="success">{success}</div>}
+
+      <div className="settings-card">
+        <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Server size={18} /> API сервер
+        </div>
+
+        <div className="form-group">
+          <label>URL API</label>
+          <input
+            type="text"
+            value={apiUrl}
+            onChange={(e) => setApiUrl(e.target.value)}
+            placeholder="http://localhost:3001 (пусто = по умолчанию)"
+          />
+          <span className="form-hint">Текущий: <strong>{savedUrl || '/api (текущий сервер)'}</strong></span>
+        </div>
+
+        <div className="form-actions-inline" style={{ gap: 8, marginTop: 12 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleTest}
+            disabled={testing || !apiUrl.trim()}
+          >
+            {testing ? 'Проверка...' : 'Проверить соединение'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSave}
+          >
+            Сохранить
+          </button>
+          {savedUrl && (
+            <button type="button" className="btn" onClick={handleReset}>Сбросить</button>
+          )}
+        </div>
+
+        {testResult && (
+          <div className={`test-result ${testResult.ok ? 'test-ok' : 'test-fail'}`} style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+            {testResult.ok ? <CheckCircle size={16} color="var(--success)" /> : <XCircle size={16} color="var(--danger)" />}
+            <span style={{ color: testResult.ok ? 'var(--success)' : 'var(--danger)' }}>{testResult.message}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SettingsPage() {
   const { isAdmin } = useAuth();
@@ -389,10 +497,7 @@ function SettingsPage() {
         )}
 
         {activeTab === 'integrations' && (
-          <div className="settings-section">
-            <h2 className="settings-section-title">Интеграции</h2>
-            <p className="settings-placeholder">Настройка интеграций будет доступна в следующем обновлении.</p>
-          </div>
+          <IntegrationsTab />
         )}
 
         {activeTab === 'appearance' && (

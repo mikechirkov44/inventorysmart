@@ -1,12 +1,19 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+function getBaseUrl() {
+  const stored = localStorage.getItem('inventorysmart_api_url');
+  if (stored && stored.trim()) {
+    return `${stored.replace(/\/+$/, '')}/api`;
+  }
+  return '/api';
+}
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getBaseUrl(),
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
