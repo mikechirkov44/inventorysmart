@@ -41,4 +41,27 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
+router.put('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Текущий и новый пароль обязательны' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Новый пароль должен быть не менее 6 символов' });
+    }
+
+    const user = await User.findByUsername(req.user.username);
+    if (!user || !User.verifyPassword(currentPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Неверный текущий пароль' });
+    }
+
+    await User.update(req.user.id, { password: newPassword });
+
+    res.json({ message: 'Пароль успешно изменён' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
