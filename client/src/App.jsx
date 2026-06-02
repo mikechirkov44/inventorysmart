@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotificationBell from './components/NotificationBell';
@@ -15,13 +15,13 @@ import WorkOrders from './pages/WorkOrders';
 import WorksDirectory from './pages/WorksDirectory';
 import RoomsDirectory from './pages/RoomsDirectory';
 import EmployeesDirectory from './pages/EmployeesDirectory';
-import UsersPage from './pages/UsersPage';
 import ImportExcel from './pages/ImportExcel';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
 import SparePartsReceipts from './pages/SparePartsReceipts';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SchedulePage from './pages/SchedulePage';
+import SettingsPage from './pages/SettingsPage';
 import SetupPage from './pages/SetupPage';
 import './App.css';
 
@@ -86,7 +86,7 @@ function AppNav() {
         {isAdmin && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
         {isAdmin && <li><NavLink to="/analytics"><BarChart3 size={18} /><span>Аналитика</span></NavLink></li>}
         {isAdmin && <li><NavLink to="/import"><Upload size={18} /><span>Импорт</span></NavLink></li>}
-        {isAdmin && <li><NavLink to="/users"><Users size={18} /><span>Пользователи</span></NavLink></li>}
+        {isAdmin && <li><NavLink to="/settings"><Settings size={18} /><span>Настройки</span></NavLink></li>}
       </ul>
     </nav>
   );
@@ -138,7 +138,7 @@ function AppRoutes() {
       <Route path="/spare-parts" element={<ProtectedRoute adminOnly><SparePartsDirectory /></ProtectedRoute>} />
       <Route path="/spare-parts-receipts" element={<ProtectedRoute adminOnly><SparePartsReceipts /></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute adminOnly><ImportExcel /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute adminOnly><UsersPage /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute adminOnly><SettingsPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

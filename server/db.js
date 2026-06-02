@@ -168,6 +168,16 @@ async function migrate() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_name VARCHAR(255) DEFAULT '',
+        logo VARCHAR(255),
+        timezone VARCHAR(100) DEFAULT 'Europe/Moscow',
+        allow_inspection_without_qr BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       ALTER TABLE spare_parts ADD COLUMN IF NOT EXISTS unit VARCHAR(50) DEFAULT 'шт';
       ALTER TABLE spare_parts_works ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 0;
     `);

@@ -56,6 +56,7 @@ async function start() {
   const sparePartsReceiptsRoutes = require('./routes/sparePartsReceipts');
   const analyticsRoutes = require('./routes/analytics');
   const scheduleRoutes = require('./routes/schedule');
+  const companyRoutes = require('./routes/company');
 
   app.use('/api/equipment', equipmentRoutes);
   app.use('/api/work-orders', workOrderRoutes);
@@ -72,6 +73,7 @@ async function start() {
   app.use('/api/spare-parts-receipts', sparePartsReceiptsRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/schedule', scheduleRoutes);
+  app.use('/api/company', companyRoutes);
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

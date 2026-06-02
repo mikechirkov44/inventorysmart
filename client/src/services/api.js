@@ -133,4 +133,11 @@ export const importAPI = {
   downloadTemplate: () => api.get('/import/template', { responseType: 'blob' }),
 };
 
+export const companyAPI = {
+  get: () => api.get('/company'),
+  update: (formData) => api.put('/company', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+};
+
 export default api;
