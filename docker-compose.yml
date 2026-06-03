@@ -4,15 +4,15 @@ services:
     container_name: inventorysmart-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: inventorysmart
-      POSTGRES_USER: inventorysmart
-      POSTGRES_PASSWORD: inventorysmart_secret
+      POSTGRES_DB: ${POSTGRES_DB:-inventorysmart}
+      POSTGRES_USER: ${POSTGRES_USER:-inventorysmart}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inventorysmart_secret}
     volumes:
       - pg-data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U inventorysmart"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-inventorysmart}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,7 +30,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=postgresql://inventorysmart:inventorysmart_secret@db:5432/inventorysmart
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-inventorysmart}:${POSTGRES_PASSWORD:-inventorysmart_secret}@db:5432/${POSTGRES_DB:-inventorysmart}
+      - JWT_SECRET=${JWT_SECRET:-inventorysmart-secret-key-2026}
     depends_on:
       db:
         condition: service_healthy
@@ -40,7 +41,7 @@ services:
     container_name: inventorysmart-client
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${APP_PORT:-80}:80"
     depends_on:
       - server
 
