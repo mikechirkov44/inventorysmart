@@ -10,8 +10,10 @@ function mapRow(row) {
     id: row.id,
     username: row.username,
     fullName: row.full_name,
+    role: row.role || 'user',
     positionId: row.position_id,
     employeeId: row.employee_id,
+    companyId: row.company_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };

@@ -48,8 +48,10 @@ async function start() {
   // Public routes (no auth)
   const authRoutes = require('./routes/auth');
   const setupRoutes = require('./routes/setup');
+  const superadminRoutes = require('./routes/superadmin');
   app.use('/api/auth', authRoutes);
   app.use('/api/setup', setupRoutes);
+  app.use('/api/superadmin', superadminRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {
@@ -63,6 +65,7 @@ async function start() {
     if (req.path === '/setup' || req.path.startsWith('/setup/')) return next();
     if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
     if (req.path === '/health') return next();
+    if (req.path === '/superadmin' || req.path.startsWith('/superadmin/')) return next();
     authenticate(req, res, next);
   });
 

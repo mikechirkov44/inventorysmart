@@ -147,12 +147,48 @@ export const companyAPI = {
   }),
 };
 
+export const licenseAPI = {
+  activate: (key) => api.post('/company/activate-license', { key }),
+};
+
 export const positionsAPI = {
   getAll: () => api.get('/positions'),
   getById: (id) => api.get(`/positions/${id}`),
   create: (data) => api.post('/positions', data),
   update: (id, data) => api.put(`/positions/${id}`, data),
   delete: (id) => api.delete(`/positions/${id}`),
+};
+
+const superadminApi = axios.create({
+  baseURL: getBaseUrl(),
+});
+
+superadminApi.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
+  const token = localStorage.getItem('superadmin_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+superadminApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('superadmin_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const superadminAPI = {
+  login: (username, password) => superadminApi.post('/superadmin/login', { username, password }),
+  getCompanies: () => superadminApi.get('/superadmin/companies'),
+  getUsers: () => superadminApi.get('/superadmin/users'),
+  createCompany: (companyName) => superadminApi.post('/superadmin/companies', { companyName }),
+  generateLicense: (companyId, plan, daysValid) => superadminApi.post('/superadmin/generate-license', { companyId, plan, daysValid }),
 };
 
 export default api;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { companyAPI, usersAPI, positionsAPI, employeesAPI } from '../services/api';
+import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
 
@@ -363,6 +363,12 @@ function SettingsPage() {
   const [positions, setPositions] = useState([]);
   const [employees, setEmployees] = useState([]);
 
+  const [license, setLicense] = useState(null);
+  const [licenseKeyInput, setLicenseKeyInput] = useState('');
+  const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState('');
+  const [activateSuccess, setActivateSuccess] = useState('');
+
   const isSettingsReadOnly = canEdit('settings') === false;
 
   useEffect(() => {
@@ -389,6 +395,15 @@ function SettingsPage() {
       });
       if (res.data.logo) {
         setLogoPreview(`/uploads/${res.data.logo}`);
+      }
+      if (res.data.licenseKey) {
+        try {
+          const json = atob(res.data.licenseKey);
+          const decoded = JSON.parse(json);
+          if (decoded.plan && decoded.expiresAt) {
+            setLicense({ plan: decoded.plan, expiresAt: decoded.expiresAt });
+          }
+        } catch {}
       }
       setLoading(false);
     } catch {
@@ -465,6 +480,24 @@ function SettingsPage() {
       const res = await employeesAPI.getAll();
       setEmployees(res.data);
     } catch {}
+  };
+
+  const handleActivateLicense = async () => {
+    if (!licenseKeyInput.trim()) return;
+    setActivating(true);
+    setActivateError('');
+    setActivateSuccess('');
+    try {
+      const res = await licenseAPI.activate(licenseKeyInput.trim());
+      setLicense({ plan: res.data.plan, expiresAt: res.data.expiresAt });
+      setLicenseKeyInput('');
+      setActivateSuccess('Лицензия активирована');
+      setTimeout(() => setActivateSuccess(''), 3000);
+    } catch (err) {
+      setActivateError(err.response?.data?.error || 'Ошибка активации');
+    } finally {
+      setActivating(false);
+    }
   };
 
   const resetUserForm = () => {
@@ -586,13 +619,31 @@ function SettingsPage() {
               </div>
 
               <div className="settings-card settings-card-highlight">
-                <div className="plan-info">
-                  <span className="plan-badge">DEMO</span>
-                  <span className="plan-text">Тариф активен до 28.02.2026</span>
-                </div>
+                {license && (
+                  <div className="plan-info">
+                    <span className="plan-badge">{license.plan}</span>
+                    <span className="plan-text">Тариф активен до {new Date(license.expiresAt).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                )}
+                {activateSuccess && <div className="success">{activateSuccess}</div>}
+                {activateError && <div className="error">{activateError}</div>}
                 <div className="plan-actions">
-                  <button type="button" className="btn btn-primary btn-small">Улучшить</button>
-                  <button type="button" className="btn btn-secondary btn-small">Продлить</button>
+                  <input
+                    type="text"
+                    className="license-key-input"
+                    placeholder="Введите лицензионный ключ"
+                    value={licenseKeyInput}
+                    onChange={(e) => setLicenseKeyInput(e.target.value)}
+                    disabled={activating}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-small"
+                    onClick={handleActivateLicense}
+                    disabled={activating || !licenseKeyInput.trim()}
+                  >
+                    {activating ? 'Активация...' : 'Активировать'}
+                  </button>
                 </div>
               </div>
 

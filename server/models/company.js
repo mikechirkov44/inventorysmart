@@ -8,6 +8,7 @@ function mapRow(row) {
     logo: row.logo,
     timezone: row.timezone,
     allowInspectionWithoutQr: row.allow_inspection_without_qr,
+    licenseKey: row.license_key || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -32,6 +33,7 @@ module.exports = {
     if (data.logo !== undefined) mapped.logo = data.logo;
     if (data.timezone !== undefined) mapped.timezone = data.timezone;
     if (data.allowInspectionWithoutQr !== undefined) mapped.allow_inspection_without_qr = data.allowInspectionWithoutQr;
+    if (data.licenseKey !== undefined) mapped.license_key = data.licenseKey;
     mapped.updated_at = new Date();
 
     const keys = Object.keys(mapped);

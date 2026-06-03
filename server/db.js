@@ -193,7 +193,41 @@ async function migrate() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id UUID REFERENCES employees(id) ON DELETE SET NULL;
 
       ALTER TABLE employees ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
+
+      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS license_key TEXT DEFAULT '';
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id UUID;
+
+      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_id UUID;
     `);
+
+    // Seed default company for existing data
+    const { rows: csCount } = await client.query('SELECT COUNT(*) FROM company_settings');
+    if (parseInt(csCount[0].count) === 0) {
+      const defaultCompanyId = '00000000-0000-0000-0000-000000000001';
+      await client.query(
+        'INSERT INTO company_settings (id, company_id, company_name) VALUES ($1, $2, $3)',
+        [defaultCompanyId, defaultCompanyId, 'Демо компания']
+      );
+    } else {
+      await client.query('UPDATE company_settings SET company_id = gen_random_uuid() WHERE company_id IS NULL');
+    }
+
+    // Assign existing users to the first company if not assigned
+    await client.query(`
+      UPDATE users SET company_id = (
+        SELECT company_id FROM company_settings ORDER BY created_at LIMIT 1
+      ) WHERE company_id IS NULL
+    `);
+
+    // Seed superadmin user (password: superadmin123)
+    const bcrypt = require('bcryptjs');
+    const superadminHash = bcrypt.hashSync('superadmin123', 10);
+    await client.query(`
+      INSERT INTO users (username, password_hash, full_name, role)
+      VALUES ('superadmin', $1, 'Суперадминистратор', 'superadmin')
+      ON CONFLICT (username) DO UPDATE SET role = 'superadmin'
+    `, [superadminHash]);
 
     // Seed default positions
     const { rows: posCount } = await client.query('SELECT COUNT(*) FROM positions');

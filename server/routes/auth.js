@@ -25,9 +25,11 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         fullName: user.full_name,
+        role: user.role || 'user',
         positionId: user.position_id,
         positionName: user.position_name,
         employeeId: user.employee_id,
+        companyId: user.company_id,
         permissions
       },
       User.JWT_SECRET,
@@ -40,9 +42,11 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         fullName: user.full_name,
+        role: user.role || 'user',
         positionId: user.position_id,
         positionName: user.position_name,
         employeeId: user.employee_id,
+        companyId: user.company_id,
         permissions
       }
     });

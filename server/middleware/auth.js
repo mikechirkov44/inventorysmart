@@ -59,4 +59,14 @@ function requirePermission(resource, action) {
   };
 }
 
-module.exports = { authenticate, requireRole, requirePermission };
+function requireSuperadmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authorization required' });
+  }
+  if (req.user.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Доступ запрещён' });
+  }
+  next();
+}
+
+module.exports = { authenticate, requireRole, requirePermission, requireSuperadmin };

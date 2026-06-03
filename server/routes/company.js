@@ -58,4 +58,43 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), upload.sing
   }
 });
 
+router.post('/activate-license', authenticate, requirePermission('settings', 'edit'), async (req, res) => {
+  try {
+    const { key } = req.body;
+    if (!key || !key.trim()) {
+      return res.status(400).json({ error: 'Введите лицензионный ключ' });
+    }
+
+    let decoded;
+    try {
+      const json = Buffer.from(key.trim(), 'base64').toString('utf-8');
+      decoded = JSON.parse(json);
+    } catch {
+      return res.status(400).json({ error: 'Неверный формат лицензионного ключа' });
+    }
+
+    if (!decoded.plan || !decoded.expiresAt) {
+      return res.status(400).json({ error: 'Неверный формат лицензионного ключа' });
+    }
+
+    const expiresDate = new Date(decoded.expiresAt);
+    if (isNaN(expiresDate.getTime())) {
+      return res.status(400).json({ error: 'Неверная дата окончания лицензии' });
+    }
+
+    if (expiresDate < new Date()) {
+      return res.status(400).json({ error: 'Срок действия лицензии истёк' });
+    }
+
+    await Company.update({ licenseKey: key.trim() });
+
+    res.json({
+      plan: decoded.plan,
+      expiresAt: decoded.expiresAt,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

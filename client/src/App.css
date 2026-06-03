@@ -3971,6 +3971,22 @@ input, textarea, select { font-family: inherit; }
 .plan-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.license-key-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: white;
+}
+
+.license-key-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .logo-upload-row {
@@ -4140,8 +4156,236 @@ input, textarea, select { font-family: inherit; }
     align-items: flex-start;
   }
 
+  .plan-actions {
+    flex-direction: column;
+  }
+
   .logo-upload-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* Superadmin Panel */
+.sa-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sa-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--gray-900);
+}
+
+.sa-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 24px;
+}
+
+.sa-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  color: var(--gray-500);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+
+.sa-tab:hover {
+  color: var(--gray-700);
+}
+
+.sa-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.sa-content {
+  background: white;
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+}
+
+.sa-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sa-section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--gray-800);
+}
+
+.sa-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.sa-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.sa-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.sa-table-container {
+  overflow-x: auto;
+}
+
+.sa-license-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sa-license-badge.active {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.sa-license-badge.expired {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.sa-license-badge.none {
+  background: var(--gray-100);
+  color: var(--gray-400);
+}
+
+.sa-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sa-status-success {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.sa-status-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.sa-license-form {
+  max-width: 500px;
+  margin-bottom: 16px;
+}
+
+.sa-license-form .form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.sa-license-form .form-row .form-group {
+  flex: 1;
+}
+
+.sa-generated-key {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+}
+
+.sa-generated-key label {
+  display: block;
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-bottom: 8px;
+}
+
+.sa-key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sa-key-display {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 13px;
+  background: white;
+  color: var(--gray-800);
+}
+
+.login-footer {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.login-footer a {
+  color: var(--gray-400);
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .sa-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sa-tab {
+    white-space: nowrap;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .sa-form {
+    flex-direction: column;
+  }
+
+  .sa-license-form .form-row {
+    flex-direction: column;
+  }
+
+  .sa-key-row {
+    flex-direction: column;
   }
 }

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-superadmin/
 .env
 *.log
 .DS_Store

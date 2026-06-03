@@ -40,7 +40,9 @@ services:
         condition: service_healthy
 
   client:
-    build: ./client
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     container_name: inventorysmart-client
     restart: unless-stopped
     ports:
