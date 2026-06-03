@@ -1,3 +1,10 @@
+/**
+ * @module Маршруты сканирования
+ * @description API для сканирования QR-кодов оборудования: получение полной информации
+ * о оборудовании, его помещении, ответственном сотруднике, запланированных и просроченных задачах,
+ * а также завершение работ через QR-сканирование.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Equipment = require('../models/equipment');
@@ -7,6 +14,20 @@ const Room = require('../models/room');
 const Employee = require('../models/employee');
 const SparePart = require('../models/sparePart');
 
+/**
+ * @route GET /scan/:code
+ * @description Получение полной информации об оборудовании по QR-коду или инвентарному номеру.
+ * Включает данные оборудования, помещения, ответственного сотрудника, просроченные и актуальные задачи.
+ * @param {string} req.params.code - QR-код (UUID), ID или инвентарный номер оборудования
+ * @returns {Object} Полная информация для осмотра
+ * @returns {Object} return.equipment - Данные оборудования
+ * @returns {Object|null} return.room - Данные помещения
+ * @returns {Object|null} return.responsibleEmployee - Ответственный сотрудник
+ * @returns {Object[]} return.dueTasks - Просроченные/актуальные задачи
+ * @returns {Object[]} return.notDueTasks - Задачи в плане
+ * @returns {number} return.completedTotal - Общее количество выполненных работ
+ * @returns {404} Если оборудование не найдено
+ */
 router.get('/:code', async (req, res) => {
   try {
     const code = req.params.code;
@@ -123,6 +144,18 @@ router.get('/:code', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /scan/complete
+ * @description Завершение работы по оборудованию через QR-сканирование.
+ * Создаёт запись о выполнении (WorkOrder) и списывает использованные запчасти со склада.
+ * @param {Object} req.body
+ * @param {string} req.body.equipmentId - Идентификатор оборудования
+ * @param {string} req.body.workId - Идентификатор работы
+ * @param {string} req.body.masterName - ФИО мастера
+ * @param {string} [req.body.notes] - Примечания к выполнению
+ * @param {Array} [req.body.sparePartsUsed] - Использованные запчасти [{sparePartId, quantity}]
+ * @returns {Object} Созданная запись WorkOrder и список списанных запчастей
+ */
 router.post('/complete', async (req, res) => {
   try {
     const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;

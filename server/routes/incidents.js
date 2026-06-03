@@ -1,27 +1,28 @@
+/**
+ * @module Маршруты инцидентов (поломок)
+ * @description API для управления инцидентами: создание поломок, просмотр списка,
+ * обновление статуса, удаление. Автоматическая отправка уведомлений администраторам.
+ */
+
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Incident = require('../models/incident');
 const Notification = require('../models/notification');
 const Equipment = require('../models/equipment');
 const { authenticate, requirePermission } = require('../middleware/auth');
+const { incidentUpload } = require('../utils/upload');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
-  filename: (req, file, cb) => cb(null, 'incident-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
-    cb(null, allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype));
-  }
-});
-
-router.post('/', upload.array('photos', 5), async (req, res) => {
+/**
+ * @route POST /incidents
+ * @description Создание нового инцидента (поломки) с фотографиями
+ * @param {Object} req.body - Данные инцидента
+ * @param {string} req.body.equipmentId - Идентификатор оборудования
+ * @param {string} req.body.description - Описание поломки
+ * @param {string} req.body.employeeName - ФИО сотрудника, зафиксировавшего поломку
+ * @param {File[]} [req.files] - Фотографии поломки (до 5 файлов)
+ * @returns {Object} Созданный инцидент (201)
+ */
+router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
   try {
     const { equipmentId, description, employeeName } = req.body;
     const photos = req.files ? req.files.map(f => f.filename) : [];
@@ -64,6 +65,14 @@ router.post('/', upload.array('photos', 5), async (req, res) => {
   }
 });
 
+/**
+ * @route GET /incidents
+ * @description Получение списка инцидентов с фильтрацией
+ * @requires permission incidents:view
+ * @param {string} [req.query.status] - Фильтр по статусу
+ * @param {string} [req.query.equipmentId] - Фильтр по ID оборудования
+ * @returns {Object[]} Список инцидентов с данными оборудования
+ */
 router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
   try {
     let incidents = await Incident.findAll();
@@ -95,6 +104,13 @@ router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
   }
 });
 
+/**
+ * @route GET /incidents/:id
+ * @description Получение инцидента по идентификатору
+ * @param {string} req.params.id - Идентификатор инцидента
+ * @returns {Object} Данные инцидента с информацией об оборудовании
+ * @returns {404} Если инцидент не найден
+ */
 router.get('/:id', async (req, res) => {
   try {
     const incident = await Incident.findById(req.params.id);
@@ -117,6 +133,17 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /incidents/:id
+ * @description Обновление инцидента (статус, заметки администратора)
+ * @requires permission incidents:edit
+ * @param {string} req.params.id - Идентификатор инцидента
+ * @param {Object} req.body
+ * @param {string} [req.body.status] - Новый статус (resolved и т.д.)
+ * @param {string} [req.body.adminNotes] - Заметки администратора
+ * @returns {Object} Обновлённый инцидент
+ * @returns {404} Если инцидент не найден
+ */
 router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
@@ -144,6 +171,14 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /incidents/:id
+ * @description Удаление инцидента
+ * @requires permission incidents:delete
+ * @param {string} req.params.id - Идентификатор инцидента
+ * @returns {Object} Результат операции
+ * @returns {404} Если инцидент не найден
+ */
 router.delete('/:id', requirePermission('incidents', 'delete'), async (req, res) => {
   try {
     const deleted = await Incident.remove(req.params.id);

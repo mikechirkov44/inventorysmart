@@ -1,7 +1,21 @@
+/**
+ * @module Маршруты работ (задач)
+ * @description API для CRUD-операций с видами работ/задачами: получение списка с фильтрацией,
+ * просмотр по ID, создание, обновление и удаление.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Work = require('../models/work');
 
+/**
+ * @route GET /works
+ * @description Получение списка работ с фильтрацией
+ * @param {string} [req.query.name] - Фильтр по названию (частичное совпадение)
+ * @param {string} [req.query.category] - Фильтр по категории
+ * @param {string} [req.query.search] - Поиск по названию и описанию
+ * @returns {Object[]} Список работ
+ */
 router.get('/', async (req, res) => {
   try {
     let works = await Work.findAll();
@@ -27,6 +41,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /works/:id
+ * @description Получение работы по идентификатору
+ * @param {string} req.params.id - Идентификатор работы
+ * @returns {Object} Данные работы
+ * @returns {404} Если работа не найдена
+ */
 router.get('/:id', async (req, res) => {
   try {
     const work = await Work.findById(req.params.id);
@@ -39,6 +60,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /works
+ * @description Создание новой работы/задачи
+ * @param {Object} req.body - Данные работы (name, description, frequencyDays, category)
+ * @returns {Object} Созданная работа (201)
+ */
 router.post('/', async (req, res) => {
   try {
     const work = await Work.create(req.body);
@@ -48,6 +75,14 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /works/:id
+ * @description Обновление данных работы
+ * @param {string} req.params.id - Идентификатор работы
+ * @param {Object} req.body - Обновлённые данные работы
+ * @returns {Object} Обновлённая работа
+ * @returns {404} Если работа не найдена
+ */
 router.put('/:id', async (req, res) => {
   try {
     const work = await Work.update(req.params.id, req.body);
@@ -60,6 +95,13 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /works/:id
+ * @description Удаление работы
+ * @param {string} req.params.id - Идентификатор работы
+ * @returns {Object} Сообщение об успешном удалении
+ * @returns {404} Если работа не найдена
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Work.remove(req.params.id);

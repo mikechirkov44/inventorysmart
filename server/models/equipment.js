@@ -1,5 +1,17 @@
+/**
+ * @module EquipmentModel
+ * @description Модель для управления оборудованием (equipment).
+ * Хранит информацию об оборудовании: QR-код, инвентарный номер,
+ * категорию, статус, расположение и связанные работы.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект оборудования.
+ * @param {Object|null} row - Строка из таблицы equipment
+ * @returns {Object|null} Объект оборудования или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -18,6 +30,11 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает всё оборудование с привязанными ID работ.
+   * @async
+   * @returns {Promise<Array<Object>>} Список оборудования с полем workIds
+   */
   findAll: async () => {
     const { rows: equipment } = await query('SELECT * FROM equipment ORDER BY name');
     const { rows: eqWorks } = await query('SELECT * FROM equipment_works');
@@ -27,6 +44,12 @@ module.exports = {
     }));
   },
 
+  /**
+   * Находит оборудование по ID вместе с привязанными работами.
+   * @async
+   * @param {number} id - Идентификатор оборудования
+   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM equipment WHERE id = $1', [id]);
     if (!rows[0]) return null;
@@ -34,6 +57,12 @@ module.exports = {
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
   },
 
+  /**
+   * Находит оборудование по QR-коду.
+   * @async
+   * @param {string} qrCode - QR-код оборудования
+   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   */
   findByQrCode: async (qrCode) => {
     const { rows } = await query('SELECT * FROM equipment WHERE qr_code = $1', [qrCode]);
     if (!rows[0]) return null;
@@ -41,6 +70,12 @@ module.exports = {
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
   },
 
+  /**
+   * Находит оборудование по инвентарному номеру.
+   * @async
+   * @param {string} inventoryNumber - Инвентарный номер
+   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   */
   findByInventoryNumber: async (inventoryNumber) => {
     const { rows } = await query('SELECT * FROM equipment WHERE inventory_number = $1', [inventoryNumber]);
     if (!rows[0]) return null;
@@ -48,6 +83,20 @@ module.exports = {
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
   },
 
+  /**
+   * Создаёт новое оборудование с привязкой к работам.
+   * @async
+   * @param {Object} data - Данные оборудования
+   * @param {string} data.name - Название
+   * @param {string} [data.inventoryNumber] - Инвентарный номер
+   * @param {string} [data.description] - Описание
+   * @param {string} [data.photo] - Фото (URL)
+   * @param {number} [data.roomId] - ID помещения
+   * @param {string} [data.category] - Категория
+   * @param {string} [data.status] - Статус (working/broken/etc)
+   * @param {Array<number>} [data.workIds] - Массив ID связанных работ
+   * @returns {Promise<Object>} Созданное оборудование с workIds
+   */
   create: async (data) => {
     let workIds = data.workIds || [];
     if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
@@ -65,6 +114,14 @@ module.exports = {
     return { ...mapRow(eq), workIds };
   },
 
+  /**
+   * Обновляет оборудование по ID, включая привязку к работам.
+   * @async
+   * @param {number} id - Идентификатор оборудования
+   * @param {Object} data - Данные для обновления
+   * @param {Array<number>} [data.workIds] - Новый список ID работ (полная замена)
+   * @returns {Promise<Object|null>} Обновлённое оборудование или null
+   */
   update: async (id, data) => {
     const fieldMap = { inventoryNumber: 'inventory_number', roomId: 'room_id' };
     const mapped = {};
@@ -95,11 +152,23 @@ module.exports = {
     return await module.exports.findById(id);
   },
 
+  /**
+   * Удаляет оборудование по ID.
+   * @async
+   * @param {number} id - Идентификатор оборудования
+   * @returns {Promise<boolean>} true если удалено, иначе false
+   */
   remove: async (id) => {
     const { rowCount } = await query('DELETE FROM equipment WHERE id = $1', [id]);
     return rowCount > 0;
   },
 
+  /**
+   * Создаёт несколько единиц оборудования за раз.
+   * @async
+   * @param {Array<Object>} items - Массив данных оборудования (см. create)
+   * @returns {Promise<Array<Object>>} Список созданного оборудования
+   */
   createMany: async (items) => {
     const results = [];
     for (const item of items) { results.push(await module.exports.create(item)); }

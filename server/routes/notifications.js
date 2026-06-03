@@ -1,3 +1,9 @@
+/**
+ * @module Маршруты уведомлений
+ * @description API для управления уведомлениями: получение списка, подсчёт непрочитанных,
+ * пометка как прочитанных, удаление. Для сотрудников генерируются уведомления о предстоящих/просроченных работах.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/notification');
@@ -6,6 +12,12 @@ const Employee = require('../models/employee');
 const Room = require('../models/room');
 const Equipment = require('../models/equipment');
 
+/**
+ * @route GET /notifications
+ * @description Получение уведомлений текущего пользователя.
+ * Для администраторов — все уведомления. Для сотрудников — персональные + генерация уведомлений о предстоящих работах.
+ * @returns {Object[]} Список уведомлений
+ */
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
@@ -58,6 +70,12 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /notifications/unread-count
+ * @description Получение количества непрочитанных уведомлений
+ * @returns {Object} Количество непрочитанных уведомлений
+ * @returns {number} return.count
+ */
 router.get('/unread-count', async (req, res) => {
   try {
     const userId = req.user.id;
@@ -77,6 +95,13 @@ router.get('/unread-count', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /notifications/:id/read
+ * @description Пометка уведомления как прочитанного
+ * @param {string} req.params.id - Идентификатор уведомления
+ * @returns {Object} Обновлённое уведомление
+ * @returns {404} Если уведомление не найдено
+ */
 router.put('/:id/read', async (req, res) => {
   try {
     const notif = await Notification.markRead(req.params.id);
@@ -87,6 +112,11 @@ router.put('/:id/read', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /notifications/read-all
+ * @description Пометка всех уведомлений пользователя как прочитанных
+ * @returns {Object} Результат операции
+ */
 router.put('/read-all', async (req, res) => {
   try {
     await Notification.markAllRead(req.user.id);
@@ -96,6 +126,13 @@ router.put('/read-all', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /notifications/:id
+ * @description Удаление уведомления
+ * @param {string} req.params.id - Идентификатор уведомления
+ * @returns {Object} Результат операции
+ * @returns {404} Если уведомление не найдено
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Notification.remove(req.params.id);

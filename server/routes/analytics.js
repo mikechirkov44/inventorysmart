@@ -1,3 +1,9 @@
+/**
+ * @module Маршруты аналитики
+ * @description API для получения аналитических данных по выполнению работ сотрудниками.
+ * Предоставляет статистику по запланированным, выполненным, просроченным и незавершённым задачам.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Equipment = require('../models/equipment');
@@ -7,6 +13,12 @@ const Room = require('../models/room');
 const Employee = require('../models/employee');
 const Position = require('../models/position');
 
+/**
+ * Рассчитывает аналитические данные по сотрудникам и оборудованию.
+ * @async
+ * @function getAnalytics
+ * @returns {Promise<Array>} Массив статистики по каждому сотруднику
+ */
 async function getAnalytics() {
   const allEquipment = await Equipment.findAll();
   const allWorks = await Work.findAll();
@@ -146,6 +158,18 @@ async function getAnalytics() {
   return Object.values(employeeStats);
 }
 
+/**
+ * @route GET /analytics
+ * @description Получение полной аналитики по всем сотрудникам
+ * @returns {Object[]} Список сотрудников с детальной статистикой выполнения работ
+ * @returns {number} return[].employeeId - Идентификатор сотрудника
+ * @returns {string} return[].employeeName - ФИО сотрудника
+ * @returns {number} return[].totalPlanned - Общее количество запланированных работ
+ * @returns {number} return[].totalCompleted - Количество выполненных работ
+ * @returns {number} return[].onTime - Количество работ, выполненных в срок
+ * @returns {number} return[].overdue - Количество просроченных работ
+ * @returns {number} return[].completionRate - Процент выполнения
+ */
 router.get('/', async (req, res) => {
   try {
     const analytics = await getAnalytics();
@@ -156,6 +180,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /analytics/summary
+ * @description Получение сводной аналитики по всем сотрудникам
+ * @returns {Object} Сводные данные
+ * @returns {number} return.totalPlanned - Общее количество запланированных работ
+ * @returns {number} return.totalCompleted - Общее количество выполненных работ
+ * @returns {number} return.totalOnTime - Общее количество работ в срок
+ * @returns {number} return.totalOverdue - Общее количество просроченных работ
+ * @returns {number} return.totalNever - Работы, которые никогда не выполнялись
+ * @returns {number} return.completionRate - Общий процент выполнения
+ * @returns {number} return.employees - Количество сотрудников
+ */
 router.get('/summary', async (req, res) => {
   try {
     const analytics = await getAnalytics();

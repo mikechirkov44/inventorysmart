@@ -1,3 +1,10 @@
+/**
+ * @module App
+ * @description Корневой компонент приложения InventorySmart.
+ * Содержит навигацию, маршрутизацию и обёртки провайдеров
+ * (авторизация, уведомления, подтверждения).
+ */
+
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings } from 'lucide-react';
@@ -27,6 +34,7 @@ import SettingsPage from './pages/SettingsPage';
 import SetupPage from './pages/SetupPage';
 import './App.css';
 
+/** Выпадающее меню раздела «Справочники» в боковой навигации */
 function DirDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -70,6 +78,7 @@ function DirDropdown() {
   );
 }
 
+/** Боковая панель навигации приложения */
 function AppNav() {
   const { user, logout, canView } = useAuth();
 
@@ -98,6 +107,7 @@ function AppNav() {
   );
 }
 
+/** Верхняя шапка с уведомлениями и информацией о пользователе */
 function TopHeader() {
   const { user, logout } = useAuth();
   if (!user) return null;
@@ -114,6 +124,7 @@ function TopHeader() {
   );
 }
 
+/** Обёртка страницы с анимацией входа при смене маршрута */
 function PageWrapper({ children }) {
   const location = useLocation();
   return (
@@ -123,6 +134,7 @@ function PageWrapper({ children }) {
   );
 }
 
+/** Маршруты приложения. Каждый маршрут защищён ProtectedRoute. */
 function AppRoutes() {
   const { user, loading, canView } = useAuth();
 
@@ -160,6 +172,7 @@ function AppRoutes() {
   );
 }
 
+/** Корневой компонент приложения с провайдерами и маршрутизацией */
 function App() {
   return (
     <Router>

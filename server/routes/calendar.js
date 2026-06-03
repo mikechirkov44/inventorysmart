@@ -1,7 +1,20 @@
+/**
+ * @module Маршруты календаря
+ * @description API для получения событий календаря на заданный месяц.
+ * Возвращает запланированные работы в формате, пригодном для отображения в календаре.
+ */
+
 const express = require('express');
 const router = express.Router();
 const { getCalendarEvents } = require('../utils/schedule');
 
+/**
+ * @route GET /calendar
+ * @description Получение событий календаря на указанный месяц
+ * @param {number} req.query.month - Месяц (1-12)
+ * @param {number} req.query.year - Год (например, 2026)
+ * @returns {Object[]} Список событий календаря на заданный период
+ */
 router.get('/', async (req, res) => {
   try {
     const now = new Date();

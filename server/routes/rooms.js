@@ -1,7 +1,21 @@
+/**
+ * @module Маршруты помещений
+ * @description API для CRUD-операций с помещениями (комнатами): получение списка с фильтрацией,
+ * просмотр по ID, создание, обновление и удаление.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Room = require('../models/room');
 
+/**
+ * @route GET /rooms
+ * @description Получение списка помещений с фильтрацией
+ * @param {string} [req.query.name] - Фильтр по названию (частичное совпадение)
+ * @param {string} [req.query.building] - Фильтр по зданию
+ * @param {string} [req.query.search] - Поиск по названию, описанию, зданию
+ * @returns {Object[]} Список помещений
+ */
 router.get('/', async (req, res) => {
   try {
     let rooms = await Room.findAll();
@@ -28,6 +42,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /rooms/:id
+ * @description Получение помещения по идентификатору
+ * @param {string} req.params.id - Идентификатор помещения
+ * @returns {Object} Данные помещения
+ * @returns {404} Если помещение не найдено
+ */
 router.get('/:id', async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
@@ -40,6 +61,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /rooms
+ * @description Создание нового помещения
+ * @param {Object} req.body - Данные помещения (name, building, description, responsibleEmployeeId)
+ * @returns {Object} Созданное помещение (201)
+ */
 router.post('/', async (req, res) => {
   try {
     const room = await Room.create(req.body);
@@ -49,6 +76,14 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /rooms/:id
+ * @description Обновление данных помещения
+ * @param {string} req.params.id - Идентификатор помещения
+ * @param {Object} req.body - Обновлённые данные помещения
+ * @returns {Object} Обновлённое помещение
+ * @returns {404} Если помещение не найдено
+ */
 router.put('/:id', async (req, res) => {
   try {
     const room = await Room.update(req.params.id, req.body);
@@ -61,6 +96,13 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /rooms/:id
+ * @description Удаление помещения
+ * @param {string} req.params.id - Идентификатор помещения
+ * @returns {Object} Сообщение об успешном удалении
+ * @returns {404} Если помещение не найдено
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Room.remove(req.params.id);

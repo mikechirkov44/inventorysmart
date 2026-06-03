@@ -1,9 +1,14 @@
+/**
+ * @module SetupPage
+ * @description Страница первоначальной настройки системы. Создание учётной записи администратора.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 function SetupPage() {
+  /** Получение метода автоматического входа из AuthContext */
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -17,6 +22,7 @@ function SetupPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  /** Проверка необходимости первоначальной настройки */
   useEffect(() => {
     api.get('/setup')
       .then(res => {
@@ -26,6 +32,7 @@ function SetupPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  /** Обработчик создания учётной записи администратора */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

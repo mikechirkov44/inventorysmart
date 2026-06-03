@@ -1,3 +1,8 @@
+/**
+ * @module db
+ * @description Модуль подключения к PostgreSQL и миграция схемы БД
+ */
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,11 +13,23 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
+/**
+ * Выполняет SQL-запрос к базе данных через пул соединений
+ * @param {string} text - SQL-запрос с параметрами ($1, $2, ...)
+ * @param {Array} [params] - Массив значений параметров запроса
+ * @returns {Promise<import('pg').QueryResult>} Результат выполнения запроса
+ */
 async function query(text, params) {
   const result = await pool.query(text, params);
   return result;
 }
 
+/**
+ * Выполняет миграцию схемы базы данных: создаёт таблицы, добавляет
+ * недостающие столбцы и заполняет начальные данные (роли, должности,
+ * суперадминистратор, компания по умолчанию)
+ * @returns {Promise<void>}
+ */
 async function migrate() {
   const client = await pool.connect();
   try {

@@ -1,7 +1,15 @@
+/**
+ * @module NotificationBell
+ * @description Компонент колокольчика уведомлений.
+ * Отображает выпадающий список уведомлений с возможностью
+ * отметки прочитанными. Автоматически обновляется каждые 30 секунд.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 import api from '../services/api';
 
+/** Компонент колокольчика уведомлений в шапке приложения */
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -22,6 +30,7 @@ function NotificationBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  /** Загружает список уведомлений и количество непрочитанных */
   const fetchNotifications = async () => {
     try {
       const [notifs, unread] = await Promise.all([
@@ -33,6 +42,7 @@ function NotificationBell() {
     } catch {}
   };
 
+  /** Помечает уведомление как прочитанное по ID */
   const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
@@ -40,6 +50,7 @@ function NotificationBell() {
     } catch {}
   };
 
+  /** Помечает все уведомления как прочитанные */
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
@@ -47,6 +58,7 @@ function NotificationBell() {
     } catch {}
   };
 
+  /** Возвращает иконку по типу уведомления */
   const icon = (type) => {
     const size = 16;
     switch (type) {

@@ -1,3 +1,7 @@
+/**
+ * @module LoginPage
+ * @description Страница авторизации пользователя. Если система не настроена — перенаправляет на SetupPage.
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -5,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { Package, ArrowRight } from 'lucide-react';
 
 function LoginPage() {
+  /** Получение метода входа и флага необходимости настройки из AuthContext */
   const { login, setupRequired } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -13,6 +18,7 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /** Если система не настроена — показываем экран первоначальной настройки */
   if (setupRequired) {
     return (
       <div className="login-page">
@@ -57,6 +63,7 @@ function LoginPage() {
     );
   }
 
+  /** Обработчик отправки формы входа */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

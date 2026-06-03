@@ -1,7 +1,12 @@
+/**
+ * @module SchedulePage
+ * @description План-график ремонтов: таблица с фильтрами и Gantt-диаграмма по оборудованию.
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 
+/** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -97,8 +102,10 @@ function SchedulePage() {
   const [chartMonths, setChartMonths] = useState(6);
   const [expandedEquipment, setExpandedEquipment] = useState(new Set());
 
+  /** Загрузка план-графика при изменении группировки */
   useEffect(() => { fetchSchedule(); }, [groupBy]);
 
+  /** Получение данных план-графика с сервера */
   const fetchSchedule = async () => {
     setLoading(true);
     try {
@@ -110,6 +117,7 @@ function SchedulePage() {
     setLoading(false);
   };
 
+  /** Уникальные помещения из данных */
   const uniqueRooms = useMemo(() => {
     if (!data) return [];
     const set = new Set();
@@ -131,6 +139,7 @@ function SchedulePage() {
     return [...set].sort();
   }, [data]);
 
+  /** Фильтрация и сортировка всех строк план-графика */
   const allFilteredRows = useMemo(() => {
     if (!data) return [];
     let rows = [];
@@ -192,6 +201,7 @@ function SchedulePage() {
     return rows;
   }, [data, filterStatus, filterEquipment, filterRoom, filterWork, filterFrequency, dateFrom, dateTo, search, sortField, sortDir]);
 
+  /** Группировка отфильтрованных строк */
   const filteredGroups = useMemo(() => {
     if (!data) return [];
     const rowSet = new Set(allFilteredRows.map(r => r.id));
@@ -201,6 +211,7 @@ function SchedulePage() {
     }).filter(g => g.rows.length > 0);
   }, [data, allFilteredRows]);
 
+  /** Подготовка данных для Gantt-диаграммы */
   const chartData = useMemo(() => {
     let startDate, endDate;
     if (dateFrom && dateTo) {
@@ -309,6 +320,7 @@ function SchedulePage() {
     return { days, months, equipmentGroups, startDate, endDate, totalDays };
   }, [allFilteredRows, chartMonths, dateFrom, dateTo]);
 
+  /** Переключение сортировки */
   const handleSort = (field) => {
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
@@ -319,6 +331,7 @@ function SchedulePage() {
     return `sortable sorted-${sortDir}`;
   };
 
+  /** Переключение свёрнутости группы в таблице */
   const toggleGroup = (idx) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
@@ -331,6 +344,7 @@ function SchedulePage() {
   const expandAll = () => setExpandedGroups(new Set(filteredGroups.map((_, i) => i)));
   const collapseAll = () => setExpandedGroups(new Set());
 
+  /** Переключение свёрнутости оборудования на диаграмме */
   const toggleEquipment = (name) => {
     setExpandedEquipment(prev => {
       const next = new Set(prev);
@@ -342,12 +356,14 @@ function SchedulePage() {
   const expandAllEquipment = () => setExpandedEquipment(new Set(chartData.equipmentGroups.map(g => g.equipmentName)));
   const collapseAllEquipment = () => setExpandedEquipment(new Set());
 
+  /** Применение быстрого периода (неделя, месяц и т.д.) */
   const applyQuickPeriod = (days, months) => {
     setDateFrom(todayStr());
     setDateTo(dateOffsetStr(days));
     setChartMonths(months);
   };
 
+  /** Сброс всех фильтров */
   const clearFilters = () => {
     setSearch('');
     setFilterStatus('');

@@ -1,3 +1,10 @@
+/**
+ * @module Маршруты суперадминистратора
+ * @description API для управления порталом на уровне суперадминистратора:
+ * вход в систему, управление компаниями, генерация лицензий, создание пользователей.
+ * Все маршруты (кроме login) требуют аутентификации и роли superadmin.
+ */
+
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
@@ -6,7 +13,14 @@ const { authenticate } = require('../middleware/auth');
 const { requireSuperadmin } = require('../middleware/auth');
 const SuperAdmin = require('../models/superadmin');
 
-// Superadmin login (separate from regular auth)
+/**
+ * @route POST /superadmin/login
+ * @description Аутентификация суперадминистратора (отдельно от обычной авторизации)
+ * @param {Object} req.body
+ * @param {string} req.body.username - Логин суперадминистратора
+ * @param {string} req.body.password - Пароль
+ * @returns {Object} JWT-токен и данные пользователя
+ */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -52,6 +66,13 @@ router.post('/login', async (req, res) => {
 // All routes below require authentication + superadmin role
 router.use(authenticate, requireSuperadmin);
 
+/**
+ * @route GET /superadmin/companies
+ * @description Получение списка всех компаний портала
+ * @requires authenticate
+ * @requires role superadmin
+ * @returns {Object[]} Список компаний
+ */
 router.get('/companies', async (req, res) => {
   try {
     const companies = await SuperAdmin.getCompanies();
@@ -61,6 +82,13 @@ router.get('/companies', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /superadmin/users
+ * @description Получение списка всех пользователей всех компаний
+ * @requires authenticate
+ * @requires role superadmin
+ * @returns {Object[]} Список пользователей
+ */
 router.get('/users', async (req, res) => {
   try {
     const users = await SuperAdmin.getAllUsers();
@@ -70,6 +98,15 @@ router.get('/users', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /superadmin/companies
+ * @description Создание новой компании
+ * @requires authenticate
+ * @requires role superadmin
+ * @param {Object} req.body
+ * @param {string} req.body.companyName - Название компании
+ * @returns {Object} Созданная компания
+ */
 router.post('/companies', async (req, res) => {
   try {
     const { companyName } = req.body;
@@ -83,6 +120,17 @@ router.post('/companies', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /superadmin/generate-license
+ * @description Генерация лицензионного ключа для компании
+ * @requires authenticate
+ * @requires role superadmin
+ * @param {Object} req.body
+ * @param {string} req.body.companyId - Идентификатор компании
+ * @param {string} req.body.plan - Название плана (например, "Pro")
+ * @param {number} req.body.daysValid - Срок действия в днях
+ * @returns {Object} Лицензионный ключ и информация о лицензии
+ */
 router.post('/generate-license', async (req, res) => {
   try {
     const { companyId, plan, daysValid } = req.body;
@@ -113,7 +161,19 @@ router.post('/generate-license', async (req, res) => {
   }
 });
 
-// Create a user for a specific company
+/**
+ * @route POST /superadmin/users
+ * @description Создание пользователя для указанной компании
+ * @requires authenticate
+ * @requires role superadmin
+ * @param {Object} req.body
+ * @param {string} req.body.username - Логин пользователя
+ * @param {string} req.body.password - Пароль (минимум 6 символов)
+ * @param {string} [req.body.fullName] - Полное имя
+ * @param {string} req.body.companyId - Идентификатор компании
+ * @param {string} [req.body.positionId] - Идентификатор должности
+ * @returns {Object} Созданный пользователь
+ */
 router.post('/users', async (req, res) => {
   try {
     const { username, password, fullName, companyId, positionId } = req.body;

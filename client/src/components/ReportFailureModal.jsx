@@ -1,6 +1,19 @@
+/**
+ * @module ReportFailureModal
+ * @description Модальное окно для сообщения о поломке оборудования.
+ * Позволяет пользователю описать проблему и прикрепить до 5 фотографий.
+ */
+
 import { useState, useRef } from 'react';
 import api from '../services/api';
 
+/**
+ * Форма отчёта о поломке.
+ * @param {Object} props
+ * @param {Object} props.equipment - Оборудование, о котором сообщается
+ * @param {Function} props.onClose - Обработчик закрытия модального окна
+ * @param {Function} props.onSuccess - Обработчик успешной отправки отчёта
+ */
 function ReportFailureModal({ equipment, onClose, onSuccess }) {
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -9,6 +22,7 @@ function ReportFailureModal({ equipment, onClose, onSuccess }) {
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
+  /** Обрабатывает выбор фотографий. Максимум 5 файлов. */
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     if (photos.length + files.length > 5) {
@@ -23,11 +37,13 @@ function ReportFailureModal({ equipment, onClose, onSuccess }) {
     });
   };
 
+  /** Удаляет фотографию по индексу */
   const removePhoto = (index) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  /** Отправляет отчёт о поломке на сервер */
   const handleSubmit = async () => {
     if (!description.trim()) {
       setError('Опишите проблему');

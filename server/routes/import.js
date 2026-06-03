@@ -1,35 +1,23 @@
+/**
+ * @module Маршруты импорта данных
+ * @description API для импорта оборудования из Excel-файлов и скачивания шаблона импорта.
+ */
+
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const XLSX = require('xlsx');
 const Equipment = require('../models/equipment');
+const { excelUpload } = require('../utils/upload');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'excel-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /xlsx|xls|csv/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    if (extname) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only Excel files are allowed'));
-    }
-  }
-});
-
-router.post('/excel', upload.single('file'), async (req, res) => {
+/**
+ * @route POST /import/excel
+ * @description Импорт оборудования из Excel-файла (.xlsx)
+ * @param {File} req.file - Excel-файл с данными оборудования (multipart/form-data)
+ * @returns {Object} Результат импорта
+ * @returns {string} return.message - Сообщение о количестве импортированных записей
+ * @returns {Object[]} return.equipment - Созданное оборудование
+ */
+router.post('/excel', excelUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -82,6 +70,11 @@ router.post('/excel', upload.single('file'), async (req, res) => {
   }
 });
 
+/**
+ * @route GET /import/template
+ * @description Скачивание шаблона Excel-файла для импорта оборудования
+ * @returns {File} Excel-файл equipment_template.xlsx для скачивания
+ */
 router.get('/template', (req, res) => {
   try {
     const wb = XLSX.utils.book_new();

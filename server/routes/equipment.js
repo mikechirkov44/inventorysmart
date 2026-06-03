@@ -1,35 +1,24 @@
+/**
+ * @module Маршруты оборудования
+ * @description API для CRUD-операций с оборудованием: получение списка с фильтрацией,
+ * просмотр по ID, генерация QR-кода, создание, обновление и удаление.
+ */
+
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const QRCode = require('qrcode');
 const Equipment = require('../models/equipment');
+const { imageUpload } = require('../utils/upload');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
+/**
+ * @route GET /equipment
+ * @description Получение списка оборудования с фильтрацией
+ * @param {string} [req.query.name] - Фильтр по названию (частичное совпадение)
+ * @param {string} [req.query.category] - Фильтр по категории
+ * @param {string} [req.query.location] - Фильтр по местоположению
+ * @param {string} [req.query.search] - Поиск по названию, инвентарному номеру, описанию
+ * @returns {Object[]} Список оборудования
+ */
 router.get('/', async (req, res) => {
   try {
     let equipment = await Equipment.findAll();
@@ -59,6 +48,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /equipment/:id
+ * @description Получение оборудования по идентификатору
+ * @param {string} req.params.id - Идентификатор оборудования
+ * @returns {Object} Данные оборудования
+ * @returns {404} Если оборудование не найдено
+ */
 router.get('/:id', async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id);
@@ -71,6 +67,17 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /equipment/:id/qr
+ * @description Генерация QR-кода для оборудования
+ * @param {string} req.params.id - Идентификатор оборудования
+ * @returns {Object} Данные QR-кода
+ * @returns {string} return.equipmentId - Идентификатор оборудования
+ * @returns {string} return.qrCode - UUID QR-кода
+ * @returns {string} return.qrImage - Base64 Data URL изображения QR-кода
+ * @returns {string} return.scanUrl - URL для сканирования
+ * @returns {404} Если оборудование не найдено
+ */
 router.get('/:id/qr', async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id);
@@ -100,7 +107,14 @@ router.get('/:id/qr', async (req, res) => {
   }
 });
 
-router.post('/', upload.single('photo'), async (req, res) => {
+/**
+ * @route POST /equipment
+ * @description Создание нового оборудования
+ * @param {Object} req.body - Данные оборудования (name, inventoryNumber, description, location, category, workIds)
+ * @param {File} [req.file] - Фотография оборудования (multipart/form-data)
+ * @returns {Object} Созданное оборудование (201)
+ */
+router.post('/', imageUpload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -118,7 +132,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 });
 
-router.put('/:id', upload.single('photo'), async (req, res) => {
+/**
+ * @route PUT /equipment/:id
+ * @description Обновление данных оборудования
+ * @param {string} req.params.id - Идентификатор оборудования
+ * @param {Object} req.body - Обновлённые данные оборудования
+ * @param {File} [req.file] - Новая фотография оборудования (multipart/form-data)
+ * @returns {Object} Обновлённое оборудование
+ * @returns {404} Если оборудование не найдено
+ */
+router.put('/:id', imageUpload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -139,6 +162,13 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /equipment/:id
+ * @description Удаление оборудования
+ * @param {string} req.params.id - Идентификатор оборудования
+ * @returns {Object} Сообщение об успешном удалении
+ * @returns {404} Если оборудование не найдено
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Equipment.remove(req.params.id);

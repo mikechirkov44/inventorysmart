@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница приходных документов ЗИП.
+ * Управление поступлениями запасных частей на склад:
+ * создание, просмотр, удаление документов с автоматическим обновлением остатков.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент управления приходными документами ЗИП */
 function SparePartsReceipts() {
   const [receipts, setReceipts] = useState([]);
   const [allSpareParts, setAllSpareParts] = useState([]);
@@ -26,8 +33,10 @@ function SparePartsReceipts() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка документов и справочника ЗИП при монтировании */
   useEffect(() => { fetchData(); }, []);
 
+  /** Загрузка всех приходных документов и запасных частей */
   const fetchData = async () => {
     try {
       const [receiptsRes, spRes] = await Promise.all([
@@ -43,12 +52,14 @@ function SparePartsReceipts() {
     }
   };
 
+  /** Словарь ЗИП для быстрого поиска по ID */
   const spMap = useMemo(() => {
     const m = {};
     allSpareParts.forEach(sp => { m[sp.id] = sp; });
     return m;
   }, [allSpareParts]);
 
+  /** Фильтрация ЗИП для добавления в документ */
   const filteredSp = useMemo(() => {
     if (!spSearch) return [];
     const s = spSearch.toLowerCase();
@@ -58,6 +69,7 @@ function SparePartsReceipts() {
     ).slice(0, 10);
   }, [allSpareParts, spSearch]);
 
+  /** Фильтрация документов по поисковому запросу */
   const filtered = useMemo(() => {
     if (!search) return receipts;
     const s = search.toLowerCase();
@@ -67,6 +79,7 @@ function SparePartsReceipts() {
     );
   }, [receipts, search]);
 
+  /** Сброс формы с получением следующего номера документа */
   const resetForm = async () => {
     try {
       const res = await sparePartsReceiptsAPI.getNextNumber();
@@ -90,6 +103,7 @@ function SparePartsReceipts() {
     setSpSearch('');
   };
 
+  /** Начало создания нового документа */
   const startCreate = async () => {
     await resetForm();
     try {
@@ -99,6 +113,7 @@ function SparePartsReceipts() {
     setShowForm(true);
   };
 
+  /** Добавление позиции ЗИП в документ */
   const addItem = (sp) => {
     setFormData(prev => ({
       ...prev,
@@ -107,6 +122,7 @@ function SparePartsReceipts() {
     setSpSearch('');
   };
 
+  /** Обновление количества или цены позиции в документе */
   const updateItem = (sparePartId, field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -116,6 +132,7 @@ function SparePartsReceipts() {
     }));
   };
 
+  /** Удаление позиции из документа */
   const removeItem = (sparePartId) => {
     setFormData(prev => ({
       ...prev,
@@ -123,6 +140,7 @@ function SparePartsReceipts() {
     }));
   };
 
+  /** Отправка документа и обновление остатков на складе */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.items.length === 0) {
@@ -139,6 +157,7 @@ function SparePartsReceipts() {
     }
   };
 
+  /** Удаление документа с откатом остатков */
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удалить документ?', message: 'Остатки будут откачены.', type: 'danger' });
     if (confirmed) {
@@ -152,6 +171,7 @@ function SparePartsReceipts() {
     }
   };
 
+  /** Форматирование цены в рублях */
   const formatPrice = (val) => {
     if (!val) return '0';
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(val);
@@ -260,6 +280,7 @@ function SparePartsReceipts() {
         </div>
       )}
 
+      {/* Панель фильтров */}
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по номеру, поставщику..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
@@ -267,6 +288,7 @@ function SparePartsReceipts() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {receipts.length}</div>
       </div>
 
+      {/* Таблица приходных документов */}
       <div className="table-container">
         <div className="table-scroll">
           <table className="data-table">

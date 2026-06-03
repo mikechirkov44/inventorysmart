@@ -1,5 +1,13 @@
+/**
+ * @module api
+ * @description Модуль HTTP-клиента для взаимодействия с бэкендом API.
+ * Содержит настроенные экземпляры axios с перехватчиками запросов/ответов,
+ * а также объекты API для каждого ресурса приложения (оборудование, работы, сотрудники и т.д.).
+ */
+
 import axios from 'axios';
 
+/** Получает базовый URL API из localStorage или использует /api по умолчанию */
 function getBaseUrl() {
   const stored = localStorage.getItem('inventorysmart_api_url');
   if (stored && stored.trim()) {
@@ -32,6 +40,7 @@ api.interceptors.response.use(
   }
 );
 
+/** API для работы с оборудованием */
 export const equipmentAPI = {
   getAll: (params) => api.get('/equipment', { params }),
   getById: (id) => api.get(`/equipment/${id}`),
@@ -41,6 +50,7 @@ export const equipmentAPI = {
   getQR: (id) => api.get(`/equipment/${id}/qr`),
 };
 
+/** API для работы с наряд-заказами (журнал работ) */
 export const workOrderAPI = {
   getAll: () => api.get('/work-orders'),
   getById: (id) => api.get(`/work-orders/${id}`),
@@ -50,6 +60,7 @@ export const workOrderAPI = {
   delete: (id) => api.delete(`/work-orders/${id}`),
 };
 
+/** API для справочника работ */
 export const worksAPI = {
   getAll: (params) => api.get('/works', { params }),
   getById: (id) => api.get(`/works/${id}`),
@@ -58,6 +69,7 @@ export const worksAPI = {
   delete: (id) => api.delete(`/works/${id}`),
 };
 
+/** API для справочника помещений */
 export const roomsAPI = {
   getAll: (params) => api.get('/rooms', { params }),
   getById: (id) => api.get(`/rooms/${id}`),
@@ -66,6 +78,7 @@ export const roomsAPI = {
   delete: (id) => api.delete(`/rooms/${id}`),
 };
 
+/** API для справочника сотрудников */
 export const employeesAPI = {
   getAll: (params) => api.get('/employees', { params }),
   getById: (id) => api.get(`/employees/${id}`),
@@ -74,6 +87,7 @@ export const employeesAPI = {
   delete: (id) => api.delete(`/employees/${id}`),
 };
 
+/** API для управления пользователями системы */
 export const usersAPI = {
   getAll: () => api.get('/users'),
   getById: (id) => api.get(`/users/${id}`),
@@ -82,15 +96,18 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+/** API для работы с QR-сканером */
 export const scanAPI = {
   scanQR: (qrCode) => api.get(`/scan/${qrCode}`),
   completeTask: (data) => api.post('/scan/complete', data),
 };
 
+/** API для получения событий календаря */
 export const calendarAPI = {
   getEvents: (month, year) => api.get('/calendar', { params: { month, year } }),
 };
 
+/** API для управления уведомлениями */
 export const notificationsAPI = {
   getAll: () => api.get('/notifications'),
   getUnreadCount: () => api.get('/notifications/unread-count'),
@@ -98,6 +115,7 @@ export const notificationsAPI = {
   markAllRead: () => api.put('/notifications/read-all'),
 };
 
+/** API для работы с инцидентами (поломками) */
 export const incidentsAPI = {
   getAll: (params) => api.get('/incidents', { params }),
   getById: (id) => api.get(`/incidents/${id}`),
@@ -106,6 +124,7 @@ export const incidentsAPI = {
   delete: (id) => api.delete(`/incidents/${id}`),
 };
 
+/** API для управления запасными частями (ЗИП) */
 export const sparePartsAPI = {
   getAll: (params) => api.get('/spare-parts', { params }),
   getById: (id) => api.get(`/spare-parts/${id}`),
@@ -116,6 +135,7 @@ export const sparePartsAPI = {
   replenish: (items) => api.post('/spare-parts/replenish', { items }),
 };
 
+/** API для документов поступления ЗИП */
 export const sparePartsReceiptsAPI = {
   getAll: () => api.get('/spare-parts-receipts'),
   getById: (id) => api.get(`/spare-parts-receipts/${id}`),
@@ -124,15 +144,18 @@ export const sparePartsReceiptsAPI = {
   delete: (id) => api.delete(`/spare-parts-receipts/${id}`),
 };
 
+/** API для аналитических данных */
 export const analyticsAPI = {
   getAnalytics: () => api.get('/analytics'),
   getSummary: () => api.get('/analytics/summary'),
 };
 
+/** API для план-графика работ */
 export const scheduleAPI = {
   getSchedule: (params) => api.get('/schedule', { params }),
 };
 
+/** API для импорта данных из Excel */
 export const importAPI = {
   importExcel: (formData) => api.post('/import/excel', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -140,6 +163,7 @@ export const importAPI = {
   downloadTemplate: () => api.get('/import/template', { responseType: 'blob' }),
 };
 
+/** API для управления данными компании */
 export const companyAPI = {
   get: () => api.get('/company'),
   update: (formData) => api.put('/company', formData, {
@@ -147,10 +171,12 @@ export const companyAPI = {
   }),
 };
 
+/** API для активации лицензии */
 export const licenseAPI = {
   activate: (key) => api.post('/company/activate-license', { key }),
 };
 
+/** API для справочника должностей */
 export const positionsAPI = {
   getAll: () => api.get('/positions'),
   getById: (id) => api.get(`/positions/${id}`),
@@ -159,6 +185,7 @@ export const positionsAPI = {
   delete: (id) => api.delete(`/positions/${id}`),
 };
 
+/** Экземпляр API для суперадминистратора (отдельная авторизация) */
 const superadminApi = axios.create({
   baseURL: getBaseUrl(),
 });
@@ -183,6 +210,7 @@ superadminApi.interceptors.response.use(
   }
 );
 
+/** API для панели суперадминистратора */
 export const superadminAPI = {
   login: (username, password) => superadminApi.post('/superadmin/login', { username, password }),
   getCompanies: () => superadminApi.get('/superadmin/companies'),

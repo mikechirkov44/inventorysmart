@@ -1,13 +1,20 @@
+# ============================================
+# InventorySmart - Запуск для разработки (Windows)
+# ============================================
+
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "InventorySmart - Система учета оборудования" -ForegroundColor Green
+Write-Host "InventorySmart - Система учёта оборудования" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "Запуск backend сервера..." -ForegroundColor Yellow
 $backendJob = Start-Job -ScriptBlock {
-    Set-Location "C:\Users\User_161\Documents\Projects\inventorysmart"
+    param($dir)
+    Set-Location $dir
     node server/index.js
-}
+} -ArgumentList $ScriptDir
 
 Start-Sleep -Seconds 3
 
@@ -16,17 +23,19 @@ Write-Host ""
 
 Write-Host "Запуск frontend (основное приложение)..." -ForegroundColor Yellow
 $frontendJob = Start-Job -ScriptBlock {
-    Set-Location "C:\Users\User_161\Documents\Projects\inventorysmart\client"
+    param($dir)
+    Set-Location "$dir\client"
     npx vite --host
-}
+} -ArgumentList $ScriptDir
 
 Start-Sleep -Seconds 2
 
 Write-Host "Запуск frontend (панель суперадмина)..." -ForegroundColor Yellow
 $adminJob = Start-Job -ScriptBlock {
-    Set-Location "C:\Users\User_161\Documents\Projects\inventorysmart\client-admin"
+    param($dir)
+    Set-Location "$dir\client-admin"
     npx vite --host
-}
+} -ArgumentList $ScriptDir
 
 Start-Sleep -Seconds 3
 

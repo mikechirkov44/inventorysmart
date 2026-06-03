@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Страница настроек системы.
+ * Включает вкладки: профиль компании, пользователи, должности,
+ * интеграции и оформление. Управление лицензией и правами доступа.
+ */
+
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -5,6 +11,7 @@ import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Список доступных часовых поясов */
 const TIMEZONES = [
   { value: 'Europe/Kaliningrad', label: '(GMT+2:00) Kaliningrad' },
   { value: 'Europe/Moscow', label: '(GMT+3:00) Istanbul, Minsk, Moscow, St. Petersburg, Volgograd' },
@@ -19,6 +26,7 @@ const TIMEZONES = [
   { value: 'Asia/Kamchatka', label: '(GMT+12:00) Kamchatka' },
 ];
 
+/** Метки прав доступа для отображения */
 const PERMISSION_LABELS = {
   equipment: 'Оборудование',
   employees: 'Сотрудники',
@@ -35,12 +43,14 @@ const PERMISSION_LABELS = {
   settings: 'Настройки',
 };
 
+/** Значения уровней доступа */
 const PERM_VALUES = {
   full: 'Полный доступ',
   view: 'Только чтение',
   none: 'Нет доступа',
 };
 
+/** Вкладки настроек */
 const TABS = [
   { id: 'company', label: 'Компания' },
   { id: 'users', label: 'Пользователи' },
@@ -49,6 +59,7 @@ const TABS = [
   { id: 'appearance', label: 'Оформление' },
 ];
 
+/** Вкладка настроек подключения к API-серверу */
 function IntegrationsTab() {
   const [apiUrl, setApiUrl] = useState('');
   const [savedUrl, setSavedUrl] = useState('');
@@ -57,12 +68,14 @@ function IntegrationsTab() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
 
+  /** Загрузка сохранённого URL из localStorage */
   useEffect(() => {
     const stored = localStorage.getItem('inventorysmart_api_url') || '';
     setApiUrl(stored);
     setSavedUrl(stored);
   }, []);
 
+  /** Проверка соединения с API-сервером */
   const handleTest = async () => {
     if (!apiUrl.trim()) return;
     setTesting(true);
@@ -77,6 +90,7 @@ function IntegrationsTab() {
     setTesting(false);
   };
 
+  /** Сохранение URL API-сервера в localStorage */
   const handleSave = () => {
     const url = apiUrl.trim();
     if (url && !url.startsWith('http')) {
@@ -93,6 +107,7 @@ function IntegrationsTab() {
     setTimeout(() => setSuccess(''), 5000);
   };
 
+  /** Сброс URL API на значение по умолчанию */
   const handleReset = () => {
     localStorage.removeItem('inventorysmart_api_url');
     setApiUrl('');
@@ -157,6 +172,7 @@ function IntegrationsTab() {
   );
 }
 
+/** Вкладка управления должностями и правами доступа */
 function PositionsTab() {
   const { canEdit } = useAuth();
   const toast = useToast();
@@ -168,8 +184,10 @@ function PositionsTab() {
   const [formData, setFormData] = useState({ name: '', permissions: {} });
   const canEditSettings = canEdit('settings');
 
+  /** Загрузка должностей при монтировании */
   useEffect(() => { fetchPositions(); }, []);
 
+  /** Загрузка списка должностей с сервера */
   const fetchPositions = async () => {
     try {
       const res = await positionsAPI.getAll();
@@ -181,18 +199,21 @@ function PositionsTab() {
     }
   };
 
+  /** Сброс формы должности */
   const resetForm = () => {
     setFormData({ name: '', permissions: {} });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования должности */
   const handleEdit = (pos) => {
     setFormData({ name: pos.name, permissions: { ...pos.permissions } });
     setEditId(pos.id);
     setShowForm(true);
   };
 
+  /** Обновление права доступа для должности */
   const handlePermChange = (key, value) => {
     setFormData(prev => ({
       ...prev,
@@ -218,6 +239,7 @@ function PositionsTab() {
     }
   };
 
+  /** Удаление должности с предупреждением о последствиях */
   const handleDelete = async (id) => {
     if (await confirm('Удалить должность? Пользователи с этой должностью потеряют доступ.')) {
       try {
@@ -336,6 +358,7 @@ function PositionsTab() {
   );
 }
 
+/** Основной компонент страницы настроек */
 function SettingsPage() {
   const { canEdit } = useAuth();
   const toast = useToast();
@@ -367,10 +390,12 @@ function SettingsPage() {
 
   const isSettingsReadOnly = canEdit('settings') === false;
 
+  /** Загрузка данных компании при монтировании */
   useEffect(() => {
     fetchCompany();
   }, []);
 
+  /** Загрузка данных при смене вкладки */
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers();
@@ -380,6 +405,7 @@ function SettingsPage() {
     if (activeTab === 'positions') fetchPositions();
   }, [activeTab]);
 
+  /** Загрузка данных компании и лицензии */
   const fetchCompany = async () => {
     try {
       const res = await companyAPI.get();
@@ -408,6 +434,7 @@ function SettingsPage() {
     }
   };
 
+  /** Обработка загрузки логотипа компании */
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -445,10 +472,12 @@ function SettingsPage() {
     }
   };
 
+  /** Отмена изменений и перезагрузка данных */
   const handleCancel = () => {
     fetchCompany();
   };
 
+  /** Загрузка списка пользователей */
   const fetchUsers = async () => {
     try {
       const res = await usersAPI.getAll();
@@ -459,6 +488,7 @@ function SettingsPage() {
     }
   };
 
+  /** Загрузка списка должностей */
   const fetchPositions = async () => {
     try {
       const res = await positionsAPI.getAll();
@@ -466,6 +496,7 @@ function SettingsPage() {
     } catch {}
   };
 
+  /** Загрузка списка сотрудников */
   const fetchEmployees = async () => {
     try {
       const res = await employeesAPI.getAll();
@@ -473,6 +504,7 @@ function SettingsPage() {
     } catch {}
   };
 
+  /** Активация лицензионного ключа */
   const handleActivateLicense = async () => {
     if (!licenseKeyInput.trim()) return;
     setActivating(true);
@@ -488,12 +520,14 @@ function SettingsPage() {
     }
   };
 
+  /** Сброс формы пользователя */
   const resetUserForm = () => {
     setUserFormData({ username: '', password: '', fullName: '', positionId: '', employeeId: '' });
     setEditUserId(null);
     setShowUserForm(false);
   };
 
+  /** Открытие формы редактирования пользователя */
   const handleEditUser = (user) => {
     setUserFormData({
       username: user.username,
@@ -506,6 +540,7 @@ function SettingsPage() {
     setShowUserForm(true);
   };
 
+  /** Обработка отправки формы пользователя */
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     if (!userFormData.username.trim()) { toast.error('Введите логин'); return; }
@@ -531,6 +566,7 @@ function SettingsPage() {
     }
   };
 
+  /** Удаление пользователя с подтверждением */
   const handleDeleteUser = async (id) => {
     if (await confirm('Удалить пользователя?')) {
       try {
@@ -546,6 +582,7 @@ function SettingsPage() {
 
   return (
     <div className="settings-page">
+      {/* Навигация по вкладкам */}
       <div className="settings-tabs">
         {TABS.map(tab => (
           <button
@@ -558,7 +595,9 @@ function SettingsPage() {
         ))}
       </div>
 
+      {/* Содержимое активной вкладки */}
       <div className="settings-content">
+        {/* Вкладка «Компания» */}
         {activeTab === 'company' && (
           <div className="settings-section">
             <h2 className="settings-section-title">Профиль компании</h2>
@@ -672,6 +711,7 @@ function SettingsPage() {
           </div>
         )}
 
+        {/* Вкладка «Пользователи» */}
         {activeTab === 'users' && (
           <div className="settings-section">
             <h2 className="settings-section-title">Пользователи</h2>
@@ -776,14 +816,17 @@ function SettingsPage() {
           </div>
         )}
 
+        {/* Вкладка «Должности» */}
         {activeTab === 'positions' && (
           <PositionsTab />
         )}
 
+        {/* Вкладка «Интеграции» */}
         {activeTab === 'integrations' && (
           <IntegrationsTab />
         )}
 
+        {/* Вкладка «Оформление» */}
         {activeTab === 'appearance' && (
           <div className="settings-section">
             <h2 className="settings-section-title">Оформление</h2>

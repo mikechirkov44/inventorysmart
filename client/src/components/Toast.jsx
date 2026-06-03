@@ -1,14 +1,30 @@
+/**
+ * @module Toast
+ * @description Система всплывающих уведомлений (туастов).
+ * Предоставляет контекст для отображения кратких сообщений
+ * об успехе, ошибке, предупреждении или информации.
+ */
+
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
+/** Контекст для передачи методов управления туастами */
 const ToastContext = createContext(null);
 
+/** Счётчик уникальных ID туастов */
 let toastId = 0;
 
+/**
+ * Провайдер системы уведомлений.
+ * Управляет списком активных туастов и их автоматическим скрытием.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Дочерние компоненты
+ */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const timersRef = useRef({});
 
+  /** Удаляет туаст по ID с анимацией выхода */
   const removeToast = useCallback((id) => {
     if (timersRef.current[id]) {
       clearTimeout(timersRef.current[id]);
@@ -20,6 +36,15 @@ export function ToastProvider({ children }) {
     }, 250);
   }, []);
 
+  /**
+   * Добавляет новый туаст.
+   * @param {Object} params
+   * @param {'success'|'error'|'warning'|'info'} [params.type='info'] - Тип уведомления
+   * @param {string} [params.title] - Заголовок
+   * @param {string} [params.message] - Текст сообщения
+   * @param {number} [params.duration=4000] - Время показа в мс (0 — без автоскрытия)
+   * @returns {number} ID созданного туаста
+   */
   const addToast = useCallback(({ type = 'info', title, message, duration = 4000 }) => {
     const id = ++toastId;
     setToasts(prev => [...prev, { id, type, title, message, exiting: false }]);
@@ -69,6 +94,7 @@ export function ToastProvider({ children }) {
   );
 }
 
+/** Хук для доступа к методам управления туастами. Использовать внутри ToastProvider. */
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');

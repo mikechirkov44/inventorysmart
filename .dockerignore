@@ -7,3 +7,6 @@ client-admin/dist
 .gitignore
 *.log
 .env
+server/data
+server/uploads
+server.log

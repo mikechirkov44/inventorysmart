@@ -1,8 +1,13 @@
+/**
+ * @module WorksDirectory
+ * @description Справочник работ: добавление, редактирование, удаление плановых работ.
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Варианты периодичности работ */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -36,8 +41,10 @@ function WorksDirectory() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка списка работ при монтировании */
   useEffect(() => { fetchWorks(); }, []);
 
+  /** Получение списка работ с сервера */
   const fetchWorks = async () => {
     try {
       const response = await worksAPI.getAll();
@@ -46,10 +53,12 @@ function WorksDirectory() {
     } catch { toast.error('Ошибка загрузки справочника работ'); setLoading(false); }
   };
 
+  /** Уникальные категории работ */
   const categories = useMemo(() => {
     return [...new Set(works.map(w => w.category).filter(Boolean))].sort();
   }, [works]);
 
+  /** Фильтрация работ по поиску и категории */
   const filtered = useMemo(() => {
     let result = [...works];
     if (search) {
@@ -63,12 +72,14 @@ function WorksDirectory() {
     return result;
   }, [works, search, filterCategory]);
 
+  /** Сброс формы и закрытие */
   const resetForm = () => {
     setFormData({ name: '', description: '', frequencyDays: 30, category: '' });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования работы */
   const handleEdit = (work) => {
     setFormData({
       name: work.name,
@@ -80,6 +91,7 @@ function WorksDirectory() {
     setShowForm(true);
   };
 
+  /** Создание или обновление работы */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) { toast.error('Введите название работы'); return; }
@@ -98,6 +110,7 @@ function WorksDirectory() {
     }
   };
 
+  /** Удаление работы с подтверждением */
   const handleDelete = async (id) => {
     const ok = await confirm({ title: 'Удалить работу?', message: 'Удалить работу из справочника?', type: 'danger', confirmText: 'Удалить' });
     if (ok) {

@@ -1,7 +1,19 @@
+/**
+ * @module IncidentModel
+ * @description Модель для управления инцидентами (incidents).
+ * Хранит информацию о происшествиях с оборудованием: описание,
+ * фото, статус, заметки администратора и привязку к сотруднику.
+ */
+
 const { query } = require('../db');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Преобразует строку из БД в объект инцидента.
+ * @param {Object|null} row - Строка из таблицы incidents
+ * @returns {Object|null} Объект инцидента или null
+ */
 function mapRow(row) {
   if (!row) return null;
   let photos = row.photos;
@@ -21,21 +33,49 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает все инциденты, отсортированные по дате создания (новые первые).
+   * @async
+   * @returns {Promise<Array<Object>>} Список инцидентов
+   */
   findAll: async () => {
     const { rows } = await query('SELECT * FROM incidents ORDER BY created_at DESC');
     return rows.map(mapRow);
   },
 
+  /**
+   * Находит инцидент по ID.
+   * @async
+   * @param {number} id - Идентификатор инцидента
+   * @returns {Promise<Object|null>} Объект инцидента или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM incidents WHERE id = $1', [id]);
     return mapRow(rows[0]);
   },
 
+  /**
+   * Находит все инциденты для указанного оборудования.
+   * @async
+   * @param {number} equipmentId - ID оборудования
+   * @returns {Promise<Array<Object>>} Список инцидентов оборудования
+   */
   findByEquipmentId: async (equipmentId) => {
     const { rows } = await query('SELECT * FROM incidents WHERE equipment_id = $1 ORDER BY created_at DESC', [equipmentId]);
     return rows.map(mapRow);
   },
 
+  /**
+   * Создаёт новый инцидент.
+   * @async
+   * @param {Object} data - Данные инцидента
+   * @param {number} data.equipmentId - ID оборудования
+   * @param {number} [data.employeeId] - ID сотрудника-заявителя
+   * @param {string} [data.employeeName] - Имя сотрудника
+   * @param {string} [data.description] - Описание инцидента
+   * @param {Array<string>} [data.photos] - Массив путей к фотографиям
+   * @returns {Promise<Object>} Созданный инцидент (статус: new)
+   */
   create: async (data) => {
     const { rows } = await query(
       'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
@@ -44,6 +84,13 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Обновляет инцидент по ID.
+   * @async
+   * @param {number} id - Идентификатор инцидента
+   * @param {Object} data - Данные для обновления (status, adminNotes, photos и т.д.)
+   * @returns {Promise<Object|null>} Обновлённый инцидент или null
+   */
   update: async (id, data) => {
     const fieldMap = { adminNotes: 'admin_notes' };
     const mapped = {};
@@ -66,6 +113,12 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Удаляет инцидент по ID и удаляет связанные файлы фотографий.
+   * @async
+   * @param {number} id - Идентификатор инцидента
+   * @returns {Promise<boolean>} true если удалён, иначе false
+   */
   remove: async (id) => {
     const incident = await module.exports.findById(id);
     if (incident && incident.photos) {

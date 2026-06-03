@@ -1,9 +1,23 @@
+/**
+ * @module UserModel
+ * @description Модель для управления пользователями системы (users).
+ * Хранит учётные данные, роли, привязку к должности и сотруднику.
+ * Предоставляет функции аутентификации, CRUD-операций и проверки паролей.
+ */
+
 const { query } = require('../db');
 const bcrypt = require('bcryptjs');
 
+/** @constant {string} JWT_SECRET Секретный ключ для JWT-токенов */
 const JWT_SECRET = process.env.JWT_SECRET || 'inventorysmart-secret-key-2026';
+/** @constant {string} JWT_EXPIRES Срок действия JWT-токена */
 const JWT_EXPIRES = '24h';
 
+/**
+ * Преобразует строку из БД в объект пользователя.
+ * @param {Object|null} row - Строка из таблицы users
+ * @returns {Object|null} Объект пользователя или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -20,21 +34,26 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /** @type {string} Секретный ключ для JWT */
   JWT_SECRET,
+  /** @type {string} Срок действия JWT */
   JWT_EXPIRES,
 
-  ensureAdmin: async () => {
-    const { rows } = await query('SELECT COUNT(*) FROM users');
-    if (parseInt(rows[0].count) === 0) {
-      console.log('No users found. Use POST /api/setup to create admin account.');
-    }
-  },
-
+  /**
+   * Проверяет, требуется ли начальная настройка (нет пользователей в системе).
+   * @async
+   * @returns {Promise<boolean>} true если нет ни одного пользователя
+   */
   isSetupRequired: async () => {
     const { rows } = await query('SELECT COUNT(*) FROM users');
     return parseInt(rows[0].count) === 0;
   },
 
+  /**
+   * Получает всех пользователей с должностями и именами сотрудников.
+   * @async
+   * @returns {Promise<Array<Object>>} Список пользователей
+   */
   findAll: async () => {
     const { rows } = await query(`
       SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.created_at, u.updated_at,
@@ -53,6 +72,12 @@ module.exports = {
     }));
   },
 
+  /**
+   * Находит пользователя по ID с должностью и разрешениями.
+   * @async
+   * @param {number} id - Идентификатор пользователя
+   * @returns {Promise<Object|null>} Объект пользователя или null
+   */
   findById: async (id) => {
     const { rows } = await query(`
       SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.created_at, u.updated_at,
@@ -70,23 +95,12 @@ module.exports = {
     };
   },
 
-  findByIdWithPosition: async (id) => {
-    const { rows } = await query(`
-      SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.created_at, u.updated_at,
-             p.name as position_name, p.permissions as position_permissions
-      FROM users u
-      LEFT JOIN positions p ON u.position_id = p.id
-      WHERE u.id = $1
-    `, [id]);
-    if (!rows[0]) return null;
-    const r = rows[0];
-    return {
-      ...mapRow(r),
-      positionName: r.position_name || null,
-      positionPermissions: r.position_permissions ? (typeof r.position_permissions === 'string' ? JSON.parse(r.position_permissions) : r.position_permissions) : null
-    };
-  },
-
+  /**
+   * Находит пользователя по имени пользователя с должностью и разрешениями.
+   * @async
+   * @param {string} username - Имя пользователя
+   * @returns {Promise<Object|null>} Объект пользователя (сырой из БД) или null
+   */
   findByUsername: async (username) => {
     const { rows } = await query(`
       SELECT u.*, p.name as position_name, p.permissions as position_permissions
@@ -97,6 +111,17 @@ module.exports = {
     return rows[0] || null;
   },
 
+  /**
+   * Создаёт нового пользователя. Если имя занято — возвращает null.
+   * @async
+   * @param {Object} data - Данные пользователя
+   * @param {string} data.username - Имя пользователя (уникальное)
+   * @param {string} data.password - Пароль (хэшируется)
+   * @param {string} [data.fullName] - Полное имя
+   * @param {number} [data.positionId] - ID должности
+   * @param {number} [data.employeeId] - ID связанного сотрудника
+   * @returns {Promise<Object|null>} Созданный пользователь или null
+   */
   create: async (data) => {
     const existing = await module.exports.findByUsername(data.username);
     if (existing) return null;
@@ -109,6 +134,17 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Обновляет данные пользователя по ID.
+   * @async
+   * @param {number} id - Идентификатор пользователя
+   * @param {Object} data - Данные для обновления
+   * @param {string} [data.password] - Новый пароль (хэшируется)
+   * @param {string} [data.fullName] - Полное имя
+   * @param {number} [data.positionId] - ID должности
+   * @param {number} [data.employeeId] - ID сотрудника
+   * @returns {Promise<Object|null>} Обновлённый пользователь или null
+   */
   update: async (id, data) => {
     const mapped = {};
     if (data.password) {
@@ -127,10 +163,22 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Удаляет пользователя по ID.
+   * @async
+   * @param {number} id - Идентификатор пользователя
+   * @returns {Promise<boolean>} true если удалён, иначе false
+   */
   remove: async (id) => {
     const { rowCount } = await query('DELETE FROM users WHERE id = $1', [id]);
     return rowCount > 0;
   },
 
+  /**
+   * Проверяет пароль пользователя.
+   * @param {string} plain - Открытый пароль
+   * @param {string} hash - Хэш пароля из БД
+   * @returns {boolean} true если пароль совпадает
+   */
   verifyPassword: (plain, hash) => bcrypt.compareSync(plain, hash)
 };

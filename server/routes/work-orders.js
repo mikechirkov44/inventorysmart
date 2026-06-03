@@ -1,35 +1,21 @@
+/**
+ * @module Маршруты наряд-заказов
+ * @description API для управления наряд-заказами (Work Orders): получение списка,
+ * просмотр по ID, фильтрация по оборудованию, создание, обновление и удаление.
+ * Поддержка загрузки фотографий и автоматического списания запчастей при завершении.
+ */
+
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const WorkOrder = require('../models/workOrder');
 const SparePart = require('../models/sparePart');
+const { imageUpload } = require('../utils/upload');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
+/**
+ * @route GET /work-orders
+ * @description Получение списка всех наряд-заказов
+ * @returns {Object[]} Список наряд-заказов
+ */
 router.get('/', async (req, res) => {
   try {
     const workOrders = await WorkOrder.findAll();
@@ -39,6 +25,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /work-orders/:id
+ * @description Получение наряд-заказа по идентификатору
+ * @param {string} req.params.id - Идентификатор наряд-заказа
+ * @returns {Object} Данные наряд-заказа
+ * @returns {404} Если наряд-заказ не найден
+ */
 router.get('/:id', async (req, res) => {
   try {
     const workOrder = await WorkOrder.findById(req.params.id);
@@ -51,6 +44,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /work-orders/equipment/:equipmentId
+ * @description Получение всех наряд-заказов для конкретного оборудования
+ * @param {string} req.params.equipmentId - Идентификатор оборудования
+ * @returns {Object[]} Список наряд-заказов для указанного оборудования
+ */
 router.get('/equipment/:equipmentId', async (req, res) => {
   try {
     const workOrders = await WorkOrder.findByEquipmentId(req.params.equipmentId);
@@ -60,7 +59,14 @@ router.get('/equipment/:equipmentId', async (req, res) => {
   }
 });
 
-router.post('/', upload.array('photos', 10), async (req, res) => {
+/**
+ * @route POST /work-orders
+ * @description Создание нового наряд-заказа с возможностью загрузки фотографий
+ * @param {Object} req.body - Данные наряд-заказа (equipmentId, taskId, taskName, masterName, status, notes)
+ * @param {File[]} [req.files] - Фотографии (до 10 файлов, multipart/form-data)
+ * @returns {Object} Созданный наряд-заказ (201)
+ */
+router.post('/', imageUpload.array('photos', 10), async (req, res) => {
   try {
     const workOrderData = req.body;
     if (req.files && req.files.length > 0) {
@@ -73,7 +79,18 @@ router.post('/', upload.array('photos', 10), async (req, res) => {
   }
 });
 
-router.put('/:id', upload.array('photos', 10), async (req, res) => {
+/**
+ * @route PUT /work-orders/:id
+ * @description Обновление наряд-заказа. При переводе из pending в completed — автоматическое списание запчастей.
+ * @param {string} req.params.id - Идентификатор наряд-заказа
+ * @param {Object} req.body - Обновлённые данные (status, notes, sparePartsUsed и т.д.)
+ * @param {File[]} [req.files] - Дополнительные фотографии (до 10 файлов)
+ * @returns {Object} Обновлённый наряд-заказ
+ * @returns {Object} return.workOrder - Обновлённый наряд-заказ
+ * @returns {Object[]} [return.sparePartsDeducted] - Списанные запчасти (при завершении)
+ * @returns {404} Если наряд-заказ не найден
+ */
+router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
   try {
     const workOrderData = req.body;
     if (req.files && req.files.length > 0) {
@@ -116,6 +133,13 @@ router.put('/:id', upload.array('photos', 10), async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /work-orders/:id
+ * @description Удаление наряд-заказа
+ * @param {string} req.params.id - Идентификатор наряд-заказа
+ * @returns {Object} Сообщение об успешном удалении
+ * @returns {404} Если наряд-заказ не найден
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await WorkOrder.remove(req.params.id);

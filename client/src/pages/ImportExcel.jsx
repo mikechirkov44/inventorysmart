@@ -1,9 +1,16 @@
+/**
+ * @fileoverview Страница импорта оборудования из Excel.
+ * Позволяет скачать шаблон, загрузить файл и импортировать
+ * данные оборудования в систему.
+ */
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { importAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент импорта из Excel */
 function ImportExcel() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,6 +21,7 @@ function ImportExcel() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Обработка выбора файла */
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
@@ -23,6 +31,7 @@ function ImportExcel() {
     }
   };
 
+  /** Отправка файла на сервер для импорта */
   const handleImport = async () => {
     if (!file) {
       setError('Выберите файл для импорта');
@@ -51,6 +60,7 @@ function ImportExcel() {
     }
   };
 
+  /** Скачивание шаблона Excel */
   const handleDownloadTemplate = async () => {
     try {
       const response = await importAPI.downloadTemplate();
@@ -75,6 +85,7 @@ function ImportExcel() {
       </div>
 
       <div className="import-content">
+        {/* Секция шаблона для скачивания */}
         <div className="template-section">
           <h3>Шаблон для импорта</h3>
           <p>Скачайте шаблон и заполните его данными об оборудовании.</p>
@@ -95,6 +106,7 @@ function ImportExcel() {
           </div>
         </div>
 
+        {/* Секция загрузки файла */}
         <div className="upload-section">
           <h3>Загрузка файла</h3>
           <div className="file-upload">

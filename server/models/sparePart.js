@@ -1,5 +1,18 @@
+/**
+ * @module SparePartModel
+ * @description Модель для управления запасными частями (spare_parts).
+ * Хранит информацию о запчастях: название, артикул, производитель,
+ * единицу измерения, минимальный остаток и текущее количество.
+ * Поддерживает связь с оборудованием и работами.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект запчасти.
+ * @param {Object|null} row - Строка из таблицы spare_parts
+ * @returns {Object|null} Объект запчасти или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -16,6 +29,11 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает все запчасти со связями (equipmentIds, workLinks).
+   * @async
+   * @returns {Promise<Array<Object>>} Список запчастей
+   */
   findAll: async () => {
     const { rows: parts } = await query('SELECT * FROM spare_parts ORDER BY name');
     const { rows: spEq } = await query('SELECT * FROM spare_parts_equipment');
@@ -27,6 +45,12 @@ module.exports = {
     }));
   },
 
+  /**
+   * Находит запчасть по ID со связями.
+   * @async
+   * @param {number} id - Идентификатор запчасти
+   * @returns {Promise<Object|null>} Объект запчасти или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM spare_parts WHERE id = $1', [id]);
     if (!rows[0]) return null;
@@ -39,6 +63,20 @@ module.exports = {
     };
   },
 
+  /**
+   * Создаёт запчасть с привязкой к оборудованию и работам.
+   * @async
+   * @param {Object} data - Данные запчасти
+   * @param {string} [data.name] - Название
+   * @param {string} [data.article] - Артикул
+   * @param {string} [data.manufacturer] - Производитель
+   * @param {string} [data.unit] - Единица измерения (по умолчанию 'шт')
+   * @param {number} [data.minStock] - Минимальный остаток
+   * @param {number} [data.quantity] - Текущее количество
+   * @param {Array<number>} [data.equipmentIds] - ID связанного оборудования
+   * @param {Array<Object>} [data.workLinks] - Связи с работами [{workId, quantity}]
+   * @returns {Promise<Object>} Созданная запчасть со связями
+   */
   create: async (data) => {
     let equipmentIds = data.equipmentIds || [];
     let workLinks = data.workLinks || [];
@@ -67,6 +105,15 @@ module.exports = {
     return await module.exports.findById(sp.id);
   },
 
+  /**
+   * Обновляет запчасть по ID, включая связи с оборудованием и работами.
+   * @async
+   * @param {number} id - Идентификатор запчасти
+   * @param {Object} data - Данные для обновления
+   * @param {Array<number>} [data.equipmentIds] - Новый список ID оборудования
+   * @param {Array<Object>} [data.workLinks] - Новый список связей с работами
+   * @returns {Promise<Object|null>} Обновлённая запчасть или null
+   */
   update: async (id, data) => {
     const fieldMap = { minStock: 'min_stock' };
     const mapped = {};
@@ -112,11 +159,23 @@ module.exports = {
     return await module.exports.findById(id);
   },
 
+  /**
+   * Удаляет запчасть по ID.
+   * @async
+   * @param {number} id - Идентификатор запчасти
+   * @returns {Promise<boolean>} true если удалена, иначе false
+   */
   remove: async (id) => {
     const { rowCount } = await query('DELETE FROM spare_parts WHERE id = $1', [id]);
     return rowCount > 0;
   },
 
+  /**
+   * Списывает запчасти со склада (уменьшает количество).
+   * @async
+   * @param {Array<Object>} items - Список к списанию [{sparePartId, quantity}]
+   * @returns {Promise<Array<Object>>} Обновлённые запчасти
+   */
   deductStock: async (items) => {
     const updated = [];
     for (const { sparePartId, quantity } of items) {
@@ -131,6 +190,12 @@ module.exports = {
     return updated;
   },
 
+  /**
+   * Пополняет запасы запчастей (увеличивает количество).
+   * @async
+   * @param {Array<Object>} items - Список к пополнению [{sparePartId, quantity}]
+   * @returns {Promise<Array<Object>>} Обновлённые запчасти
+   */
   replenishStock: async (items) => {
     const updated = [];
     for (const { sparePartId, quantity } of items) {

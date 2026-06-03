@@ -1,9 +1,21 @@
+/**
+ * @module Маршруты начальной настройки
+ * @description API для первоначальной настройки системы: проверка необходимости настройки
+ * и создание первого учётного записи администратора.
+ */
+
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Position = require('../models/position');
 
+/**
+ * @route GET /setup
+ * @description Проверка, требуется ли начальная настройка системы (есть ли учётные записи)
+ * @returns {Object} Флаг необходимости настройки
+ * @returns {boolean} return.setupRequired
+ */
 router.get('/', async (req, res) => {
   try {
     const required = await User.isSetupRequired();
@@ -13,6 +25,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /setup
+ * @description Создание первого учётного записи администратора (начальная настройка)
+ * @param {Object} req.body
+ * @param {string} req.body.username - Логин администратора
+ * @param {string} req.body.password - Пароль (минимум 6 символов)
+ * @param {string} [req.body.fullName] - Полное имя (по умолчанию "Администратор")
+ * @returns {Object} JWT-токен и данные созданного пользователя (201)
+ * @returns {400} Если администратор уже существует
+ */
 router.post('/', async (req, res) => {
   try {
     if (!(await User.isSetupRequired())) {

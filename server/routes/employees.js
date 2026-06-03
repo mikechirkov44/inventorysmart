@@ -1,7 +1,21 @@
+/**
+ * @module Маршруты сотрудников
+ * @description API для CRUD-операций с сотрудниками: получение списка,
+ * поиск по фамилии/должности, создание, обновление и удаление.
+ */
+
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/employee');
 
+/**
+ * @route GET /employees
+ * @description Получение списка всех сотрудников с фильтрацией
+ * @param {string} [req.query.lastName] - Фильтр по фамилии (частичное совпадение)
+ * @param {string} [req.query.positionId] - Фильтр по ID должности
+ * @param {string} [req.query.search] - Поиск по ФИО (частичное совпадение)
+ * @returns {Object[]} Список сотрудников
+ */
 router.get('/', async (req, res) => {
   try {
     let employees = await Employee.findAll();
@@ -27,6 +41,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /employees/:id
+ * @description Получение сотрудника по идентификатору
+ * @param {string} req.params.id - Идентификатор сотрудника
+ * @returns {Object} Данные сотрудника
+ * @returns {404} Если сотрудник не найден
+ */
 router.get('/:id', async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
@@ -39,6 +60,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /employees
+ * @description Создание нового сотрудника
+ * @param {Object} req.body - Данные сотрудника (lastName, firstName, positionId и т.д.)
+ * @returns {Object} Созданный сотрудник (201)
+ */
 router.post('/', async (req, res) => {
   try {
     const employee = await Employee.create(req.body);
@@ -48,6 +75,14 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /employees/:id
+ * @description Обновление данных сотрудника
+ * @param {string} req.params.id - Идентификатор сотрудника
+ * @param {Object} req.body - Обновлённые данные сотрудника
+ * @returns {Object} Обновлённый сотрудник
+ * @returns {404} Если сотрудник не найден
+ */
 router.put('/:id', async (req, res) => {
   try {
     const employee = await Employee.update(req.params.id, req.body);
@@ -60,6 +95,13 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /employees/:id
+ * @description Удаление сотрудника
+ * @param {string} req.params.id - Идентификатор сотрудника
+ * @returns {Object} Сообщение об успешном удалении
+ * @returns {404} Если сотрудник не найден
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Employee.remove(req.params.id);

@@ -1,13 +1,23 @@
+/**
+ * @module EquipmentPassport
+ * @description Компонент паспорта оборудования.
+ * Формирует и отображает полную информацию об оборудовании:
+ * основные данные, плановые работы, инциденты, историю ремонтов.
+ * Поддерживает печать и экспорт в PDF.
+ */
+
 import { useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+/** Соответствие кодов состояния русским названиям */
 const STATUS_MAP = {
   working: 'Работает',
   under_repair: 'В ремонте',
   needs_repair: 'Требует ремонта',
 };
 
+/** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -20,20 +30,34 @@ const FREQUENCY_OPTIONS = [
   { value: 365, label: '1 раз в год' },
 ];
 
+/** Возвращает текстовое описание периодичности по количеству дней */
 function getFrequencyLabel(days) {
   const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
   return opt ? opt.label : `каждые ${days} дн.`;
 }
 
+/** Форматирует ISO-дату в формат dd.mm.yyyy */
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('ru-RU');
 }
 
+/**
+ * Паспорт оборудования.
+ * @param {Object} props
+ * @param {Object} props.equipment - Данные оборудования
+ * @param {Object} [props.room] - Помещение, где находится оборудование
+ * @param {Array} [props.assignedWorks] - Назначенные плановые работы
+ * @param {Array} [props.spareParts] - Запасные части
+ * @param {Array} [props.workOrders] - Наряд-заказы (история ремонтов)
+ * @param {Array} [props.incidents] - Инциденты
+ * @param {Object} [props.qrData] - Данные QR-кода
+ */
 function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrders, incidents, qrData }) {
   const passportRef = useRef(null);
   const [generating, setGenerating] = useState(false);
 
+  /** Открывает окно печати паспорта оборудования */
   const handlePrint = () => {
     const content = passportRef.current;
     if (!content) return;
@@ -89,6 +113,7 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
     printWindow.document.close();
   };
 
+  /** Генерирует и скачивает паспорт в формате PDF */
   const handleDownloadPDF = async () => {
     const element = passportRef.current;
     if (!element) return;

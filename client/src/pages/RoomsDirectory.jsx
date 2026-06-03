@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница справочника помещений.
+ * Управление помещениями: добавление, редактирование, удаление,
+ * отображение количества оборудования и ответственного сотрудника.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент справочника помещений */
 function RoomsDirectory() {
   const [rooms, setRooms] = useState([]);
   const [equipment, setEquipment] = useState([]);
@@ -20,8 +27,10 @@ function RoomsDirectory() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка помещений, оборудования и сотрудников при монтировании */
   useEffect(() => { fetchData(); }, []);
 
+  /** Загрузка всех необходимых данных */
   const fetchData = async () => {
     try {
       const [roomsRes, equipRes, empRes] = await Promise.all([
@@ -34,14 +43,17 @@ function RoomsDirectory() {
     } catch { toast.error('Ошибка', 'Ошибка загрузки'); setLoading(false); }
   };
 
+  /** Уникальный список зданий для фильтра */
   const buildings = useMemo(() => [...new Set(rooms.map(r => r.building).filter(Boolean))].sort(), [rooms]);
 
+  /** Словарь сотрудников для отображения ответственного */
   const empMap = useMemo(() => {
     const m = {};
     employees.forEach(e => { m[e.id] = `${e.lastName} ${e.firstName}`; });
     return m;
   }, [employees]);
 
+  /** Подсчёт количества оборудования по помещениям */
   const equipmentCountByRoomId = useMemo(() => {
     const counts = {};
     equipment.forEach(e => {
@@ -50,6 +62,7 @@ function RoomsDirectory() {
     return counts;
   }, [equipment]);
 
+  /** Фильтрация помещений по поиску и зданию */
   const filtered = useMemo(() => {
     let result = [...rooms];
     if (search) {
@@ -64,12 +77,14 @@ function RoomsDirectory() {
     return result;
   }, [rooms, search, filterBuilding]);
 
+  /** Сброс формы помещения */
   const resetForm = () => {
     setFormData({ name: '', description: '', building: '', floor: '', responsibleEmployeeId: '' });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования помещения */
   const handleEdit = (room) => {
     setFormData({
       name: room.name,
@@ -82,6 +97,7 @@ function RoomsDirectory() {
     setShowForm(true);
   };
 
+  /** Обработка отправки формы помещения */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) { setError('Введите название помещения'); return; }
@@ -92,6 +108,7 @@ function RoomsDirectory() {
     } catch { toast.error('Ошибка', 'Ошибка сохранения'); }
   };
 
+  /** Удаление помещения с подтверждением */
   const handleDelete = async (delId) => {
     const confirmed = await confirm({ title: 'Удалить помещение?', message: 'Это действие нельзя отменить.', type: 'danger' });
     if (!confirmed) return;
@@ -156,6 +173,7 @@ function RoomsDirectory() {
         </div>
       )}
 
+      {/* Панель фильтров по названию и зданию */}
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
@@ -167,6 +185,7 @@ function RoomsDirectory() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {rooms.length}</div>
       </div>
 
+      {/* Таблица помещений */}
       <div className="table-container">
         <div className="table-scroll">
           <table className="data-table">

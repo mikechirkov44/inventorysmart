@@ -1,5 +1,18 @@
+/**
+ * @module SparePartReceiptModel
+ * @description Модель для управления поступлениями запчастей (spare_part_receipts).
+ * Хранит документы о приходе запасных частей на склад: номер документа,
+ * дату, поставщика, заметки и позиции прихода с ценами.
+ * При создании автоматически увеличивает остатки запчастей.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект поступления.
+ * @param {Object|null} row - Строка из таблицы spare_part_receipts
+ * @returns {Object|null} Объект поступления или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -13,6 +26,11 @@ function mapRow(row) {
   };
 }
 
+/**
+ * Преобразует строку позиции прихода из БД в объект.
+ * @param {Object|null} row - Строка из таблицы spare_part_receipt_items
+ * @returns {Object|null} Объект позиции или null
+ */
 function mapItemRow(row) {
   if (!row) return null;
   return {
@@ -25,6 +43,11 @@ function mapItemRow(row) {
   };
 }
 
+/**
+ * Генерирует следующий номер документа поступления (формат: ПЗИП-ГГГГ-ННН).
+ * @async
+ * @returns {string} Номер документа
+ */
 async function generateDocumentNumber() {
   const year = new Date().getFullYear();
   const prefix = `ПЗИП-${year}-`;
@@ -43,6 +66,11 @@ async function generateDocumentNumber() {
 }
 
 module.exports = {
+  /**
+   * Получает все поступления с позициями и информацией о запчастях.
+   * @async
+   * @returns {Promise<Array<Object>>} Список поступлений с полем items
+   */
   findAll: async () => {
     const { rows } = await query('SELECT * FROM spare_part_receipts ORDER BY date DESC, created_at DESC');
     const receipts = rows.map(mapRow);
@@ -66,6 +94,12 @@ module.exports = {
     return receipts;
   },
 
+  /**
+   * Находит поступление по ID с позициями и информацией о запчастях.
+   * @async
+   * @param {number} id - Идентификатор поступления
+   * @returns {Promise<Object|null>} Объект поступления или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM spare_part_receipts WHERE id = $1', [id]);
     const receipt = mapRow(rows[0]);
@@ -88,8 +122,27 @@ module.exports = {
     return receipt;
   },
 
+  /**
+   * Генерирует следующий номер документа поступления.
+   * @function
+   * @returns {Promise<string>} Номер документа
+   */
   generateDocumentNumber,
 
+  /**
+   * Создаёт поступление в транзакции с обновлением остатков запчастей.
+   * @async
+   * @param {Object} data - Данные поступления
+   * @param {string} [data.documentNumber] - Номер документа (генерируется автоматически)
+   * @param {string} [data.date] - Дата поступления
+   * @param {string} [data.supplier] - Поставщик
+   * @param {string} [data.notes] - Заметки
+   * @param {Array<Object>} [data.items] - Позиции прихода
+   * @param {number} data.items[].sparePartId - ID запчасти
+   * @param {number} data.items[].quantity - Количество
+   * @param {number} [data.items[].unitPrice] - Цена за единицу
+   * @returns {Promise<Object>} Созданное поступление с позициями
+   */
   create: async (data) => {
     const client = await require('../db').pool.connect();
     try {
@@ -130,6 +183,12 @@ module.exports = {
     }
   },
 
+  /**
+   * Удаляет поступление в транзакции с откатом остатков запчастей.
+   * @async
+   * @param {number} id - Идентификатор поступления
+   * @returns {Promise<boolean>} true если удалено, иначе false
+   */
   remove: async (id) => {
     const client = await require('../db').pool.connect();
     try {

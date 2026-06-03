@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница результата сканирования QR-кода оборудования.
+ * Отображает информацию об оборудовании и список плановых работ на сегодня,
+ * позволяет отмечать выполненные работы и списывать ЗИП.
+ */
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
 
+/** Варианты периодичности работ для отображения */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -15,11 +22,13 @@ const FREQUENCY_OPTIONS = [
   { value: 365, label: '1 раз в год' },
 ];
 
+/** Получение текстовой подписи периодичности по количеству дней */
 function getFrequencyLabel(days) {
   const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
   return opt ? opt.label : `каждые ${days} дн.`;
 }
 
+/** Компонент страницы результата сканирования QR-кода */
 function ScanResult() {
   const { qrCode } = useParams();
   const [data, setData] = useState(null);
@@ -34,8 +43,10 @@ function ScanResult() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showFailureModal, setShowFailureModal] = useState(false);
 
+  /** Загрузка данных оборудования и сотрудников при сканировании */
   useEffect(() => { fetchData(); }, [qrCode]);
 
+  /** Загрузка информации об оборудовании по QR-коду */
   const fetchData = async () => {
     try {
       const [scanRes, empRes] = await Promise.all([
@@ -55,11 +66,13 @@ function ScanResult() {
     }
   };
 
+  /** Форматирование даты в российском формате */
   const formatDate = (iso) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('ru-RU');
   };
 
+  /** Переключение отметки выполнения работы с загрузкой ЗИП */
   const handleCheck = (workId) => {
     setCheckedTasks(prev => ({ ...prev, [workId]: !prev[workId] }));
     if (!checkedTasks[workId] && data) {
@@ -79,6 +92,7 @@ function ScanResult() {
     }
   };
 
+  /** Обновление количества списываемой ЗИП для работы */
   const updateTaskSparePartQty = (workId, sparePartId, qty) => {
     setTaskSpareParts(prev => ({
       ...prev,
@@ -88,10 +102,12 @@ function ScanResult() {
     }));
   };
 
+  /** Добавление комментария к выполненной работе */
   const handleComment = (workId, text) => {
     setTaskComments(prev => ({ ...prev, [workId]: text }));
   };
 
+  /** Отправка выполненных работ на сервер */
   const handleSubmit = async () => {
     const emp = employees.find(e => e.id === executorId);
     const execName = emp ? `${emp.lastName} ${emp.firstName}` : '';
@@ -155,6 +171,7 @@ function ScanResult() {
       {successMessage && <div className="success">{successMessage}</div>}
       {error && <div className="error">{error}</div>}
 
+      {/* Карточка информации об оборудовании */}
       <div className="equipment-info-card">
         <div className="equipment-photo">
           {equipment.photo
@@ -171,6 +188,7 @@ function ScanResult() {
         </div>
       </div>
 
+      {/* Список работ, требующих выполнения сегодня */}
       {dueTasks.length > 0 && (
         <div className="today-tasks-section">
           <h3>Требуют выполнения ({dueTasks.length})</h3>

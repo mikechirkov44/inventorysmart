@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Страница календаря плановых обходов.
+ * Отображает месячный календарь с плановыми работами,
+ * позволяет просматривать работы на конкретный день.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
@@ -5,6 +11,7 @@ import api from '../services/api';
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
+/** Варианты периодичности работ для отображения */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -17,11 +24,13 @@ const FREQUENCY_OPTIONS = [
   { value: 365, label: '1 раз в год' },
 ];
 
+/** Получение текстовой подписи периодичности по количеству дней */
 function getFrequencyLabel(days) {
   const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
   return opt ? opt.label : `каждые ${days} дн.`;
 }
 
+/** Компонент календаря плановых обходов */
 function CalendarPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
@@ -30,6 +39,7 @@ function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState(now.getDate());
   const [loading, setLoading] = useState(true);
 
+  /** Загрузка событий календаря при смене месяца/года */
   useEffect(() => {
     setLoading(true);
     api.get('/calendar', { params: { month, year } })
@@ -37,18 +47,21 @@ function CalendarPage() {
       .catch(() => setLoading(false));
   }, [month, year]);
 
+  /** Переход к предыдущему месяцу */
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
     else setMonth(m => m - 1);
     setSelectedDay(null);
   };
 
+  /** Переход к следующему месяцу */
   const nextMonth = () => {
     if (month === 11) { setMonth(0); setYear(y => y + 1); }
     else setMonth(m => m + 1);
     setSelectedDay(null);
   };
 
+  /** Формирование массива дней для отображения в календаре */
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
@@ -60,6 +73,7 @@ function CalendarPage() {
     return days;
   }, [month, year]);
 
+  /** Формирование ключа даты в формате YYYY-MM-DD */
   const formatDateKey = (day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const today = new Date();
@@ -72,6 +86,7 @@ function CalendarPage() {
 
   return (
     <div className="calendar-page">
+      {/* Шапка страницы */}
       <div className="header">
         <h1>Календарь обходов</h1>
         <Link to="/schedule" className="btn btn-primary">План-график</Link>
@@ -113,7 +128,9 @@ function CalendarPage() {
           </div>
         </div>
 
+        {/* Правая панель с событиями дня */}
         <div className="calendar-right">
+          {/* Блок событий на сегодня */}
           {todayEvents.length > 0 && (
             <div className="calendar-panel today-panel">
               <h3>Сегодня ({today.getDate()} {MONTHS[today.getMonth()]})</h3>

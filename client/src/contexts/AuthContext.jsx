@@ -1,8 +1,22 @@
+/**
+ * @module AuthContext
+ * @description Контекст авторизации приложения.
+ * Управляет состоянием пользователя, токеном, правами доступа
+ * и методами входа/выхода из системы.
+ */
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 
+/** Контекст авторизации */
 const AuthContext = createContext(null);
 
+/**
+ * Провайдер авторизации.
+ * При загрузке проверяет наличие токена и валидирует его через API.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Дочерние компоненты
+ */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -21,6 +35,12 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  /**
+   * Выполняет вход пользователя в систему.
+   * @param {string} username - Имя пользователя
+   * @param {string} password - Пароль
+   * @returns {Promise<Object>} Данные пользователя
+   */
   const login = async (username, password) => {
     const res = await api.post('/auth/login', { username, password });
     localStorage.setItem('token', res.data.token);
@@ -29,6 +49,7 @@ export function AuthProvider({ children }) {
     return res.data.user;
   };
 
+  /** Выходит из системы, очищая токен и данные пользователя */
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -37,6 +58,12 @@ export function AuthProvider({ children }) {
 
   const permissions = user?.permissions || {};
 
+  /**
+   * Проверяет наличие права на действие с ресурсом.
+   * @param {string} resource - Идентификатор ресурса
+   * @param {'view'|'edit'} [action='view'] - Тип действия
+   * @returns {boolean} Есть ли доступ
+   */
   const can = (resource, action = 'view') => {
     const perm = permissions[resource];
     if (perm === undefined || perm === null || perm === 'none') return false;
@@ -58,6 +85,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+/** Хук для доступа к данным авторизации и методам управления доступом. */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

@@ -1,3 +1,7 @@
+/**
+ * @module EquipmentTable
+ * @description Табличное представление списка оборудования с фильтрами, сортировкой и удалением.
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
@@ -5,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 
+/** Маппинг статусов оборудования */
 const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
@@ -12,6 +17,7 @@ const STATUS_MAP = {
 };
 
 function EquipmentTable() {
+  /** Состояние данных, фильтров, сортировки */
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [works, setWorks] = useState([]);
@@ -27,12 +33,14 @@ function EquipmentTable() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка оборудования, помещений и работ */
   useEffect(() => {
     Promise.all([equipmentAPI.getAll(), roomsAPI.getAll(), worksAPI.getAll()])
       .then(([e, r, w]) => { setEquipment(e.data); setRooms(r.data); setWorks(w.data); setLoading(false); })
       .catch(() => { setError('Ошибка загрузки'); setLoading(false); });
   }, []);
 
+  /** Маппинг ID помещений на названия */
   const roomMap = useMemo(() => {
     const m = {};
     rooms.forEach(r => { m[r.id] = r.name; });
@@ -49,6 +57,7 @@ function EquipmentTable() {
     return [...new Set(equipment.map(e => e.category).filter(Boolean))].sort();
   }, [equipment]);
 
+  /** Фильтрация и сортировка оборудования */
   const filtered = useMemo(() => {
     let result = [...equipment];
 
@@ -78,6 +87,7 @@ function EquipmentTable() {
     return result;
   }, [equipment, search, filterCategory, filterRoom, filterStatus, sortField, sortDir, roomMap]);
 
+  /** Переключение направления сортировки */
   const handleSort = (field) => {
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
@@ -93,6 +103,7 @@ function EquipmentTable() {
     return `sortable sorted-${sortDir}`;
   };
 
+  /** Удаление оборудования */
   const handleDelete = async (delId) => {
     const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить.', type: 'danger' });
     if (!confirmed) return;

@@ -4,15 +4,15 @@ services:
     container_name: inventorysmart-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-inventorysmart}
-      POSTGRES_USER: ${POSTGRES_USER:-inventorysmart}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inventorysmart_secret}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pg-data:/var/lib/postgresql/data
     ports:
       - "${DB_PORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-inventorysmart}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,10 +30,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-inventorysmart}:${POSTGRES_PASSWORD:-inventorysmart_secret}@db:5432/${POSTGRES_DB:-inventorysmart}
-      - JWT_SECRET=${JWT_SECRET:-inventorysmart-secret-key-2026}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
       - SUPERADMIN_USERNAME=${SUPERADMIN_USERNAME:-superadmin}
-      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD:-superadmin123}
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

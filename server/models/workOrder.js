@@ -1,5 +1,17 @@
+/**
+ * @module WorkOrderModel
+ * @description Модель для управления нарядами-заказами (work_orders).
+ * Хранит информацию о выполнении работ: оборудование, задача,
+ * статус, мастер, заметки, фото и использованные запчасти.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект наряда-заказа.
+ * @param {Object|null} row - Строка из таблицы work_orders
+ * @returns {Object|null} Объект наряда-заказа или null
+ */
 function mapRow(row) {
   if (!row) return null;
   let photos = row.photos;
@@ -23,21 +35,52 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает все наряды-заказы, отсортированные по дате создания (новые первые).
+   * @async
+   * @returns {Promise<Array<Object>>} Список нарядов-заказов
+   */
   findAll: async () => {
     const { rows } = await query('SELECT * FROM work_orders ORDER BY created_at DESC');
     return rows.map(mapRow);
   },
 
+  /**
+   * Находит наряд-заказ по ID.
+   * @async
+   * @param {number} id - Идентификатор наряда-заказа
+   * @returns {Promise<Object|null>} Объект наряда-заказа или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM work_orders WHERE id = $1', [id]);
     return mapRow(rows[0]);
   },
 
+  /**
+   * Находит все наряды-заказы для указанного оборудования.
+   * @async
+   * @param {number} equipmentId - ID оборудования
+   * @returns {Promise<Array<Object>>} Список нарядов-заказов
+   */
   findByEquipmentId: async (equipmentId) => {
     const { rows } = await query('SELECT * FROM work_orders WHERE equipment_id = $1 ORDER BY created_at DESC', [equipmentId]);
     return rows.map(mapRow);
   },
 
+  /**
+   * Создаёт новый наряд-заказ.
+   * @async
+   * @param {Object} data - Данные наряда-заказа
+   * @param {number} data.equipmentId - ID оборудования
+   * @param {number} [data.taskId] - ID задачи (работы)
+   * @param {string} [data.taskName] - Название задачи
+   * @param {string} [data.status] - Статус (pending/in_progress/completed)
+   * @param {string} [data.masterName] - Имя мастера
+   * @param {string} [data.notes] - Заметки
+   * @param {Array<string>} [data.photos] - Массив путей к фотографиям
+   * @param {Array<Object>} [data.sparePartsUsed] - Использованные запчасти
+   * @returns {Promise<Object>} Созданный наряд-заказ
+   */
   create: async (data) => {
     const status = data.status || 'pending';
     const { rows } = await query(
@@ -57,6 +100,14 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Обновляет наряд-заказ по ID. При статусе 'completed' автоматически
+   * устанавливает completedAt.
+   * @async
+   * @param {number} id - Идентификатор наряда-заказа
+   * @param {Object} data - Данные для обновления
+   * @returns {Promise<Object|null>} Обновлённый наряд-заказ или null
+   */
   update: async (id, data) => {
     const fieldMap = {
       equipmentId: 'equipment_id', taskId: 'task_id', taskName: 'task_name',
@@ -91,11 +142,23 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Удаляет наряд-заказ по ID.
+   * @async
+   * @param {number} id - Идентификатор наряда-заказа
+   * @returns {Promise<boolean>} true если удалён, иначе false
+   */
   remove: async (id) => {
     const { rowCount } = await query('DELETE FROM work_orders WHERE id = $1', [id]);
     return rowCount > 0;
   },
 
+  /**
+   * Создаёт несколько нарядов-заказов за раз.
+   * @async
+   * @param {Array<Object>} items - Массив данных нарядов-заказов (см. create)
+   * @returns {Promise<Array<Object>>} Список созданных нарядов-заказов
+   */
   createMany: async (items) => {
     const results = [];
     for (const item of items) { results.push(await module.exports.create(item)); }

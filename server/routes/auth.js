@@ -1,9 +1,25 @@
+/**
+ * @module Маршруты авторизации
+ * @description API для аутентификации пользователей: вход, получение данных текущего пользователя,
+ * смена пароля. Управление JWT-токенами.
+ */
+
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { authenticate } = require('../middleware/auth');
 
+/**
+ * @route POST /auth/login
+ * @description Аутентификация пользователя и получение JWT-токена
+ * @param {Object} req.body - Данные для входа
+ * @param {string} req.body.username - Логин пользователя
+ * @param {string} req.body.password - Пароль пользователя
+ * @returns {Object} Объект с токеном и данными пользователя
+ * @returns {string} return.token - JWT-токен для доступа
+ * @returns {Object} return.user - Данные пользователя (id, username, fullName, role, positionId, permissions)
+ */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -55,9 +71,15 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /auth/me
+ * @description Получение данных текущего аутентифицированного пользователя
+ * @requires authenticate
+ * @returns {Object} Данные пользователя с разрешениями
+ */
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = await User.findByIdWithPosition(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -70,6 +92,15 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /auth/change-password
+ * @description Смена пароля текущего пользователя
+ * @requires authenticate
+ * @param {Object} req.body - Данные для смены пароля
+ * @param {string} req.body.currentPassword - Текущий пароль
+ * @param {string} req.body.newPassword - Новый пароль (минимум 6 символов)
+ * @returns {Object} Сообщение об успешной смене пароля
+ */
 router.put('/change-password', authenticate, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

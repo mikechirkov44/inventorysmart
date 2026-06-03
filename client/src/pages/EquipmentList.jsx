@@ -1,3 +1,7 @@
+/**
+ * @module EquipmentList
+ * @description Список оборудования в виде карточек, сгруппированных по помещениям. Поддерживает поиск и удаление.
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI } from '../services/api';
@@ -5,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonCardGrid } from '../components/Skeleton';
 
+/** Маппинг статусов оборудования на метки и CSS-классы */
 const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
@@ -12,6 +17,7 @@ const STATUS_MAP = {
 };
 
 function EquipmentList() {
+  /** Состояние списка оборудования, помещений, загрузки, ошибки, поиска и свёрнутых групп */
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,18 +28,21 @@ function EquipmentList() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка списка оборудования и помещений при монтировании */
   useEffect(() => {
     Promise.all([equipmentAPI.getAll(), roomsAPI.getAll()])
       .then(([e, r]) => { setEquipment(e.data); setRooms(r.data); setLoading(false); })
       .catch(() => { setError('Ошибка загрузки'); setLoading(false); });
   }, []);
 
+  /** Маппинг ID помещений на их названия */
   const roomMap = useMemo(() => {
     const m = {};
     rooms.forEach(r => { m[r.id] = r.name; });
     return m;
   }, [rooms]);
 
+  /** Удаление оборудования с подтверждением */
   const handleDelete = async (delId) => {
     const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить.', type: 'danger' });
     if (!confirmed) return;
@@ -48,6 +57,7 @@ function EquipmentList() {
     item.inventoryNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  /** Группировка отфильтрованного оборудования по помещениям */
   const grouped = useMemo(() => {
     const groups = {};
     filtered.forEach(item => {
@@ -63,6 +73,7 @@ function EquipmentList() {
     });
   }, [filtered, roomMap]);
 
+  /** Переключение свёрнутости группы */
   const toggleGroup = (roomId) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev);

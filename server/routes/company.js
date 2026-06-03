@@ -1,35 +1,21 @@
+/**
+ * @module Маршруты компании
+ * @description API для управления данными компании: получение информации,
+ * обновление настроек (название, часовой пояс, логотип), активация лицензии.
+ */
+
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Company = require('../models/company');
 const { authenticate, requirePermission } = require('../middleware/auth');
+const { imageUpload } = require('../utils/upload');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
+/**
+ * @route GET /company
+ * @description Получение данных текущей компании
+ * @requires authenticate
+ * @returns {Object} Данные компании (название, часовой пояс, лицензия и т.д.)
+ */
 router.get('/', authenticate, async (req, res) => {
   try {
     const company = await Company.get();
@@ -39,7 +25,18 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.put('/', authenticate, requirePermission('settings', 'edit'), upload.single('logo'), async (req, res) => {
+/**
+ * @route PUT /company
+ * @description Обновление данных компании (название, часовой пояс, логотип, настройки)
+ * @requires authenticate
+ * @requires permission settings:edit
+ * @param {string} [req.body.companyName] - Название компании
+ * @param {string} [req.body.timezone] - Часовой пояс
+ * @param {boolean} [req.body.allowInspectionWithoutQr] - Разрешить осмотр без QR
+ * @param {File} [req.file] - Файл логотипа (multipart/form-data)
+ * @returns {Object} Обновлённые данные компании
+ */
+router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload.single('logo'), async (req, res) => {
   try {
     const data = {};
     if (req.body.companyName !== undefined) data.companyName = req.body.companyName;
@@ -58,6 +55,15 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), upload.sing
   }
 });
 
+/**
+ * @route POST /company/activate-license
+ * @description Активация лицензионного ключа для компании
+ * @requires authenticate
+ * @requires permission settings:edit
+ * @param {Object} req.body
+ * @param {string} req.body.key - Лицензионный ключ (Base64-encoded JSON)
+ * @returns {Object} Информация о плане и дате окончания лицензии
+ */
 router.post('/activate-license', authenticate, requirePermission('settings', 'edit'), async (req, res) => {
   try {
     const { key } = req.body;

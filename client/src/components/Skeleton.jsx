@@ -1,3 +1,10 @@
+/**
+ * @module Skeleton
+ * @description Компоненты-скелетоны для отображения загрузки контента.
+ * Имитируют структуру страницы во время загрузки данных.
+ */
+
+/** Скелетон карточки оборудования */
 export function SkeletonCard() {
   return (
     <div className="skeleton-card">
@@ -13,6 +20,12 @@ export function SkeletonCard() {
   );
 }
 
+/**
+ * Скелетон таблицы.
+ * @param {Object} props
+ * @param {number} [props.rows=5] - Количество строк
+ * @param {number} [props.cols=5] - Количество столбцов
+ */
 export function SkeletonTable({ rows = 5, cols = 5 }) {
   return (
     <div className="skeleton-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -35,6 +48,12 @@ export function SkeletonTable({ rows = 5, cols = 5 }) {
   );
 }
 
+/**
+ * Скелетон текстового блока.
+ * @param {Object} props
+ * @param {number} [props.lines=3] - Количество строк
+ * @param {string} [props.width] - Ширина строк (CSS)
+ */
 export function SkeletonText({ lines = 3, width }) {
   return (
     <div>
@@ -49,6 +68,7 @@ export function SkeletonText({ lines = 3, width }) {
   );
 }
 
+/** Скелетон целой страницы (заголовок + поиск + таблица) */
 export function SkeletonPage() {
   return (
     <div>
@@ -62,6 +82,11 @@ export function SkeletonPage() {
   );
 }
 
+/**
+ * Скелетон сетки карточек.
+ * @param {Object} props
+ * @param {number} [props.count=6] - Количество карточек-скелетонов
+ */
 export function SkeletonCardGrid({ count = 6 }) {
   return (
     <div className="equipment-grid">

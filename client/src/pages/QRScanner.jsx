@@ -1,7 +1,14 @@
+/**
+ * @fileoverview Страница QR-сканера.
+ * Позволяет сканировать QR-коды оборудования с помощью камеры
+ * или вводить код вручную для перехода к карточке работ.
+ */
+
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 
+/** Компонент QR-сканера */
 function QRScanner() {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
@@ -10,10 +17,12 @@ function QRScanner() {
   const scannerRef = useRef(null);
   const busyRef = useRef(false);
 
+  /** Остановка сканера при размонтировании */
   useEffect(() => {
     return () => { tryStop(); };
   }, []);
 
+  /** Безопасная остановка камеры */
   function tryStop() {
     const s = scannerRef.current;
     if (!s) return;
@@ -21,6 +30,7 @@ function QRScanner() {
     try { s.stop().catch(() => {}); } catch (_) {}
   }
 
+  /** Запуск сканирования камеры */
   async function startScanner() {
     setError(null);
     try {
@@ -45,6 +55,7 @@ function QRScanner() {
     }
   }
 
+  /** Обработка распознанного QR-кода и переход на страницу */
   function onDecoded(decodedText) {
     if (busyRef.current) return;
     busyRef.current = true;
@@ -63,11 +74,13 @@ function QRScanner() {
     }, 100);
   }
 
+  /** Остановка сканера */
   function stopScanner() {
     tryStop();
     setScanning(false);
   }
 
+  /** Обработка ручного ввода QR-кода или ID */
   function handleManualInput(e) {
     e.preventDefault();
     const v = manualInput.trim();

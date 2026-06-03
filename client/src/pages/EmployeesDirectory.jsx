@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница справочника сотрудников.
+ * Управление карточками сотрудников: добавление, редактирование,
+ * удаление, поиск по ФИО и фильтрация по должности.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { employeesAPI, positionsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент справочника сотрудников */
 function EmployeesDirectory() {
   const [employees, setEmployees] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -23,10 +30,12 @@ function EmployeesDirectory() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка сотрудников и должностей при монтировании */
   useEffect(() => {
     Promise.all([fetchEmployees(), fetchPositions()]);
   }, []);
 
+  /** Загрузка списка сотрудников с сервера */
   const fetchEmployees = async () => {
     try {
       const response = await employeesAPI.getAll();
@@ -35,6 +44,7 @@ function EmployeesDirectory() {
     } catch { toast.error('Ошибка загрузки'); setLoading(false); }
   };
 
+  /** Загрузка списка должностей */
   const fetchPositions = async () => {
     try {
       const res = await positionsAPI.getAll();
@@ -42,12 +52,14 @@ function EmployeesDirectory() {
     } catch {}
   };
 
+  /** Словарь должностей для отображения по ID */
   const positionMap = useMemo(() => {
     const m = {};
     positions.forEach(p => { m[p.id] = p.name; });
     return m;
   }, [positions]);
 
+  /** Фильтрация сотрудников по поиску и должности */
   const filtered = useMemo(() => {
     let result = [...employees];
     if (search) {
@@ -63,12 +75,14 @@ function EmployeesDirectory() {
     return result;
   }, [employees, search, filterPosition, positionMap]);
 
+  /** Сброс формы сотрудника */
   const resetForm = () => {
     setFormData({ firstName: '', lastName: '', middleName: '', positionId: '', phone: '', email: '' });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования сотрудника */
   const handleEdit = (emp) => {
     setFormData({
       firstName: emp.firstName || '',
@@ -82,6 +96,7 @@ function EmployeesDirectory() {
     setShowForm(true);
   };
 
+  /** Обработка отправки формы (создание/обновление сотрудника) */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.lastName.trim() || !formData.firstName.trim()) {
@@ -103,6 +118,7 @@ function EmployeesDirectory() {
     } catch { toast.error('Ошибка сохранения'); }
   };
 
+  /** Удаление сотрудника с подтверждением */
   const handleDelete = async (delId) => {
     if (await confirm({ title: 'Удалить сотрудника?', message: 'Это действие нельзя отменить.', type: 'danger' })) {
       try { await employeesAPI.delete(delId); fetchEmployees(); }
@@ -166,6 +182,7 @@ function EmployeesDirectory() {
         </div>
       )}
 
+      {/* Панель фильтров по ФИО и должности */}
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по ФИО, должности..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
@@ -177,6 +194,7 @@ function EmployeesDirectory() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {employees.length}</div>
       </div>
 
+      {/* Таблица сотрудников */}
       <div className="table-container">
         <div className="table-scroll">
           <table className="data-table">

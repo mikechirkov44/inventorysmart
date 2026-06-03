@@ -1,3 +1,10 @@
+/**
+ * @module Маршруты расписания
+ * @description API для получения расписания работ: планирование задач по оборудованию,
+ * группировка по сотрудникам, оборудованию или месяцам. Отображение статусов задач
+ * (просроченные, предстоящие, запланированные).
+ */
+
 const express = require('express');
 const router = express.Router();
 const Equipment = require('../models/equipment');
@@ -6,6 +13,15 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
+/**
+ * @route GET /schedule
+ * @description Получение расписания работ сгруппированного по сотрудникам, оборудованию или месяцам
+ * @param {string} [req.query.group='employee'] - Способ группировки: 'employee', 'equipment', 'month' или 'all'
+ * @returns {Object} Данные расписания
+ * @returns {Object[]} return.rows - Все строки расписания
+ * @returns {Object[]} return.groups - Сгруппированные данные
+ * @returns {number} return.total - Общее количество задач
+ */
 router.get('/', async (req, res) => {
   try {
     const groupBy = req.query.group || 'employee';

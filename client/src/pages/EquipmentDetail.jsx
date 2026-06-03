@@ -1,3 +1,7 @@
+/**
+ * @module EquipmentDetail
+ * @description Карточка оборудования: основная информация, QR-код, плановые работы, ЗИП, история ремонтов.
+ */
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI } from '../services/api';
@@ -7,6 +11,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
+/** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -46,10 +51,12 @@ function EquipmentDetail() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка всех данных оборудования при изменении ID */
   useEffect(() => {
     fetchData();
   }, [id]);
 
+  /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов */
   const fetchData = async () => {
     try {
       const [equipRes, workOrdersRes, qrRes, spRes, incRes] = await Promise.all([
@@ -83,6 +90,7 @@ function EquipmentDetail() {
     }
   };
 
+  /** Удаление оборудования с переходом на главную */
   const handleDelete = async () => {
     const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить. Все связанные данные будут удалены.', type: 'danger' });
     if (!confirmed) return;
@@ -90,6 +98,7 @@ function EquipmentDetail() {
     catch { toast.error('Ошибка', 'Не удалось удалить оборудование'); }
   };
 
+  /** Открытие окна печати QR-кода */
   const handlePrintQR = () => {
     if (!qrData) return;
     const win = window.open('', '_blank');

@@ -1,5 +1,17 @@
+/**
+ * @module RoomModel
+ * @description Модель для управления помещениями (rooms).
+ * Хранит информацию о комнатах/помещениях: название, описание,
+ * здание, этаж и ответственный сотрудник.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект помещения.
+ * @param {Object|null} row - Строка из таблицы rooms
+ * @returns {Object|null} Объект помещения или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -15,16 +27,38 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает все помещения, отсортированные по названию.
+   * @async
+   * @returns {Promise<Array<Object>>} Список помещений
+   */
   findAll: async () => {
     const { rows } = await query('SELECT * FROM rooms ORDER BY name');
     return rows.map(mapRow);
   },
 
+  /**
+   * Находит помещение по ID.
+   * @async
+   * @param {number} id - Идентификатор помещения
+   * @returns {Promise<Object|null>} Объект помещения или null
+   */
   findById: async (id) => {
     const { rows } = await query('SELECT * FROM rooms WHERE id = $1', [id]);
     return mapRow(rows[0]);
   },
 
+  /**
+   * Создаёт новое помещение.
+   * @async
+   * @param {Object} data - Данные помещения
+   * @param {string} [data.name] - Название
+   * @param {string} [data.description] - Описание
+   * @param {string} [data.building] - Здание
+   * @param {string} [data.floor] - Этаж
+   * @param {number} [data.responsibleEmployeeId] - ID ответственного сотрудника
+   * @returns {Promise<Object>} Созданное помещение
+   */
   create: async (data) => {
     const { rows } = await query(
       'INSERT INTO rooms (name, description, building, floor, responsible_employee_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -33,6 +67,13 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Обновляет помещение по ID.
+   * @async
+   * @param {number} id - Идентификатор помещения
+   * @param {Object} data - Данные для обновления
+   * @returns {Promise<Object|null>} Обновлённое помещение или null
+   */
   update: async (id, data) => {
     const fieldMap = { responsibleEmployeeId: 'responsible_employee_id' };
     const mapped = {};
@@ -50,11 +91,23 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Удаляет помещение по ID.
+   * @async
+   * @param {number} id - Идентификатор помещения
+   * @returns {Promise<boolean>} true если удалено, иначе false
+   */
   remove: async (id) => {
     const { rowCount } = await query('DELETE FROM rooms WHERE id = $1', [id]);
     return rowCount > 0;
   },
 
+  /**
+   * Создаёт несколько помещений за раз.
+   * @async
+   * @param {Array<Object>} items - Массив данных помещений (см. create)
+   * @returns {Promise<Array<Object>>} Список созданных помещений
+   */
   createMany: async (items) => {
     const results = [];
     for (const item of items) { results.push(await module.exports.create(item)); }

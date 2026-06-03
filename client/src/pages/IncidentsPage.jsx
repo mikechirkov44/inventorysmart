@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Страница управления инцидентами (поломками).
+ * Отображает список инцидентов с фильтрацией по статусу,
+ * позволяет обновлять статус, добавлять заметки и удалять инциденты.
+ */
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
@@ -5,12 +11,14 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 
+/** Маппинг статусов инцидентов на метки и CSS-классы */
 const STATUS_MAP = {
   new: { label: 'Новый', className: 'status-needs-repair' },
   in_progress: { label: 'В работе', className: 'status-under-repair' },
   resolved: { label: 'Решён', className: 'status-working' },
 };
 
+/** Компонент страницы инцидентов */
 function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,8 +28,10 @@ function IncidentsPage() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка инцидентов при монтировании */
   useEffect(() => { fetchIncidents(); }, []);
 
+  /** Загрузка списка инцидентов с фильтрацией по статусу */
   const fetchIncidents = async () => {
     try {
       const params = {};
@@ -32,8 +42,10 @@ function IncidentsPage() {
     } catch { setLoading(false); }
   };
 
+  /** Перезагрузка инцидентов при изменении фильтра статуса */
   useEffect(() => { fetchIncidents(); }, [filterStatus]);
 
+  /** Обновление статуса и заметки инцидента */
   const updateStatus = async (id, status) => {
     try {
       await api.put(`/incidents/${id}`, { status, adminNotes });
@@ -43,6 +55,7 @@ function IncidentsPage() {
     } catch { toast.error('Ошибка', 'Не удалось обновить статус'); }
   };
 
+  /** Удаление инцидента с подтверждением */
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удалить инцидент?', message: 'Инцидент будет удалён навсегда.', type: 'danger' });
     if (!confirmed) return;
@@ -57,6 +70,7 @@ function IncidentsPage() {
         <h1>Инциденты (поломки)</h1>
       </div>
 
+      {/* Панель фильтрации по статусу */}
       <div className="filters-panel">
         <div className="filter-row">
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -117,6 +131,7 @@ function IncidentsPage() {
         </div>
       </div>
 
+      {/* Модальное окно деталей инцидента */}
       {selectedIncident && (
         <div className="complete-task-modal" onClick={() => setSelectedIncident(null)}>
           <div className="modal-content incident-modal" onClick={e => e.stopPropagation()}>

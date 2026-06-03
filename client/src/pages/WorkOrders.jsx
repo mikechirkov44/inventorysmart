@@ -1,3 +1,7 @@
+/**
+ * @module WorkOrders
+ * @description Журнал выполненных и запланированных работ. Позволяет отмечать выполнение и списывать ЗИП.
+ */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI } from '../services/api';
@@ -6,6 +10,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 
 function WorkOrders() {
+  /** Состояние журнала работ, оборудования, запчастей, фильтров */
   const [workOrders, setWorkOrders] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [allSpareParts, setAllSpareParts] = useState([]);
@@ -19,10 +24,12 @@ function WorkOrders() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка всех данных журнала работ */
   useEffect(() => {
     fetchData();
   }, []);
 
+  /** Параллельная загрузка нарядов, оборудования, запчастей и работ */
   const fetchData = async () => {
     try {
       const [workOrdersRes, equipmentRes, spRes, worksRes] = await Promise.all([
@@ -42,11 +49,13 @@ function WorkOrders() {
     }
   };
 
+  /** Получение названия оборудования по ID */
   const getEquipmentName = (equipmentId) => {
     const equip = equipment.find(e => e.id === equipmentId);
     return equip ? equip.name : 'Неизвестное оборудование';
   };
 
+  /** Получение доступных ЗИП для конкретной работы и оборудования */
   const getSparePartsForWork = (equipmentId, workId) => {
     const eqSpareParts = allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipmentId));
     if (!workId) return eqSpareParts;
@@ -65,11 +74,13 @@ function WorkOrders() {
       });
   };
 
+  /** Фильтрация нарядов по статусу */
   const filteredWorkOrders = workOrders.filter(wo => {
     if (filter === 'all') return true;
     return wo.status === filter;
   });
 
+  /** Начало процесса завершения наряда: формирование списка ЗИП */
   const startComplete = (wo) => {
     setCompletingId(wo.id);
     const available = getSparePartsForWork(wo.equipmentId, wo.taskId);
@@ -82,12 +93,14 @@ function WorkOrders() {
     })));
   };
 
+  /** Обновление количества списываемой запчасти */
   const updateSparePartQty = (sparePartId, qty) => {
     setSparePartsSelection(prev =>
       prev.map(sp => sp.sparePartId === sparePartId ? { ...sp, quantity: parseInt(qty) || 0 } : sp)
     );
   };
 
+  /** Изменение статуса наряда (при завершении — открытие формы списания ЗИП) */
   const handleStatusChange = async (id, newStatus) => {
     if (newStatus === 'completed') {
       const wo = workOrders.find(w => w.id === id);
@@ -104,6 +117,7 @@ function WorkOrders() {
     }
   };
 
+  /** Подтверждение завершения наряда со списанием ЗИП */
   const confirmComplete = async () => {
     const used = sparePartsSelection.filter(sp => sp.quantity > 0).map(sp => ({
       sparePartId: sp.sparePartId,
@@ -119,11 +133,13 @@ function WorkOrders() {
     }
   };
 
+  /** Отмена завершения наряда */
   const cancelComplete = () => {
     setCompletingId(null);
     setSparePartsSelection([]);
   };
 
+  /** Удаление записи журнала работ */
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удалить запись?', message: 'Запись журнала работ будет удалена.', type: 'danger' });
     if (!confirmed) return;

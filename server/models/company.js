@@ -1,5 +1,17 @@
+/**
+ * @module CompanyModel
+ * @description Модель для управления настройками компании (company_settings).
+ * Хранит информацию о названии компании, логотипе, часовой зоне,
+ * лицензионном ключе и флаге разрешения инспекций без QR-кода.
+ */
+
 const { query } = require('../db');
 
+/**
+ * Преобразует строку из БД в объект компании.
+ * @param {Object|null} row - Строка из таблицы company_settings
+ * @returns {Object|null} Объект компании или null
+ */
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -15,6 +27,11 @@ function mapRow(row) {
 }
 
 module.exports = {
+  /**
+   * Получает настройки компании. Если записей нет — создаёт дефолтную.
+   * @async
+   * @returns {Promise<Object>} Настройки компании
+   */
   get: async () => {
     const { rows } = await query('SELECT * FROM company_settings LIMIT 1');
     if (rows.length === 0) {
@@ -26,6 +43,17 @@ module.exports = {
     return mapRow(rows[0]);
   },
 
+  /**
+   * Обновляет настройки компании.
+   * @async
+   * @param {Object} data - Данные для обновления
+   * @param {string} [data.companyName] - Название компании
+   * @param {string} [data.logo] - Логотип (URL или base64)
+   * @param {string} [data.timezone] - Часовая зона
+   * @param {boolean} [data.allowInspectionWithoutQr] - Разрешить инспекции без QR
+   * @param {string} [data.licenseKey] - Лицензионный ключ
+   * @returns {Promise<Object>} Обновлённые настройки компании
+   */
   update: async (data) => {
     const existing = await module.exports.get();
     const mapped = {};

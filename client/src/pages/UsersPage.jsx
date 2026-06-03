@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница управления пользователями (упрощённая версия).
+ * Управление учётными записями: добавление, редактирование,
+ * удаление пользователей с ролями.
+ */
+
 import { useState, useEffect } from 'react';
 import { usersAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент управления пользователями */
 function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +26,10 @@ function UsersPage() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка пользователей при монтировании */
   useEffect(() => { fetchUsers(); }, []);
 
+  /** Загрузка списка пользователей */
   const fetchUsers = async () => {
     try {
       const res = await usersAPI.getAll();
@@ -32,18 +41,21 @@ function UsersPage() {
     }
   };
 
+  /** Сброс формы пользователя */
   const resetForm = () => {
     setFormData({ username: '', password: '', fullName: '', role: 'user' });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования пользователя */
   const handleEdit = (user) => {
     setFormData({ username: user.username, password: '', fullName: user.fullName || '', role: user.role });
     setEditId(user.id);
     setShowForm(true);
   };
 
+  /** Обработка отправки формы (создание/обновление пользователя) */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.username.trim()) { toast.error('Введите логин'); return; }
@@ -67,6 +79,7 @@ function UsersPage() {
     }
   };
 
+  /** Удаление пользователя с подтверждением */
   const handleDelete = async (id) => {
     if (await confirm({ title: 'Удалить пользователя?', message: 'Это действие нельзя отменить.', type: 'danger' })) {
       try {
@@ -127,6 +140,7 @@ function UsersPage() {
         </div>
       )}
 
+      {/* Таблица пользователей */}
       <div className="table-container">
         <div className="table-scroll">
           <table className="data-table">

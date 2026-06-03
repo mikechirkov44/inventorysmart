@@ -1,3 +1,8 @@
+/**
+ * @module index
+ * @description Точка входа Express-сервера. Настройка middleware, маршрутов и запуск
+ */
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -11,6 +16,11 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+/**
+ * Инициализирует сервер: выполняет миграции БД, регистрирует
+ * публичные и защищённые маршруты, запускает HTTP-прослушивание
+ * @returns {Promise<void>}
+ */
 async function start() {
   // Run database migrations
   await migrate();

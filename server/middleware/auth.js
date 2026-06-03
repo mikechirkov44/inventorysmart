@@ -1,6 +1,19 @@
+/**
+ * @module auth
+ * @description Middleware для JWT-аутентификации и проверки прав доступа
+ */
+
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../models/user');
 
+/**
+ * Проверяет JWT-токен из заголовка Authorization и декодирует
+ * данные пользователя в req.user
+ * @param {import('express').Request} req - Объект запроса Express
+ * @param {import('express').Response} res - Объект ответа Express
+ * @param {import('express').NextFunction} next - Функция передачи управления дальше
+ * @returns {void}
+ */
 function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -17,18 +30,13 @@ function authenticate(req, res, next) {
   }
 }
 
-function requireRole(...roles) {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authorization required' });
-    }
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  };
-}
-
+/**
+ * Фабрика middleware, проверяющего наличие у пользователя права
+ * на указанное действие (view / edit / full) над ресурсом
+ * @param {string} resource - Идентификатор ресурса (equipment, works, rooms и т.д.)
+ * @param {string} action - Требуемое действие ('view' или 'edit')
+ * @returns {import('express').RequestHandler} Middleware-функция Express
+ */
 function requirePermission(resource, action) {
   return (req, res, next) => {
     if (!req.user || !req.user.permissions) {
@@ -59,6 +67,13 @@ function requirePermission(resource, action) {
   };
 }
 
+/**
+ * Middleware, разрешающее доступ только пользователям с ролью superadmin
+ * @param {import('express').Request} req - Объект запроса Express
+ * @param {import('express').Response} res - Объект ответа Express
+ * @param {import('express').NextFunction} next - Функция передачи управления дальше
+ * @returns {void}
+ */
 function requireSuperadmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authorization required' });
@@ -69,4 +84,4 @@ function requireSuperadmin(req, res, next) {
   next();
 }
 
-module.exports = { authenticate, requireRole, requirePermission, requireSuperadmin };
+module.exports = { authenticate, requirePermission, requireSuperadmin };

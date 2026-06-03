@@ -1,9 +1,19 @@
+/**
+ * @module schedule
+ * @description Утилиты расчёта графика планово-предупредительного обслуживания
+ */
+
 const Equipment = require('../models/equipment');
 const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 
+/**
+ * Загружает все виды работ и возвращает их в виде объекта,
+ * ключом которого является id работы
+ * @returns {Promise<Record<string, import('../models/work')>>} Словарь работ по ID
+ */
 async function getWorkMap() {
   const allWorks = await Work.findAll();
   const map = {};
@@ -11,6 +21,15 @@ async function getWorkMap() {
   return map;
 }
 
+/**
+ * Рассчитывает график плановых работ для конкретного элемента оборудования
+ * на основе истории нарядов-заказов и периодичности работ
+ * @param {object} equipment - Объект оборудования с полем workIds
+ * @param {Record<string, object>} workMap - Словарь работ по ID (из getWorkMap)
+ * @returns {Promise<Array<{workId: string, workName: string, description: string,
+ *   frequencyDays: number, category: string, lastCompleted: string|null,
+ *   nextDue: string|null, isOverdue: boolean}>>} Список задач с датами
+ */
 async function getEquipmentSchedule(equipment, workMap) {
   const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
   const today = new Date();
@@ -55,6 +74,17 @@ async function getEquipmentSchedule(equipment, workMap) {
   return tasks;
 }
 
+/**
+ * Формирует события календаря планового обслуживания за указанный месяц,
+ * объединяя данные по оборудованию, работам, помещениям и сотрудникам
+ * @param {number} year - Год (например, 2026)
+ * @param {number} month - Месяц (0–11, как в Date)
+ * @returns {Promise<Record<string, Array<{equipmentId: string,
+ *   equipmentName: string, inventoryNumber: string, workId: string,
+ *   workName: string, frequencyDays: number, isOverdue: boolean,
+ *   lastCompleted: string|null, roomName: string|null,
+ *   employeeName: string|null}>>>} События, сгруппированные по дням (YYYY-MM-DD)
+ */
 async function getCalendarEvents(year, month) {
   const allEquipment = await Equipment.findAll();
   const workMap = await getWorkMap();
@@ -100,6 +130,16 @@ async function getCalendarEvents(year, month) {
   return events;
 }
 
+/**
+ * Возвращает список ближайших задач по плановому обслуживанию
+ * в пределах указанного горизонта планирования
+ * @param {number} [daysAhead=7] - Количество дней вперёд от текущей даты
+ * @returns {Promise<Array<{equipmentId: string, equipmentName: string,
+ *   inventoryNumber: string, workId: string, workName: string,
+ *   frequencyDays: number, nextDue: string, isOverdue: boolean,
+ *   roomName: string|null, employeeId: string|null,
+ *   employeeName: string|null}>>} Отсортированный список задач
+ */
 async function getUpcomingTasks(daysAhead = 7) {
   const allEquipment = await Equipment.findAll();
   const workMap = await getWorkMap();

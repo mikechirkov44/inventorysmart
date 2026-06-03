@@ -1,7 +1,20 @@
+/**
+ * @module SuperadminModel
+ * @description Модель для управления компаниями и пользователями на уровне суперадмина.
+ * Предоставляет функции для CRUD-операций над компаниями,
+ * генерации лицензионных ключей и управления пользователями всех компаний.
+ */
+
 const { query } = require('../db');
 const bcrypt = require('bcryptjs');
 
 module.exports = {
+  /**
+   * Ищет пользователя по имени пользователя.
+   * @async
+   * @param {string} username - Имя пользователя
+   * @returns {Promise<Object|null>} Объект пользователя или null
+   */
   findUserByUsername: async (username) => {
     const { rows } = await query(
       'SELECT * FROM users WHERE username = $1',
@@ -10,6 +23,11 @@ module.exports = {
     return rows[0] || null;
   },
 
+  /**
+   * Получает список всех компаний с количеством пользователей и информацией о лицензии.
+   * @async
+   * @returns {Promise<Array<Object>>} Список компаний
+   */
   getCompanies: async () => {
     const { rows } = await query(`
       SELECT
@@ -47,6 +65,11 @@ module.exports = {
     });
   },
 
+  /**
+   * Получает список всех пользователей (кроме суперадминов) с должностями и компаниями.
+   * @async
+   * @returns {Promise<Array<Object>>} Список пользователей
+   */
   getAllUsers: async () => {
     const { rows } = await query(`
       SELECT
@@ -75,6 +98,13 @@ module.exports = {
     }));
   },
 
+  /**
+   * Генерирует лицензионный ключ для компании.
+   * @param {string} companyId - Идентификатор компании
+   * @param {string} plan - Название тарифного плана
+   * @param {number} daysValid - Срок действия в днях
+   * @returns {string} Лицензионный ключ (Base64)
+   */
   generateLicenseKey: (companyId, plan, daysValid) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + daysValid);
@@ -82,6 +112,12 @@ module.exports = {
     return Buffer.from(JSON.stringify(payload)).toString('base64');
   },
 
+  /**
+   * Создаёт новую компанию с уникальным company_id.
+   * @async
+   * @param {string} companyName - Название компании
+   * @returns {Promise<Object>} Созданная компания (id, companyId, companyName, createdAt)
+   */
   createCompany: async (companyName) => {
     const companyId = require('crypto').randomUUID();
     const { rows } = await query(
@@ -96,6 +132,12 @@ module.exports = {
     };
   },
 
+  /**
+   * Обновляет лицензионный ключ компании.
+   * @async
+   * @param {string} companyId - Идентификатор компании
+   * @param {string} licenseKey - Новый лицензионный ключ
+   */
   updateLicense: async (companyId, licenseKey) => {
     await query(
       'UPDATE company_settings SET license_key = $1, updated_at = NOW() WHERE company_id = $2',
@@ -103,6 +145,17 @@ module.exports = {
     );
   },
 
+  /**
+   * Создаёт пользователя в указанной компании.
+   * @async
+   * @param {Object} params - Параметры пользователя
+   * @param {string} params.username - Имя пользователя (уникальное)
+   * @param {string} params.password - Пароль (хэшируется)
+   * @param {string} params.fullName - Полное имя
+   * @param {string} params.companyId - ID компании
+   * @param {number} [params.positionId] - ID должности
+   * @returns {Promise<Object|null>} Созданный пользователь или null если имя занято
+   */
   createUser: async ({ username, password, fullName, companyId, positionId }) => {
     const { rows: existing } = await query(
       'SELECT id FROM users WHERE username = $1',

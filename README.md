@@ -1,6 +1,6 @@
 # InventorySmart - Система учёта оборудования и ЗИП
 
-Система для учёта оборудования, планирования ремонтных работ, учёта запасных частей (ЗИП) и фиксации выполненных работ.
+Система для учёта оборудования, планирования ремонтных работ, учёта запасных частей (ЗИП) и фиксации выполненных работ. Мульти-тенантная архитектура с панелью суперадминистратора.
 
 ## Возможности
 
@@ -18,7 +18,9 @@
 - **Импорт** — импорт оборудования из Excel
 - **Уведомления** — центр уведомлений, оповещения о предстоящих работах
 - **Календарь** — месячный вид запланированных работ
-- **Пользователи** — ролевая модель admin/user, JWT-аутентификация
+- **Пользователи** — ролевая модель admin/user, JWT-аутентификация, привязка к порталу
+- **Мульти-тенантность** — несколько компаний (порталов), каждая со своими пользователями
+- **Панель суперадмина** — управление компаниями, пользователями и лицензиями
 
 ## Технологии
 
@@ -32,204 +34,275 @@
 | UI-иконки | lucide-react |
 | Деплой | Docker Compose (3 сервиса: db, server, client) |
 
-## Установка
+## Быстрый старт (Docker)
 
-### Docker (рекомендуется)
+### Автоматический деплой на VPS
 
 ```bash
-docker-compose up -d
+# Клонируйте репозиторий
+git clone https://github.com/mikechirkov44/inventorysmart.git
+cd inventorysmart
+
+# Запустите скрипт деплоя
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-- Приложение: http://localhost
-- API: http://localhost:3001/api
-- База данных: localhost:5432
+Скрипт автоматически:
+1. Установит Docker и Docker Compose
+2. Запросит пароль суперадминистратора
+3. Сгенерирует JWT_SECRET и пароль БД
+4. Соберёт и запустит контейнеры
 
-### Локальная разработка
+### Ручной запуск
 
-1. Установите PostgreSQL и создайте базу `inventorysmart`
-
-2. Установите зависимости:
 ```bash
-npm install
-cd client
-npm install
+# 1. Скопируйте и заполните .env
+cp .env.example .env
+# Отредактируйте .env — заполните все обязательные переменные
+
+# 2. Запустите
+docker compose up -d
 ```
 
-3. Настройте переменную окружения:
+### Переменные окружения (.env)
+
+| Переменная | Обязательна | Описание |
+|------------|:-----------:|----------|
+| `POSTGRES_DB` | Да | Имя базы данных |
+| `POSTGRES_USER` | Да | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | Да | Пароль PostgreSQL |
+| `JWT_SECRET` | Да | Секретный ключ JWT (мин. 32 символа) |
+| `SUPERADMIN_USERNAME` | Нет | Логин суперадмина (по умолчанию: `superadmin`) |
+| `SUPERADMIN_PASSWORD` | Да | Пароль суперадмина |
+| `APP_PORT` | Нет | Порт приложения (по умолчанию: `80`) |
+| `DB_PORT` | Нет | Порт PostgreSQL (по умолчанию: `5433`) |
+
+### После запуска
+
+| Сервис | URL |
+|--------|-----|
+| Приложение | http://localhost |
+| Панель суперадмина | http://localhost/admin/ |
+| API | http://localhost/api/health |
+
+## Управление
+
 ```bash
-export DATABASE_URL=postgresql://inventorysmart:inventorysmart_secret@localhost:5432/inventorysmart
+docker compose ps          # статус контейнеров
+docker compose logs -f     # логи в реальном времени
+docker compose restart     # перезапуск
+docker compose down        # остановка
+docker compose up -d       # запуск
+docker compose up -d --build  # пересборка и запуск
 ```
 
-4. Запустите:
+## Панель суперадминистратора
+
+Доступна по адресу `/admin/`. Суперадминистратор управляет:
+
+1. **Компаниями** — создание порталов для организаций
+2. **Пользователями** — назначение пользователей на конкретные порталы
+3. **Лицензиями** — генерация лицензионных ключей (план + срок действия)
+
+Админы порталов создаются через панель суперадмина и привязываются к конкретной компании.
+
+## Локальная разработка
+
+### Windows
+
+```powershell
+# Запустите все сервисы (backend + frontend + admin)
+.\start.ps1
+```
+
+- Основное приложение: http://localhost:5173
+- Панель суперадмина: http://localhost:5174
+- API сервер: http://localhost:3001
+
+### Linux/macOS
+
 ```bash
-# Backend
+# Терминал 1: Backend
 npm start
 
-# Frontend (отдельный терминал)
-cd client
-npm run dev
-```
+# Терминал 2: Frontend
+cd client && npm run dev
 
-5. Откройте http://localhost:5173, пройдите первый экран настройки для создания админа.
+# Терминал 3: Admin panel
+cd client-admin && npm run dev
+```
 
 ## Структура проекта
 
 ```
 inventorysmart/
-├── docker-compose.yml       # Оркестрация контейнеров
-├── server/                  # Бэкенд
-│   ├── db.js               # PostgreSQL пул + миграции
-│   ├── index.js            # Express, подключение роутеров
-│   ├── middleware/auth.js   # JWT-аутентификация
-│   ├── models/             # Модели данных (SQL)
-│   │   ├── user.js
-│   │   ├── employee.js
-│   │   ├── room.js
-│   │   ├── equipment.js
-│   │   ├── work.js
-│   │   ├── workOrder.js
-│   │   ├── sparePart.js
-│   │   ├── sparePartReceipt.js
-│   │   ├── incident.js
-│   │   └── notification.js
-│   ├── routes/             # API маршруты
-│   │   ├── auth.js
-│   │   ├── equipment.js
-│   │   ├── works.js
-│   │   ├── work-orders.js
-│   │   ├── scan.js
-│   │   ├── spareParts.js
-│   │   ├── sparePartsReceipts.js
-│   │   ├── incidents.js
-│   │   ├── analytics.js
-│   │   ├── calendar.js
-│   │   ├── schedule.js
-│   │   ├── import.js
-│   │   ├── notifications.js
-│   │   ├── rooms.js
-│   │   ├── employees.js
-│   │   ├── users.js
-│   │   └── setup.js
-│   ├── uploads/            # Загруженные файлы
+├── docker-compose.yml          # Оркестрация: db, server, client
+├── deploy.sh                   # Скрипт деплоя на VPS
+├── .env.example                # Пример переменных окружения
+│
+├── server/                     # Бэкенд (Node.js + Express)
+│   ├── index.js               # Точка входа, настройка маршрутов
+│   ├── db.js                  # PostgreSQL пул + миграции
+│   ├── middleware/
+│   │   └── auth.js            # JWT-аутентификация + проверка прав
+│   ├── models/                # Модели данных (13 файлов)
+│   ├── routes/                # API маршруты (20 файлов)
+│   ├── utils/
+│   │   ├── upload.js          # Общая конфигурация загрузки файлов
+│   │   └── schedule.js        # Утилиты расчёта графика
 │   └── Dockerfile
-├── client/                 # Фронтенд
+│
+├── client/                     # Основное приложение (React SPA)
 │   ├── src/
-│   │   ├── pages/          # Страницы React (20 шт.)
-│   │   ├── services/api.js # API-клиент (axios)
-│   │   ├── components/     # Переиспользуемые компоненты
-│   │   └── contexts/AuthContext.jsx
-│   ├── vite.config.js
-│   └── Dockerfile
-└── start.ps1              # Скрипт запуска (Windows)
+│   │   ├── App.jsx            # Маршрутизация + навигация
+│   │   ├── App.css            # Стили (~5000 строк)
+│   │   ├── pages/             # Страницы (21 файл)
+│   │   ├── components/        # Переиспользуемые компоненты (8 файлов)
+│   │   ├── contexts/
+│   │   │   └── AuthContext.jsx # Контекст аутентификации
+│   │   └── services/
+│   │       └── api.js         # API-клиент (axios)
+│   ├── nginx.conf             # Конфигурация nginx для продакшена
+│   └── Dockerfile             # Многоэтапная сборка (client + admin)
+│
+└── client-admin/               # Панель суперадмина (отдельная SPA)
+    └── src/
+        ├── SuperAdminPage.jsx # Управление компаниями/пользователями/лицензиями
+        └── api.js             # API-клиент суперадмина
 ```
 
 ## API Endpoints
 
 ### Аутентификация
-- `POST /api/auth/login` — вход в систему
-- `GET /api/auth/me` — текущий пользователь
-- `POST /api/setup` — первоначальная настройка админа
+- `POST /api/auth/login` — вход (возвращает JWT + права)
+- `GET /api/auth/me` — текущий пользователь с правами
+- `POST /api/setup` — первоначальная настройка (только если нет пользователей)
 
 ### Оборудование
 - `GET /api/equipment` — список оборудования
 - `GET /api/equipment/:id` — получить оборудование
-- `POST /api/equipment` — создать оборудование
-- `PUT /api/equipment/:id` — обновить оборудование
-- `DELETE /api/equipment/:id` — удалить оборудование
-- `GET /api/equipment/:id/qr` — QR-код оборудования
+- `POST /api/equipment` — создать (с фото)
+- `PUT /api/equipment/:id` — обновить
+- `DELETE /api/equipment/:id` — удалить
+- `GET /api/equipment/:id/qr` — QR-код (PNG)
 
 ### Сканирование
-- `GET /api/scan/:qrCode` — сканировать QR-код (возвращает оборудование + плановые работы с расходом ЗИП)
-- `POST /api/scan/complete` — зафиксировать выполнение работы (принимает sparePartsUsed для автосписания)
+- `GET /api/scan/:qrCode` — сканировать QR (оборудование + плановые работы + расход ЗИП)
+- `POST /api/scan/complete` — выполнить работу (автосписание ЗИП)
 
 ### Работы (справочник)
 - `GET /api/works` — список видов работ
-- `POST /api/works` — создать вид работы
-- `PUT /api/works/:id` — обновить вид работы
-- `DELETE /api/works/:id` — удалить вид работы
+- `POST /api/works` — создать
+- `PUT /api/works/:id` — обновить
+- `DELETE /api/works/:id` — удалить
 
 ### Заказ-наряды (журнал)
-- `GET /api/work-orders` — список заказ-нарядов
-- `GET /api/work-orders/:id` — получить заказ-наряд
-- `POST /api/work-orders` — создать заказ-наряд
-- `PUT /api/work-orders/:id` — обновить (с автосписанием ЗИП при переводе в completed)
-- `DELETE /api/work-orders/:id` — удалить заказ-наряд
+- `GET /api/work-orders` — список
+- `GET /api/work-orders/:id` — получить
+- `POST /api/work-orders` — создать (с фото)
+- `PUT /api/work-orders/:id` — обновить (автосписание при completed)
+- `DELETE /api/work-orders/:id` — удалить
 
 ### ЗИП
-- `GET /api/spare-parts` — список ЗИП (фильтр: ?equipmentId=)
-- `GET /api/spare-parts/:id` — получить ЗИП со связями
-- `POST /api/spare-parts` — создать позицию ЗИП
-- `PUT /api/spare-parts/:id` — обновить позицию ЗИП
-- `DELETE /api/spare-parts/:id` — удалить позицию ЗИП
-- `POST /api/spare-parts/replenish` — пополнить склад (прямое инкрементирование)
+- `GET /api/spare-parts` — список (фильтр: `?equipmentId=`)
+- `GET /api/spare-parts/:id` — получить со связями
+- `POST /api/spare-parts` — создать
+- `PUT /api/spare-parts/:id` — обновить
+- `DELETE /api/spare-parts/:id` — удалить
+- `POST /api/spare-parts/replenish` — пополнить склад
 
 ### Приходные документы ЗИП
-- `GET /api/spare-parts-receipts` — список документов
-- `GET /api/spare-parts-receipts/:id` — получить документ с позициями
-- `GET /api/spare-parts-receipts/next-number` — получить следующий номер (ПЗИП-YYYY-NNN)
-- `POST /api/spare-parts-receipts` — создать документ (автоматически инкрементирует остатки)
-- `DELETE /api/spare-parts-receipts/:id` — удалить документ (откатывает остатки)
+- `GET /api/spare-parts-receipts` — список
+- `GET /api/spare-parts-receipts/:id` — получить с позициями
+- `GET /api/spare-parts-receipts/next-number` — следующий номер (ПЗИП-YYYY-NNN)
+- `POST /api/spare-parts-receipts` — создать (автоинкремент остатков)
+- `DELETE /api/spare-parts-receipts/:id` — удалить (откат остатков)
 
 ### Инциденты
-- `GET /api/incidents` — список инцидентов
-- `POST /api/incidents` — сообщить о поломке
-- `PUT /api/incidents/:id` — обновить статус/комментарий
+- `GET /api/incidents` — список
+- `POST /api/incidents` — сообщить о поломке (с фото)
+- `PUT /api/incidents/:id` — обновить статус
 
 ### Уведомления
-- `GET /api/notifications` — список уведомлений
+- `GET /api/notifications` — список
 - `GET /api/notifications/unread-count` — количество непрочитанных
-- `PUT /api/notifications/:id/read` — отметить как прочитанное
-- `PUT /api/notifications/read-all` — отметить все как прочитанные
+- `PUT /api/notifications/:id/read` — отметить прочитанным
+- `PUT /api/notifications/read-all` — отметить все
 
 ### Аналитика
-- `GET /api/analytics` — аналитика по сотрудникам
+- `GET /api/analytics` — эффективность сотрудников
 - `GET /api/analytics/summary` — сводка
 
 ### Календарь / План-график
 - `GET /api/calendar?month=&year=` — события за месяц
-- `GET /api/schedule` — план-график (фильтры: employeeId, groupBy)
+- `GET /api/schedule` — план-график (фильтры: `employeeId`, `groupBy`)
 
 ### Справочники
 - `GET/POST /api/rooms` — помещения
 - `GET/POST /api/employees` — сотрудники
-- `GET/POST /api/users` — пользователи (только admin)
+- `GET/POST /api/users` — пользователи
+- `GET/POST /api/positions` — должности
+
+### Компания и лицензии
+- `GET /api/company` — настройки компании
+- `PUT /api/company` — обновить настройки
+
+### Суперадмин
+- `POST /api/superadmin/login` — вход суперадмина
+- `GET /api/superadmin/companies` — список компаний
+- `POST /api/superadmin/companies` — создать компанию
+- `GET /api/superadmin/users` — список пользователей
+- `POST /api/superadmin/users` — создать пользователя для компании
+- `POST /api/superadmin/generate-license` — сгенерировать лицензию
 
 ### Импорт
 - `POST /api/import/excel` — импорт из Excel
 - `GET /api/import/template` — скачать шаблон
 
-## Формат базы данных
+## Структура базы данных
 
 ### Основные таблицы
 
 | Таблица | Описание |
 |---------|----------|
-| `users` | Пользователи (admin/user) |
+| `users` | Пользователи (роли: superadmin, admin, user) |
 | `employees` | Сотрудники |
 | `rooms` | Помещения |
 | `equipment` | Оборудование |
 | `works` | Виды работ (справочник) |
-| `equipment_works` | Связь оборудование ↔ работы |
+| `equipment_works` | Связь оборудование ↔ работы (M:N) |
 | `work_orders` | Заказ-наряды (выполненные работы) |
 | `spare_parts` | ЗИП (запасные части) |
-| `spare_parts_equipment` | Связь ЗИП ↔ оборудование |
-| `spare_parts_works` | Связь ЗИП ↔ работы (+ расход) |
+| `spare_parts_equipment` | Связь ЗИП ↔ оборудование (M:N) |
+| `spare_parts_works` | Связь ЗИП ↔ работы + расход (M:N) |
 | `spare_part_receipts` | Приходные документы ЗИП |
 | `spare_part_receipt_items` | Позиции приходных документов |
 | `incidents` | Инциденты (поломки) |
 | `notifications` | Уведомления |
+| `positions` | Должности с JSON-правами доступа |
+| `company_settings` | Настройки компании + лицензия |
 
 ### Ключевые связи
 
-- **Оборудование ↔ Работы**: M:N через `equipment_works` (какие работы применимы к оборудованию)
-- **ЗИП ↔ Оборудование**: M:N через `spare_parts_equipment` (какие ЗИП подходят к оборудованию)
-- **ЗИП ↔ Работы**: M:N через `spare_parts_works` с полем `quantity` (расход ЗИП на единицу работы)
+- **Оборудование ↔ Работы**: M:N через `equipment_works`
+- **ЗИП ↔ Оборудование**: M:N через `spare_parts_equipment`
+- **ЗИП ↔ Работы**: M:N через `spare_parts_works` (поле `quantity` — расход на единицу)
 
 ## Миграция данных
 
-При первом запуске сервера автоматически создаются все таблицы (`CREATE TABLE IF NOT EXISTS`) и добавляются новые колонки (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`).
+При первом запуске сервера автоматически создаются все таблицы и добавляются новые колонки.
 
 Для миграции данных из JSON-файлов (legacy):
 ```bash
 node server/migrate-data.js
 ```
+
+## Лицензирование
+
+Лицензионный ключ генерируется суперадмином через панель `/admin/`. Ключ содержит:
+- План (DEMO, BASIC, PRO, etc.)
+- Дату окончания
+- ID компании
+
+Ключ передаётся клиенту и вводится в настройках_portalа.

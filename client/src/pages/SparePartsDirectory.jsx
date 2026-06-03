@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Страница справочника запасных частей (ЗИП).
+ * Позволяет просматривать, добавлять, редактировать и удалять позиции ЗИП,
+ * связывать их с оборудованием и работами.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 
+/** Компонент справочника запасных частей */
 function SparePartsDirectory() {
   const [items, setItems] = useState([]);
   const [equipment, setEquipment] = useState([]);
@@ -22,8 +29,10 @@ function SparePartsDirectory() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка всех необходимых данных при монтировании */
   useEffect(() => { fetchData(); }, []);
 
+  /** Загрузка запчастей, оборудования и работ с сервера */
   const fetchData = async () => {
     try {
       const [sp, eq, wk] = await Promise.all([sparePartsAPI.getAll(), equipmentAPI.getAll(), worksAPI.getAll()]);
@@ -34,21 +43,26 @@ function SparePartsDirectory() {
     } catch { toast.error('Ошибка', 'Ошибка загрузки'); setLoading(false); }
   };
 
+  /** Словарь для быстрого поиска имени оборудования по ID */
   const eqMap = useMemo(() => { const m = {}; equipment.forEach(e => { m[e.id] = e.name; }); return m; }, [equipment]);
+  /** Словарь для быстрого поиска имени работы по ID */
   const wkMap = useMemo(() => { const m = {}; works.forEach(w => { m[w.id] = w.name; }); return m; }, [works]);
 
+  /** Фильтрация оборудования для выпадающего списка */
   const filteredEq = useMemo(() => {
     if (!eqSearch) return equipment;
     const s = eqSearch.toLowerCase();
     return equipment.filter(e => e.name.toLowerCase().includes(s) || (e.inventoryNumber && e.inventoryNumber.toLowerCase().includes(s)));
   }, [equipment, eqSearch]);
 
+  /** Фильтрация работ для выпадающего списка */
   const filteredWk = useMemo(() => {
     if (!wkSearch) return works;
     const s = wkSearch.toLowerCase();
     return works.filter(w => w.name.toLowerCase().includes(s));
   }, [works, wkSearch]);
 
+  /** Фильтрация позиций ЗИП по поисковому запросу */
   const filtered = useMemo(() => {
     if (!search) return items;
     const s = search.toLowerCase();
@@ -59,12 +73,14 @@ function SparePartsDirectory() {
     );
   }, [items, search]);
 
+  /** Сброс формы и состояния редактирования */
   const resetForm = () => {
     setFormData({ name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: [] });
     setEditId(null);
     setShowForm(false);
   };
 
+  /** Открытие формы редактирования позиции */
   const handleEdit = (item) => {
     setFormData({
       name: item.name,
@@ -80,6 +96,7 @@ function SparePartsDirectory() {
     setShowForm(true);
   };
 
+  /** Переключение ID в массиве (оборудование или работы) */
   const toggleId = (field, id) => {
     setFormData(prev => {
       const ids = prev[field].includes(id) ? prev[field].filter(x => x !== id) : [...prev[field], id];
@@ -87,6 +104,7 @@ function SparePartsDirectory() {
     });
   };
 
+  /** Переключение привязки работы к ЗИП */
   const toggleWorkLink = (workId) => {
     setFormData(prev => {
       const exists = prev.workLinks.find(wl => wl.workId === workId);
@@ -97,6 +115,7 @@ function SparePartsDirectory() {
     });
   };
 
+  /** Обновление расхода ЗИП при выполнении работы */
   const updateWorkQuantity = (workId, quantity) => {
     setFormData(prev => ({
       ...prev,
@@ -104,6 +123,7 @@ function SparePartsDirectory() {
     }));
   };
 
+  /** Обработка отправки формы (создание или обновление) */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) { setError('Введите наименование'); return; }
@@ -119,6 +139,7 @@ function SparePartsDirectory() {
     } catch { toast.error('Ошибка', 'Ошибка сохранения'); }
   };
 
+  /** Удаление позиции ЗИП с подтверждением */
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удаление', message: 'Удалить позицию?', type: 'danger' });
     if (!confirmed) return;
@@ -248,6 +269,7 @@ function SparePartsDirectory() {
         </div>
       )}
 
+      {/* Панель фильтров и поиска */}
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по наименованию, артикулу, производителю..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
@@ -255,6 +277,7 @@ function SparePartsDirectory() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {items.length}</div>
       </div>
 
+      {/* Таблица позиций ЗИП */}
       <div className="table-container">
         <div className="table-scroll">
           <table className="data-table">

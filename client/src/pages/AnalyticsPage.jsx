@@ -1,16 +1,25 @@
+/**
+ * @fileoverview Страница аналитики.
+ * Отображает статистику выполнения работ по сотрудникам,
+ * диаграмму эффективности и отчёт по остаткам ЗИП.
+ */
+
 import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '../services/api';
 import { sparePartsAPI } from '../services/api';
 
+/** Компонент горизонтальной диаграммы эффективности сотрудников */
 function PerformanceChart({ data }) {
   const [animated, setAnimated] = useState(false);
   const chartRef = useRef(null);
 
+  /** Запуск анимации диаграммы после монтирования */
   useEffect(() => {
     const timer = setTimeout(() => setAnimated(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
+  /** Сортировка сотрудников по проценту выполнения */
   const sorted = [...data]
     .filter(e => e.totalPlanned > 0)
     .sort((a, b) => b.completionRate - a.completionRate);
@@ -59,6 +68,7 @@ function PerformanceChart({ data }) {
   );
 }
 
+/** Компонент отчёта по остаткам ЗИП на складе */
 function StockReport() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,8 +76,10 @@ function StockReport() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  /** Загрузка всех позиций ЗИП */
   useEffect(() => { fetchItems(); }, []);
 
+  /** Загрузка данных остатков с сервера */
   const fetchItems = async () => {
     try {
       const res = await sparePartsAPI.getAll();
@@ -79,6 +91,7 @@ function StockReport() {
     }
   };
 
+  /** Фильтрация позиций по поиску и статусу остатков */
   const filtered = useMemo(() => {
     let result = [...items];
     if (search) {
@@ -95,6 +108,7 @@ function StockReport() {
     return result;
   }, [items, search, filterStatus]);
 
+  /** Расчёт сводной статистики остатков */
   const stats = useMemo(() => {
     const total = items.reduce((s, i) => s + (i.quantity || 0), 0);
     const empty = items.filter(i => (i.quantity || 0) === 0).length;
@@ -189,12 +203,14 @@ function StockReport() {
   );
 }
 
+/** Основной компонент страницы аналитики */
 function AnalyticsPage() {
   const [analytics, setAnalytics] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('employees');
 
+  /** Загрузка данных аналитики и сводки при монтировании */
   useEffect(() => {
     Promise.all([api.get('/analytics'), api.get('/analytics/summary')])
       .then(([a, s]) => { setAnalytics(a.data); setSummary(s.data); setLoading(false); })
@@ -213,6 +229,7 @@ function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Переключение между видом сотрудников и ЗИП */}
       {view === 'stock' ? (
         <StockReport />
       ) : (

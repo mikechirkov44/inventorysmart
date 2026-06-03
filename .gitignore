@@ -3,6 +3,7 @@ dist/
 dist-superadmin/
 .env
 *.log
+server.log
 .DS_Store
 Thumbs.db
 server/data/equipment.json

@@ -1,3 +1,7 @@
+/**
+ * @module EquipmentForm
+ * @description Форма добавления и редактирования оборудования. Загружает помещения и работы.
+ */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
@@ -5,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 
+/** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
   { value: 7, label: '1 раз в неделю' },
@@ -53,12 +58,14 @@ function EquipmentForm() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  /** Загрузка помещений и работ; при редактировании — данных оборудования */
   useEffect(() => {
     Promise.all([roomsAPI.getAll(), worksAPI.getAll()])
       .then(([r, w]) => { setRooms(r.data); setWorks(w.data); });
     if (isEditing) fetchEquipment();
   }, [id]);
 
+  /** Загрузка данных редактируемого оборудования */
   const fetchEquipment = async () => {
     try {
       const response = await equipmentAPI.getById(id);
@@ -79,11 +86,13 @@ function EquipmentForm() {
     }
   };
 
+  /** Обработчик изменения текстовых полей формы */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  /** Обработчик выбора фотографии с предпросмотром */
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -94,6 +103,7 @@ function EquipmentForm() {
     }
   };
 
+  /** Переключение привязки плановой работы */
   const handleWorkToggle = (workId) => {
     setFormData(prev => {
       const ids = prev.workIds.includes(workId)
@@ -103,6 +113,7 @@ function EquipmentForm() {
     });
   };
 
+  /** Отправка формы: создание или обновление оборудования */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

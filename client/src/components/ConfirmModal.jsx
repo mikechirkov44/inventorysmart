@@ -1,11 +1,34 @@
+/**
+ * @module ConfirmModal
+ * @description Модальное окно подтверждения действий.
+ * Предоставляет контекст для глобального вызова диалогов подтверждения.
+ */
+
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { AlertTriangle, Info, Trash2 } from 'lucide-react';
 
+/** Контекст для передачи функции confirm */
 const ConfirmContext = createContext(null);
 
+/**
+ * Провайдер контекста подтверждений.
+ * Управляет состоянием модального окна и обрабатывает нажатия клавиш.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Дочерние компоненты
+ */
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState(null);
 
+  /**
+   * Открывает модальное окно подтверждения.
+   * @param {Object} params - Параметры диалога
+   * @param {string} params.title - Заголовок окна
+   * @param {string} params.message - Текст сообщения
+   * @param {'danger'|'warning'|'info'} [params.type='danger'] - Тип сообщения
+   * @param {string} [params.confirmText='Подтвердить'] - Текст кнопки подтверждения
+   * @param {string} [params.cancelText='Отмена'] - Текст кнопки отмены
+   * @returns {Promise<boolean>} Результат подтверждения
+   */
   const confirm = useCallback(({ title, message, type = 'danger', confirmText = 'Подтвердить', cancelText = 'Отмена' }) => {
     return new Promise((resolve) => {
       setState({ title, message, type, confirmText, cancelText, resolve });
@@ -62,6 +85,7 @@ export function ConfirmProvider({ children }) {
   );
 }
 
+/** Хук для доступа к функции подтверждения. Использовать внутри ConfirmProvider. */
 export function useConfirm() {
   const ctx = useContext(ConfirmContext);
   if (!ctx) throw new Error('useConfirm must be used within ConfirmProvider');
