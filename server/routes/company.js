@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const Company = require('../models/company');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requirePermission } = require('../middleware/auth');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -39,7 +39,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.put('/', authenticate, requireRole('admin'), upload.single('logo'), async (req, res) => {
+router.put('/', authenticate, requirePermission('settings', 'edit'), upload.single('logo'), async (req, res) => {
   try {
     const data = {};
     if (req.body.companyName !== undefined) data.companyName = req.body.companyName;

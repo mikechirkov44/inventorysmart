@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requirePermission } = require('../middleware/auth');
 
-router.use(authenticate, requireRole('admin'));
+router.use(authenticate, requirePermission('settings', 'edit'));
 
 router.get('/', async (req, res) => {
   try {
@@ -28,12 +28,12 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { username, password, fullName, role } = req.body;
+    const { username, password, fullName, positionId, employeeId } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const user = await User.create({ username, password, fullName, role });
+    const user = await User.create({ username, password, fullName, positionId, employeeId });
     if (!user) {
       return res.status(409).json({ error: 'Username already exists' });
     }
@@ -45,10 +45,11 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { fullName, role, password } = req.body;
+    const { fullName, positionId, employeeId, password } = req.body;
     const updateData = {};
     if (fullName !== undefined) updateData.fullName = fullName;
-    if (role !== undefined) updateData.role = role;
+    if (positionId !== undefined) updateData.positionId = positionId;
+    if (employeeId !== undefined) updateData.employeeId = employeeId;
     if (password) updateData.password = password;
 
     const user = await User.update(req.params.id, updateData);

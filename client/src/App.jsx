@@ -29,6 +29,7 @@ function DirDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const location = useLocation();
+  const { canView } = useAuth();
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
@@ -39,6 +40,9 @@ function DirDropdown() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts');
+  if (!hasDirAccess) return null;
 
   const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts'].some(p => location.pathname === p);
 
@@ -51,13 +55,13 @@ function DirDropdown() {
       </button>
       {open && (
         <ul className="nav-dropdown-menu">
-          <li><NavLink to="/" end>Оборудование (карточки)</NavLink></li>
-          <li><NavLink to="/equipment-table">Оборудование (таблица)</NavLink></li>
-          <li className="nav-dropdown-divider" />
-          <li><NavLink to="/employees">Сотрудники</NavLink></li>
-          <li><NavLink to="/works">Работы</NavLink></li>
-          <li><NavLink to="/rooms">Помещения</NavLink></li>
-          <li><NavLink to="/spare-parts">ЗИП</NavLink></li>
+          {canView('equipment') && <li><NavLink to="/" end>Оборудование (карточки)</NavLink></li>}
+          {canView('equipment') && <li><NavLink to="/equipment-table">Оборудование (таблица)</NavLink></li>}
+          {(canView('employees') || canView('works') || canView('rooms') || canView('spareParts')) && <li className="nav-dropdown-divider" />}
+          {canView('employees') && <li><NavLink to="/employees">Сотрудники</NavLink></li>}
+          {canView('works') && <li><NavLink to="/works">Работы</NavLink></li>}
+          {canView('rooms') && <li><NavLink to="/rooms">Помещения</NavLink></li>}
+          {canView('spareParts') && <li><NavLink to="/spare-parts">ЗИП</NavLink></li>}
         </ul>
       )}
     </li>
@@ -65,7 +69,7 @@ function DirDropdown() {
 }
 
 function AppNav() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, canView } = useAuth();
 
   if (!user) return null;
 
@@ -79,14 +83,14 @@ function AppNav() {
       </div>
       <ul className="nav-links">
         <DirDropdown />
-        <li><NavLink to="/work-orders"><ClipboardList size={18} /><span>Журнал</span></NavLink></li>
-        <li><NavLink to="/spare-parts-receipts"><FileText size={18} /><span>Документы</span></NavLink></li>
-        <li><NavLink to="/scan"><ScanLine size={18} /><span>QR-сканер</span></NavLink></li>
-        <li><NavLink to="/schedule"><CalendarDays size={18} /><span>План-график</span></NavLink></li>
-        {isAdmin && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
-        {isAdmin && <li><NavLink to="/analytics"><BarChart3 size={18} /><span>Аналитика</span></NavLink></li>}
-        {isAdmin && <li><NavLink to="/import"><Upload size={18} /><span>Импорт</span></NavLink></li>}
-        {isAdmin && <li><NavLink to="/settings"><Settings size={18} /><span>Настройки</span></NavLink></li>}
+        {canView('workOrders') && <li><NavLink to="/work-orders"><ClipboardList size={18} /><span>Журнал</span></NavLink></li>}
+        {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} /><span>Документы</span></NavLink></li>}
+        {canView('scanner') && <li><NavLink to="/scan"><ScanLine size={18} /><span>QR-сканер</span></NavLink></li>}
+        {canView('schedule') && <li><NavLink to="/schedule"><CalendarDays size={18} /><span>План-график</span></NavLink></li>}
+        {canView('incidents') && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
+        {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} /><span>Аналитика</span></NavLink></li>}
+        {canView('import') && <li><NavLink to="/import"><Upload size={18} /><span>Импорт</span></NavLink></li>}
+        {canView('settings') && <li><NavLink to="/settings"><Settings size={18} /><span>Настройки</span></NavLink></li>}
       </ul>
     </nav>
   );
@@ -109,7 +113,7 @@ function TopHeader() {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, canView } = useAuth();
 
   if (loading) return <div className="loading">Загрузка...</div>;
 
@@ -119,26 +123,26 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
 
       {/* User routes */}
-      <Route path="/" element={<ProtectedRoute><EquipmentList /></ProtectedRoute>} />
-      <Route path="/equipment-table" element={<ProtectedRoute><EquipmentTable /></ProtectedRoute>} />
-      <Route path="/equipment/:id" element={<ProtectedRoute><EquipmentDetail /></ProtectedRoute>} />
-      <Route path="/equipment/new" element={<ProtectedRoute><EquipmentForm /></ProtectedRoute>} />
-      <Route path="/equipment/:id/edit" element={<ProtectedRoute><EquipmentForm /></ProtectedRoute>} />
-      <Route path="/scan" element={<ProtectedRoute><QRScanner /></ProtectedRoute>} />
-      <Route path="/scan/:qrCode" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
-      <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><EquipmentList /></ProtectedRoute>} />
+      <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><EquipmentTable /></ProtectedRoute>} />
+      <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><EquipmentDetail /></ProtectedRoute>} />
+      <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><EquipmentForm /></ProtectedRoute>} />
+      <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><EquipmentForm /></ProtectedRoute>} />
+      <Route path="/scan" element={<ProtectedRoute requiredPermission="scanner"><QRScanner /></ProtectedRoute>} />
+      <Route path="/scan/:qrCode" element={<ProtectedRoute requiredPermission="scanner"><ScanResult /></ProtectedRoute>} />
+      <Route path="/work-orders" element={<ProtectedRoute requiredPermission="workOrders"><WorkOrders /></ProtectedRoute>} />
 
-      {/* Admin routes */}
-      <Route path="/incidents" element={<ProtectedRoute adminOnly><IncidentsPage /></ProtectedRoute>} />
-      <Route path="/analytics" element={<ProtectedRoute adminOnly><AnalyticsPage /></ProtectedRoute>} />
-      <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
-      <Route path="/works" element={<ProtectedRoute adminOnly><WorksDirectory /></ProtectedRoute>} />
-      <Route path="/rooms" element={<ProtectedRoute adminOnly><RoomsDirectory /></ProtectedRoute>} />
-      <Route path="/employees" element={<ProtectedRoute adminOnly><EmployeesDirectory /></ProtectedRoute>} />
-      <Route path="/spare-parts" element={<ProtectedRoute adminOnly><SparePartsDirectory /></ProtectedRoute>} />
-      <Route path="/spare-parts-receipts" element={<ProtectedRoute adminOnly><SparePartsReceipts /></ProtectedRoute>} />
-      <Route path="/import" element={<ProtectedRoute adminOnly><ImportExcel /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute adminOnly><SettingsPage /></ProtectedRoute>} />
+      {/* Resource routes */}
+      <Route path="/incidents" element={<ProtectedRoute requiredPermission="incidents"><IncidentsPage /></ProtectedRoute>} />
+      <Route path="/analytics" element={<ProtectedRoute requiredPermission="analytics"><AnalyticsPage /></ProtectedRoute>} />
+      <Route path="/schedule" element={<ProtectedRoute requiredPermission="schedule"><SchedulePage /></ProtectedRoute>} />
+      <Route path="/works" element={<ProtectedRoute requiredPermission="works"><WorksDirectory /></ProtectedRoute>} />
+      <Route path="/rooms" element={<ProtectedRoute requiredPermission="rooms"><RoomsDirectory /></ProtectedRoute>} />
+      <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><EmployeesDirectory /></ProtectedRoute>} />
+      <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><SparePartsDirectory /></ProtectedRoute>} />
+      <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><SparePartsReceipts /></ProtectedRoute>} />
+      <Route path="/import" element={<ProtectedRoute requiredPermission="import"><ImportExcel /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><SettingsPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

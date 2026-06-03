@@ -35,10 +35,24 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const isAdmin = user?.role === 'admin';
+  const permissions = user?.permissions || {};
+
+  const can = (resource, action = 'view') => {
+    const perm = permissions[resource];
+    if (perm === undefined || perm === null || perm === 'none') return false;
+    if (typeof perm === 'boolean') return perm;
+    if (typeof perm === 'string') {
+      if (perm === 'full') return true;
+      if (perm === 'view') return action === 'view';
+    }
+    return false;
+  };
+
+  const canView = (resource) => can(resource, 'view');
+  const canEdit = (resource) => can(resource, 'edit');
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, setupRequired, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, loading, setupRequired, login, logout, permissions, can, canView, canEdit }}>
       {children}
     </AuthContext.Provider>
   );

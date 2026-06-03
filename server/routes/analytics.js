@@ -5,6 +5,7 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
+const Position = require('../models/position');
 
 async function getAnalytics() {
   const allEquipment = await Equipment.findAll();
@@ -12,6 +13,7 @@ async function getAnalytics() {
   const allWorkOrders = await WorkOrder.findAll();
   const allRooms = await Room.findAll();
   const allEmployees = await Employee.findAll();
+  const allPositions = await Position.findAll();
 
   const workMap = {};
   allWorks.forEach(w => { workMap[w.id] = w; });
@@ -22,6 +24,9 @@ async function getAnalytics() {
   const empMap = {};
   allEmployees.forEach(e => { empMap[e.id] = e; });
 
+  const positionMap = {};
+  allPositions.forEach(p => { positionMap[p.id] = p.name; });
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -31,7 +36,7 @@ async function getAnalytics() {
     employeeStats[emp.id] = {
       employeeId: emp.id,
       employeeName: `${emp.lastName} ${emp.firstName}`,
-      position: emp.position || '',
+      position: positionMap[emp.positionId] || '',
       totalPlanned: 0,
       totalCompleted: 0,
       onTime: 0,

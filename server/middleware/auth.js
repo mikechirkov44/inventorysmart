@@ -29,4 +29,34 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { authenticate, requireRole };
+function requirePermission(resource, action) {
+  return (req, res, next) => {
+    if (!req.user || !req.user.permissions) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+
+    const perm = req.user.permissions[resource];
+
+    if (perm === undefined || perm === null || perm === 'none') {
+      return res.status(403).json({ error: 'Нет доступа к этому ресурсу' });
+    }
+
+    if (typeof perm === 'boolean') {
+      if (!perm) return res.status(403).json({ error: 'Нет доступа к этому ресурсу' });
+      return next();
+    }
+
+    if (typeof perm === 'string') {
+      if (perm === 'full') return next();
+      if (perm === 'view') {
+        if (action === 'view') return next();
+        return res.status(403).json({ error: 'Нет прав на редактирование' });
+      }
+      return res.status(403).json({ error: 'Нет доступа к этому ресурсу' });
+    }
+
+    return res.status(403).json({ error: 'Некорректные права доступа' });
+  };
+}
+
+module.exports = { authenticate, requireRole, requirePermission };

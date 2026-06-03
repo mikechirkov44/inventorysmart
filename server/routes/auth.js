@@ -16,14 +16,36 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const permissions = user.position_permissions
+      ? (typeof user.position_permissions === 'string' ? JSON.parse(user.position_permissions) : user.position_permissions)
+      : {};
+
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, fullName: user.full_name },
+      {
+        id: user.id,
+        username: user.username,
+        fullName: user.full_name,
+        positionId: user.position_id,
+        positionName: user.position_name,
+        employeeId: user.employee_id,
+        permissions
+      },
       User.JWT_SECRET,
       { expiresIn: User.JWT_EXPIRES }
     );
 
-    const { password_hash, ...userInfo } = user;
-    res.json({ token, user: userInfo });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        fullName: user.full_name,
+        positionId: user.position_id,
+        positionName: user.position_name,
+        employeeId: user.employee_id,
+        permissions
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -31,11 +53,14 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findByIdWithPosition(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+    res.json({
+      ...user,
+      permissions: req.user.permissions || {}
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

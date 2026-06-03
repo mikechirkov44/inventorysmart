@@ -180,6 +180,74 @@ async function migrate() {
 
       ALTER TABLE spare_parts ADD COLUMN IF NOT EXISTS unit VARCHAR(50) DEFAULT 'шт';
       ALTER TABLE spare_parts_works ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 0;
+
+      CREATE TABLE IF NOT EXISTS positions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL UNIQUE,
+        permissions JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id UUID REFERENCES employees(id) ON DELETE SET NULL;
+
+      ALTER TABLE employees ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
+    `);
+
+    // Seed default positions
+    const { rows: posCount } = await client.query('SELECT COUNT(*) FROM positions');
+    if (parseInt(posCount[0].count) === 0) {
+      await client.query(`
+        INSERT INTO positions (name, permissions) VALUES
+        ('Администратор', '{
+          "equipment": "full", "employees": "full", "works": "full",
+          "rooms": "full", "spareParts": "full", "workOrders": "full",
+          "sparePartsReceipts": "full", "scanner": true, "schedule": true,
+          "incidents": "full", "analytics": true, "import": true,
+          "settings": "full"
+        }'),
+        ('Механик', '{
+          "equipment": "view", "employees": "none", "works": "none",
+          "rooms": "none", "spareParts": "none", "workOrders": "full",
+          "sparePartsReceipts": "none", "scanner": true, "schedule": true,
+          "incidents": "full", "analytics": false, "import": false,
+          "settings": "none"
+        }'),
+        ('Руководитель', '{
+          "equipment": "full", "employees": "full", "works": "full",
+          "rooms": "full", "spareParts": "full", "workOrders": "full",
+          "sparePartsReceipts": "full", "scanner": false, "schedule": true,
+          "incidents": "full", "analytics": true, "import": true,
+          "settings": "view"
+        }')
+      `);
+    }
+
+    // Migrate existing users: role='admin' -> Администратор, role='user' -> Механик
+    await client.query(`
+      UPDATE users SET position_id = (
+        SELECT id FROM positions WHERE name = 'Администратор'
+      ) WHERE role = 'admin' AND position_id IS NULL
+    `);
+    await client.query(`
+      UPDATE users SET position_id = (
+        SELECT id FROM positions WHERE name = 'Механик'
+      ) WHERE role = 'user' AND position_id IS NULL
+    `);
+
+    // Migrate employees: match free-text position to positions table
+    await client.query(`
+      UPDATE employees e SET position_id = (
+        SELECT id FROM positions p WHERE p.name = e.position
+      ) WHERE position_id IS NULL AND position != ''
+    `);
+
+    // Ensure Механик has schedule access
+    await client.query(`
+      UPDATE positions
+      SET permissions = jsonb_set(permissions, '{schedule}', 'true')
+      WHERE name = 'Механик' AND permissions->>'schedule' = 'false'
     `);
 
     await client.query('COMMIT');

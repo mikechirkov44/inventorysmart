@@ -5,7 +5,7 @@ const path = require('path');
 const Incident = require('../models/incident');
 const Notification = require('../models/notification');
 const Equipment = require('../models/equipment');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requirePermission } = require('../middleware/auth');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
@@ -40,7 +40,13 @@ router.post('/', upload.array('photos', 5), async (req, res) => {
     }
 
     const User = require('../models/user');
-    const admins = (await User.findAll()).filter(u => u.role === 'admin');
+    const Position = require('../models/position');
+    const allUsers = await User.findAll();
+    const admins = allUsers.filter(u => {
+      if (!u.positionPermissions) return false;
+      const perm = u.positionPermissions.incidents;
+      return perm === 'full' || perm === true;
+    });
     for (const admin of admins) {
       await Notification.create({
         userId: admin.id,
@@ -58,7 +64,7 @@ router.post('/', upload.array('photos', 5), async (req, res) => {
   }
 });
 
-router.get('/', requireRole('admin'), async (req, res) => {
+router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
   try {
     let incidents = await Incident.findAll();
     const { status, equipmentId } = req.query;
@@ -111,7 +117,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', requireRole('admin'), async (req, res) => {
+router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
     const updateData = {};
@@ -138,7 +144,7 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
   }
 });
 
-router.delete('/:id', requireRole('admin'), async (req, res) => {
+router.delete('/:id', requirePermission('incidents', 'delete'), async (req, res) => {
   try {
     const deleted = await Incident.remove(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Not found' });

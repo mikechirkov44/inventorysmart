@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { companyAPI, usersAPI } from '../services/api';
+import { companyAPI, usersAPI, positionsAPI, employeesAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, Server, CheckCircle, XCircle } from 'lucide-react';
+import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
 
 const TIMEZONES = [
   { value: 'Europe/Kaliningrad', label: '(GMT+2:00) Kaliningrad' },
@@ -17,10 +17,32 @@ const TIMEZONES = [
   { value: 'Asia/Kamchatka', label: '(GMT+12:00) Kamchatka' },
 ];
 
+const PERMISSION_LABELS = {
+  equipment: 'Оборудование',
+  employees: 'Сотрудники',
+  works: 'Работы',
+  rooms: 'Помещения',
+  spareParts: 'ЗИП',
+  workOrders: 'Журнал',
+  sparePartsReceipts: 'Документы ЗИП',
+  scanner: 'QR-сканер',
+  schedule: 'План-график',
+  incidents: 'Инциденты',
+  analytics: 'Аналитика',
+  import: 'Импорт',
+  settings: 'Настройки',
+};
+
+const PERM_VALUES = {
+  full: 'Полный доступ',
+  view: 'Только чтение',
+  none: 'Нет доступа',
+};
+
 const TABS = [
   { id: 'company', label: 'Компания' },
   { id: 'users', label: 'Пользователи' },
-  { id: 'positions', label: 'Должность' },
+  { id: 'positions', label: 'Должности' },
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
@@ -133,8 +155,191 @@ function IntegrationsTab() {
   );
 }
 
+function PositionsTab() {
+  const { canEdit } = useAuth();
+  const [positions, setPositions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: '', permissions: {} });
+  const canEditSettings = canEdit('settings');
+
+  useEffect(() => { fetchPositions(); }, []);
+
+  const fetchPositions = async () => {
+    try {
+      const res = await positionsAPI.getAll();
+      setPositions(res.data);
+      setLoading(false);
+    } catch {
+      setError('Ошибка загрузки должностей');
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', permissions: {} });
+    setEditId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (pos) => {
+    setFormData({ name: pos.name, permissions: { ...pos.permissions } });
+    setEditId(pos.id);
+    setShowForm(true);
+  };
+
+  const handlePermChange = (key, value) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: { ...prev.permissions, [key]: value }
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) { setError('Введите название должности'); return; }
+    try {
+      if (editId) {
+        await positionsAPI.update(editId, formData);
+        setSuccess('Должность обновлена');
+      } else {
+        await positionsAPI.create(formData);
+        setSuccess('Должность создана');
+      }
+      resetForm();
+      fetchPositions();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка сохранения');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Удалить должность? Пользователи с этой должностью потеряют доступ.')) {
+      try {
+        await positionsAPI.delete(id);
+        fetchPositions();
+      } catch (err) {
+        setError(err.response?.data?.error || 'Ошибка удаления');
+      }
+    }
+  };
+
+  if (loading) return <div className="loading">Загрузка...</div>;
+
+  return (
+    <div className="settings-section">
+      <h2 className="settings-section-title">Должности</h2>
+      <p className="settings-section-desc">Управление должностями и правами доступа пользователей к ресурсам системы.</p>
+
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Shield size={18} /> Список должностей
+          </h3>
+          {canEditSettings && (
+            <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary btn-small">
+              {showForm ? 'Закрыть' : '+ Добавить'}
+            </button>
+          )}
+        </div>
+
+        {showForm && (
+          <div className="settings-user-form">
+            <h4>{editId ? 'Редактирование должности' : 'Новая должность'}</h4>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Название *</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              </div>
+
+              <div className="permissions-grid">
+                {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
+                  const val = formData.permissions[key];
+                  const isBoolean = typeof val === 'boolean' || key === 'scanner' || key === 'schedule' || key === 'analytics' || key === 'import';
+                  return (
+                    <div key={key} className="permission-row">
+                      <span className="permission-label">{label}</span>
+                      {isBoolean ? (
+                        <select
+                          value={val === undefined ? 'false' : String(val)}
+                          onChange={(e) => handlePermChange(key, e.target.value === 'true')}
+                        >
+                          <option value="true">Да</option>
+                          <option value="false">Нет</option>
+                        </select>
+                      ) : (
+                        <select
+                          value={val || 'none'}
+                          onChange={(e) => handlePermChange(key, e.target.value)}
+                        >
+                          <option value="full">Полный доступ</option>
+                          <option value="view">Только чтение</option>
+                          <option value="none">Нет доступа</option>
+                        </select>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="form-actions-inline">
+                <button type="submit" className="btn btn-primary">{editId ? 'Обновить' : 'Создать'}</button>
+                <button type="button" onClick={resetForm} className="btn">Отмена</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="table-container">
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Название</th>
+                  <th>Права доступа</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {positions.map(pos => (
+                  <tr key={pos.id}>
+                    <td className="td-bold">{pos.name}</td>
+                    <td>
+                      <div className="permissions-summary">
+                        {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
+                          const val = pos.permissions[key];
+                          if (val === undefined || val === null || val === 'none' || val === false) return null;
+                          const display = typeof val === 'boolean' ? (val ? 'Да' : 'Нет') : PERM_VALUES[val] || val;
+                          return <span key={key} className="permission-badge">{label}: {display}</span>;
+                        })}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        {canEditSettings && <button onClick={() => handleEdit(pos)} className="btn btn-small btn-secondary">Ред.</button>}
+                        {canEditSettings && <button onClick={() => handleDelete(pos.id)} className="btn btn-small btn-danger">Удал.</button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SettingsPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [activeTab, setActiveTab] = useState('company');
   const [companyData, setCompanyData] = useState({
     companyName: '',
@@ -153,14 +358,24 @@ function SettingsPage() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editUserId, setEditUserId] = useState(null);
-  const [userFormData, setUserFormData] = useState({ username: '', password: '', fullName: '', role: 'user' });
+  const [userFormData, setUserFormData] = useState({ username: '', password: '', fullName: '', positionId: '', employeeId: '' });
+
+  const [positions, setPositions] = useState([]);
+  const [employees, setEmployees] = useState([]);
+
+  const isSettingsReadOnly = canEdit('settings') === false;
 
   useEffect(() => {
     fetchCompany();
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'users') {
+      fetchUsers();
+      fetchPositions();
+      fetchEmployees();
+    }
+    if (activeTab === 'positions') fetchPositions();
   }, [activeTab]);
 
   const fetchCompany = async () => {
@@ -238,14 +453,34 @@ function SettingsPage() {
     }
   };
 
+  const fetchPositions = async () => {
+    try {
+      const res = await positionsAPI.getAll();
+      setPositions(res.data);
+    } catch {}
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await employeesAPI.getAll();
+      setEmployees(res.data);
+    } catch {}
+  };
+
   const resetUserForm = () => {
-    setUserFormData({ username: '', password: '', fullName: '', role: 'user' });
+    setUserFormData({ username: '', password: '', fullName: '', positionId: '', employeeId: '' });
     setEditUserId(null);
     setShowUserForm(false);
   };
 
   const handleEditUser = (user) => {
-    setUserFormData({ username: user.username, password: '', fullName: user.fullName || '', role: user.role });
+    setUserFormData({
+      username: user.username,
+      password: '',
+      fullName: user.fullName || '',
+      positionId: user.positionId || '',
+      employeeId: user.employeeId || ''
+    });
     setEditUserId(user.id);
     setShowUserForm(true);
   };
@@ -259,6 +494,8 @@ function SettingsPage() {
     try {
       const data = { ...userFormData };
       if (editUserId && !data.password) delete data.password;
+      if (!data.positionId) delete data.positionId;
+      if (!data.employeeId) delete data.employeeId;
 
       if (editUserId) {
         await usersAPI.update(editUserId, data);
@@ -319,6 +556,7 @@ function SettingsPage() {
                     value={companyData.companyName}
                     onChange={(e) => setCompanyData({ ...companyData, companyName: e.target.value })}
                     placeholder="Название организации"
+                    disabled={isSettingsReadOnly}
                   />
                 </div>
 
@@ -330,16 +568,18 @@ function SettingsPage() {
                         <img src={logoPreview} alt="Логотип" />
                       </div>
                     )}
-                    <label className="btn btn-secondary logo-upload-btn">
-                      <Upload size={16} />
-                      <span>Загрузить</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
+                    {!isSettingsReadOnly && (
+                      <label className="btn btn-secondary logo-upload-btn">
+                        <Upload size={16} />
+                        <span>Загрузить</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    )}
                   </div>
                   <span className="logo-hint">Рекомендуемый размер: 200x200 пикселей (макс. 5 МБ)</span>
                 </div>
@@ -364,6 +604,7 @@ function SettingsPage() {
                   <select
                     value={companyData.timezone}
                     onChange={(e) => setCompanyData({ ...companyData, timezone: e.target.value })}
+                    disabled={isSettingsReadOnly}
                   >
                     {TIMEZONES.map(tz => (
                       <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -377,6 +618,7 @@ function SettingsPage() {
                       type="checkbox"
                       checked={companyData.allowInspectionWithoutQr}
                       onChange={(e) => setCompanyData({ ...companyData, allowInspectionWithoutQr: e.target.checked })}
+                      disabled={isSettingsReadOnly}
                     />
                     <span className="checkbox-text">
                       <span className="checkbox-text-main">Разрешить осмотры и запросы без QR-кода</span>
@@ -386,12 +628,14 @@ function SettingsPage() {
                 </div>
               </div>
 
-              <div className="settings-actions">
-                <button type="button" onClick={handleCancel} className="btn">Отмена</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Сохранение...' : 'Сохранить изменения'}
-                </button>
-              </div>
+              {!isSettingsReadOnly && (
+                <div className="settings-actions">
+                  <button type="button" onClick={handleCancel} className="btn">Отмена</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         )}
@@ -431,12 +675,24 @@ function SettingsPage() {
                         <input type="text" value={userFormData.fullName} onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })} />
                       </div>
                       <div className="form-group">
-                        <label>Роль</label>
-                        <select value={userFormData.role} onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}>
-                          <option value="user">Пользователь</option>
-                          <option value="admin">Администратор</option>
+                        <label>Должность</label>
+                        <select value={userFormData.positionId} onChange={(e) => setUserFormData({ ...userFormData, positionId: e.target.value })}>
+                          <option value="">Не назначена</option>
+                          {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                       </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Сотрудник</label>
+                        <select value={userFormData.employeeId} onChange={(e) => setUserFormData({ ...userFormData, employeeId: e.target.value })}>
+                          <option value="">Не привязан</option>
+                          {employees.map(emp => (
+                            <option key={emp.id} value={emp.id}>{emp.lastName} {emp.firstName} {emp.middleName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group" />
                     </div>
                     <div className="form-actions-inline">
                       <button type="submit" className="btn btn-primary">{editUserId ? 'Обновить' : 'Создать'}</button>
@@ -456,7 +712,8 @@ function SettingsPage() {
                         <tr>
                           <th>Логин</th>
                           <th>ФИО</th>
-                          <th>Роль</th>
+                          <th>Должность</th>
+                          <th>Сотрудник</th>
                           <th>Создан</th>
                           <th>Действия</th>
                         </tr>
@@ -467,10 +724,11 @@ function SettingsPage() {
                             <td className="td-bold">{u.username}</td>
                             <td>{u.fullName || '—'}</td>
                             <td>
-                              <span className={`status-badge ${u.role === 'admin' ? 'status-under-repair' : 'status-working'}`}>
-                                {u.role === 'admin' ? 'Администратор' : 'Пользователь'}
-                              </span>
+                              {u.positionName ? (
+                                <span className="status-badge status-under-repair">{u.positionName}</span>
+                              ) : <span className="status-badge status-needs-repair">Не назначена</span>}
                             </td>
+                            <td>{u.employeeName || '—'}</td>
                             <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
                             <td>
                               <div className="table-actions">
@@ -490,10 +748,7 @@ function SettingsPage() {
         )}
 
         {activeTab === 'positions' && (
-          <div className="settings-section">
-            <h2 className="settings-section-title">Должности</h2>
-            <p className="settings-placeholder">Настройка должностей будет доступна в следующем обновлении.</p>
-          </div>
+          <PositionsTab />
         )}
 
         {activeTab === 'integrations' && (

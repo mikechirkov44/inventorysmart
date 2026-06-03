@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { employeesAPI } from '../services/api';
+import { employeesAPI, positionsAPI } from '../services/api';
 
 function EmployeesDirectory() {
   const [employees, setEmployees] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
@@ -14,12 +15,14 @@ function EmployeesDirectory() {
     firstName: '',
     lastName: '',
     middleName: '',
-    position: '',
+    positionId: '',
     phone: '',
     email: ''
   });
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => {
+    Promise.all([fetchEmployees(), fetchPositions()]);
+  }, []);
 
   const fetchEmployees = async () => {
     try {
@@ -29,9 +32,18 @@ function EmployeesDirectory() {
     } catch { setError('Ошибка загрузки'); setLoading(false); }
   };
 
-  const positions = useMemo(() => {
-    return [...new Set(employees.map(e => e.position).filter(Boolean))].sort();
-  }, [employees]);
+  const fetchPositions = async () => {
+    try {
+      const res = await positionsAPI.getAll();
+      setPositions(res.data);
+    } catch {}
+  };
+
+  const positionMap = useMemo(() => {
+    const m = {};
+    positions.forEach(p => { m[p.id] = p.name; });
+    return m;
+  }, [positions]);
 
   const filtered = useMemo(() => {
     let result = [...employees];
@@ -40,15 +52,16 @@ function EmployeesDirectory() {
       result = result.filter(e =>
         e.lastName.toLowerCase().includes(s) ||
         e.firstName.toLowerCase().includes(s) ||
-        (e.position && e.position.toLowerCase().includes(s))
+        (e.position && e.position.toLowerCase().includes(s)) ||
+        (e.positionId && positionMap[e.positionId]?.toLowerCase().includes(s))
       );
     }
-    if (filterPosition) result = result.filter(e => e.position === filterPosition);
+    if (filterPosition) result = result.filter(e => e.positionId === filterPosition);
     return result;
-  }, [employees, search, filterPosition]);
+  }, [employees, search, filterPosition, positionMap]);
 
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', middleName: '', position: '', phone: '', email: '' });
+    setFormData({ firstName: '', lastName: '', middleName: '', positionId: '', phone: '', email: '' });
     setEditId(null);
     setShowForm(false);
   };
@@ -58,7 +71,7 @@ function EmployeesDirectory() {
       firstName: emp.firstName || '',
       lastName: emp.lastName || '',
       middleName: emp.middleName || '',
-      position: emp.position || '',
+      positionId: emp.positionId || '',
       phone: emp.phone || '',
       email: emp.email || ''
     });
@@ -73,11 +86,13 @@ function EmployeesDirectory() {
       return;
     }
     try {
+      const data = { ...formData };
+      if (!data.positionId) delete data.positionId;
       if (editId) {
-        await employeesAPI.update(editId, formData);
+        await employeesAPI.update(editId, data);
         setSuccess('Сотрудник обновлён');
       } else {
-        await employeesAPI.create(formData);
+        await employeesAPI.create(data);
         setSuccess('Сотрудник добавлен');
       }
       resetForm();
@@ -128,10 +143,10 @@ function EmployeesDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Должность</label>
-                <input type="text" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} list="emp-positions" />
-                <datalist id="emp-positions">
-                  {positions.map(p => <option key={p} value={p} />)}
-                </datalist>
+                <select value={formData.positionId} onChange={(e) => setFormData({ ...formData, positionId: e.target.value })}>
+                  <option value="">Не назначена</option>
+                  {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label>Телефон</label>
@@ -155,7 +170,7 @@ function EmployeesDirectory() {
           <input type="text" placeholder="Поиск по ФИО, должности..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
           <select value={filterPosition} onChange={(e) => setFilterPosition(e.target.value)}>
             <option value="">Все должности</option>
-            {positions.map(p => <option key={p} value={p}>{p}</option>)}
+            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {employees.length}</div>
@@ -180,7 +195,7 @@ function EmployeesDirectory() {
                 filtered.map(emp => (
                   <tr key={emp.id}>
                     <td className="td-bold">{emp.lastName} {emp.firstName} {emp.middleName}</td>
-                    <td>{emp.position || '—'}</td>
+                    <td>{emp.positionId ? positionMap[emp.positionId] || '—' : '—'}</td>
                     <td>{emp.phone || '—'}</td>
                     <td>{emp.email || '—'}</td>
                     <td>

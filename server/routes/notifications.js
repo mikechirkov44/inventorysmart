@@ -9,9 +9,10 @@ const Equipment = require('../models/equipment');
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
+    const userPermissions = req.user.permissions || {};
+    const isAdmin = userPermissions.settings === 'full';
 
-    if (userRole === 'admin') {
+    if (isAdmin) {
       const all = await Notification.findAll();
       return res.json(all);
     }
@@ -60,9 +61,10 @@ router.get('/', async (req, res) => {
 router.get('/unread-count', async (req, res) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
+    const userPermissions = req.user.permissions || {};
+    const isAdmin = userPermissions.settings === 'full';
 
-    if (userRole === 'admin') {
+    if (isAdmin) {
       const all = await Notification.findAll();
       const count = all.filter(n => !n.read).length;
       return res.json({ count });

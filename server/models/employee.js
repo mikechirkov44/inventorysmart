@@ -7,7 +7,7 @@ function mapRow(row) {
     firstName: row.first_name,
     lastName: row.last_name,
     middleName: row.middle_name,
-    position: row.position,
+    positionId: row.position_id,
     phone: row.phone,
     email: row.email,
     createdAt: row.created_at,
@@ -28,14 +28,14 @@ module.exports = {
 
   create: async (data) => {
     const { rows } = await query(
-      'INSERT INTO employees (first_name, last_name, middle_name, position, phone, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [data.firstName || '', data.lastName || '', data.middleName || '', data.position || '', data.phone || '', data.email || '']
+      'INSERT INTO employees (first_name, last_name, middle_name, position_id, phone, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.phone || '', data.email || '']
     );
     return mapRow(rows[0]);
   },
 
   update: async (id, data) => {
-    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name' };
+    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id' };
     const fields = [];
     const values = [];
     let i = 1;
@@ -47,7 +47,7 @@ module.exports = {
       i++;
     }
     if (fields.length === 0) return null;
-    fields.push(`updated_at = NOW()`);
+    fields.push('updated_at = NOW()');
     values.push(id);
     const { rows } = await query(`UPDATE employees SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values);
     return mapRow(rows[0]);

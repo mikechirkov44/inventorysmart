@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const Position = require('../models/position');
 
 router.get('/', async (req, res) => {
   try {
@@ -26,24 +27,35 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
+    const adminPosition = await Position.findByName('Администратор');
+
     const user = await User.create({
       username,
       password,
       fullName: fullName || 'Администратор',
-      role: 'admin'
+      positionId: adminPosition ? adminPosition.id : null
     });
 
     if (!user) {
       return res.status(409).json({ error: 'Username already exists' });
     }
 
+    const permissions = adminPosition ? adminPosition.permissions : {};
+
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, fullName: user.full_name },
+      {
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName || user.full_name,
+        positionId: user.positionId,
+        positionName: 'Администратор',
+        permissions
+      },
       User.JWT_SECRET,
       { expiresIn: User.JWT_EXPIRES }
     );
 
-    res.status(201).json({ token, user, message: 'Admin account created successfully' });
+    res.status(201).json({ token, user: { ...user, positionName: 'Администратор', permissions }, message: 'Admin account created successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

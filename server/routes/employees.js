@@ -5,21 +5,20 @@ const Employee = require('../models/employee');
 router.get('/', async (req, res) => {
   try {
     let employees = await Employee.findAll();
-    const { lastName, position, search } = req.query;
+    const { lastName, positionId, search } = req.query;
 
     if (search) {
       const s = search.toLowerCase();
       employees = employees.filter(e =>
         e.lastName.toLowerCase().includes(s) ||
-        e.firstName.toLowerCase().includes(s) ||
-        (e.position && e.position.toLowerCase().includes(s))
+        e.firstName.toLowerCase().includes(s)
       );
     }
     if (lastName) {
       employees = employees.filter(e => e.lastName.toLowerCase().includes(lastName.toLowerCase()));
     }
-    if (position) {
-      employees = employees.filter(e => e.position === position);
+    if (positionId) {
+      employees = employees.filter(e => e.positionId === positionId);
     }
 
     res.json(employees);
