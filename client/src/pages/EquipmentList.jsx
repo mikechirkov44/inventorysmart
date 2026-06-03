@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import { SkeletonCardGrid } from '../components/Skeleton';
 
 const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
@@ -16,6 +19,9 @@ function EquipmentList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
 
+  const toast = useToast();
+  const confirm = useConfirm();
+
   useEffect(() => {
     Promise.all([equipmentAPI.getAll(), roomsAPI.getAll()])
       .then(([e, r]) => { setEquipment(e.data); setRooms(r.data); setLoading(false); })
@@ -29,12 +35,12 @@ function EquipmentList() {
   }, [rooms]);
 
   const handleDelete = async (delId) => {
-    if (window.confirm('Удалить оборудование?')) {
-      try {
-        await equipmentAPI.delete(delId);
-        setEquipment(prev => prev.filter(e => e.id !== delId));
-      } catch { setError('Ошибка удаления'); }
-    }
+    const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить.', type: 'danger' });
+    if (!confirmed) return;
+    try {
+      await equipmentAPI.delete(delId);
+      setEquipment(prev => prev.filter(e => e.id !== delId));
+    } catch { toast.error('Ошибка', 'Не удалось удалить оборудование'); }
   };
 
   const filtered = equipment.filter(item =>
@@ -69,8 +75,8 @@ function EquipmentList() {
   const expandAll = () => setCollapsedGroups(new Set());
   const collapseAll = () => setCollapsedGroups(new Set(grouped.map(([id]) => id)));
 
-  if (loading) return <div className="loading">Загрузка...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) return <SkeletonCardGrid count={6} />;
+  if (error) return null;
 
   return (
     <div className="equipment-list">

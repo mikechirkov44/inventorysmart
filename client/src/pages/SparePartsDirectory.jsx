@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function SparePartsDirectory() {
   const [items, setItems] = useState([]);
@@ -17,6 +19,9 @@ function SparePartsDirectory() {
     name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: []
   });
 
+  const toast = useToast();
+  const confirm = useConfirm();
+
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
@@ -26,7 +31,7 @@ function SparePartsDirectory() {
       setEquipment(eq.data);
       setWorks(wk.data);
       setLoading(false);
-    } catch { setError('Ошибка загрузки'); setLoading(false); }
+    } catch { toast.error('Ошибка', 'Ошибка загрузки'); setLoading(false); }
   };
 
   const eqMap = useMemo(() => { const m = {}; equipment.forEach(e => { m[e.id] = e.name; }); return m; }, [equipment]);
@@ -105,22 +110,22 @@ function SparePartsDirectory() {
     try {
       if (editId) {
         await sparePartsAPI.update(editId, formData);
-        setSuccess('Позиция обновлена');
+        toast.success('Успешно', 'Позиция обновлена');
       } else {
         await sparePartsAPI.create(formData);
-        setSuccess('Позиция добавлена');
+        toast.success('Успешно', 'Позиция добавлена');
       }
-      resetForm(); fetchData(); setTimeout(() => setSuccess(''), 3000);
-    } catch { setError('Ошибка сохранения'); }
+      resetForm(); fetchData();
+    } catch { toast.error('Ошибка', 'Ошибка сохранения'); }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить позицию?')) {
-      try { await sparePartsAPI.delete(id); fetchData(); } catch { setError('Ошибка удаления'); }
-    }
+    const confirmed = await confirm({ title: 'Удаление', message: 'Удалить позицию?', type: 'danger' });
+    if (!confirmed) return;
+    try { await sparePartsAPI.delete(id); fetchData(); } catch { toast.error('Ошибка', 'Ошибка удаления'); }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">

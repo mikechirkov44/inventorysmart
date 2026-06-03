@@ -103,7 +103,7 @@ function StockReport() {
     return { total, empty, low, ok };
   }, [items]);
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <>
@@ -201,7 +201,7 @@ function AnalyticsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="analytics-page">

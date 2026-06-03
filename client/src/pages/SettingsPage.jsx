@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 const TIMEZONES = [
   { value: 'Europe/Kaliningrad', label: '(GMT+2:00) Kaliningrad' },
@@ -157,10 +159,10 @@ function IntegrationsTab() {
 
 function PositionsTab() {
   const { canEdit } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ name: '', permissions: {} });
@@ -174,7 +176,7 @@ function PositionsTab() {
       setPositions(res.data);
       setLoading(false);
     } catch {
-      setError('Ошибка загрузки должностей');
+      toast.error('Ошибка загрузки должностей');
       setLoading(false);
     }
   };
@@ -200,43 +202,39 @@ function PositionsTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) { setError('Введите название должности'); return; }
+    if (!formData.name.trim()) { toast.error('Введите название должности'); return; }
     try {
       if (editId) {
         await positionsAPI.update(editId, formData);
-        setSuccess('Должность обновлена');
+        toast.success('Должность обновлена');
       } else {
         await positionsAPI.create(formData);
-        setSuccess('Должность создана');
+        toast.success('Должность создана');
       }
       resetForm();
       fetchPositions();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка сохранения');
+      toast.error(err.response?.data?.error || 'Ошибка сохранения');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить должность? Пользователи с этой должностью потеряют доступ.')) {
+    if (await confirm('Удалить должность? Пользователи с этой должностью потеряют доступ.')) {
       try {
         await positionsAPI.delete(id);
         fetchPositions();
       } catch (err) {
-        setError(err.response?.data?.error || 'Ошибка удаления');
+        toast.error(err.response?.data?.error || 'Ошибка удаления');
       }
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="settings-section">
       <h2 className="settings-section-title">Должности</h2>
       <p className="settings-section-desc">Управление должностями и правами доступа пользователей к ресурсам системы.</p>
-
-      {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       <div className="settings-card">
         <div className="settings-card-header">
@@ -340,6 +338,8 @@ function PositionsTab() {
 
 function SettingsPage() {
   const { canEdit } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState('company');
   const [companyData, setCompanyData] = useState({
     companyName: '',
@@ -351,8 +351,6 @@ function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -366,8 +364,6 @@ function SettingsPage() {
   const [license, setLicense] = useState(null);
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [activating, setActivating] = useState(false);
-  const [activateError, setActivateError] = useState('');
-  const [activateSuccess, setActivateSuccess] = useState('');
 
   const isSettingsReadOnly = canEdit('settings') === false;
 
@@ -407,7 +403,7 @@ function SettingsPage() {
       }
       setLoading(false);
     } catch {
-      setError('Ошибка загрузки данных');
+      toast.error('Ошибка загрузки данных');
       setLoading(false);
     }
   };
@@ -416,7 +412,7 @@ function SettingsPage() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError('Файл слишком большой (макс. 5 МБ)');
+        toast.error('Файл слишком большой (макс. 5 МБ)');
         return;
       }
       setLogoFile(file);
@@ -429,8 +425,6 @@ function SettingsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
-    setSuccess('');
 
     try {
       const formData = new FormData();
@@ -442,11 +436,10 @@ function SettingsPage() {
       }
 
       await companyAPI.update(formData);
-      setSuccess('Изменения сохранены');
+      toast.success('Изменения сохранены');
       fetchCompany();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка сохранения');
+      toast.error(err.response?.data?.error || 'Ошибка сохранения');
     } finally {
       setSaving(false);
     }
@@ -454,8 +447,6 @@ function SettingsPage() {
 
   const handleCancel = () => {
     fetchCompany();
-    setSuccess('');
-    setError(null);
   };
 
   const fetchUsers = async () => {
@@ -485,16 +476,13 @@ function SettingsPage() {
   const handleActivateLicense = async () => {
     if (!licenseKeyInput.trim()) return;
     setActivating(true);
-    setActivateError('');
-    setActivateSuccess('');
     try {
       const res = await licenseAPI.activate(licenseKeyInput.trim());
       setLicense({ plan: res.data.plan, expiresAt: res.data.expiresAt });
       setLicenseKeyInput('');
-      setActivateSuccess('Лицензия активирована');
-      setTimeout(() => setActivateSuccess(''), 3000);
+      toast.success('Лицензия активирована');
     } catch (err) {
-      setActivateError(err.response?.data?.error || 'Ошибка активации');
+      toast.error(err.response?.data?.error || 'Ошибка активации');
     } finally {
       setActivating(false);
     }
@@ -520,9 +508,8 @@ function SettingsPage() {
 
   const handleUserSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    if (!userFormData.username.trim()) { setError('Введите логин'); return; }
-    if (!editUserId && !userFormData.password) { setError('Введите пароль'); return; }
+    if (!userFormData.username.trim()) { toast.error('Введите логин'); return; }
+    if (!editUserId && !userFormData.password) { toast.error('Введите пароль'); return; }
 
     try {
       const data = { ...userFormData };
@@ -532,31 +519,30 @@ function SettingsPage() {
 
       if (editUserId) {
         await usersAPI.update(editUserId, data);
-        setSuccess('Пользователь обновлён');
+        toast.success('Пользователь обновлён');
       } else {
         await usersAPI.create(data);
-        setSuccess('Пользователь создан');
+        toast.success('Пользователь создан');
       }
       resetUserForm();
       fetchUsers();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка сохранения');
+      toast.error(err.response?.data?.error || 'Ошибка сохранения');
     }
   };
 
   const handleDeleteUser = async (id) => {
-    if (window.confirm('Удалить пользователя?')) {
+    if (await confirm('Удалить пользователя?')) {
       try {
         await usersAPI.delete(id);
         fetchUsers();
       } catch (err) {
-        setError(err.response?.data?.error || 'Ошибка удаления');
+        toast.error(err.response?.data?.error || 'Ошибка удаления');
       }
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="settings-page">
@@ -576,9 +562,6 @@ function SettingsPage() {
         {activeTab === 'company' && (
           <div className="settings-section">
             <h2 className="settings-section-title">Профиль компании</h2>
-
-            {error && <div className="error">{error}</div>}
-            {success && <div className="success">{success}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="settings-card">
@@ -625,8 +608,6 @@ function SettingsPage() {
                     <span className="plan-text">Тариф активен до {new Date(license.expiresAt).toLocaleDateString('ru-RU')}</span>
                   </div>
                 )}
-                {activateSuccess && <div className="success">{activateSuccess}</div>}
-                {activateError && <div className="error">{activateError}</div>}
                 <div className="plan-actions">
                   <input
                     type="text"
@@ -695,9 +676,6 @@ function SettingsPage() {
           <div className="settings-section">
             <h2 className="settings-section-title">Пользователи</h2>
 
-            {error && <div className="error">{error}</div>}
-            {success && <div className="success">{success}</div>}
-
             <div className="settings-card">
               <div className="settings-card-header">
                 <h3 className="settings-card-title">Учётные записи</h3>
@@ -754,7 +732,7 @@ function SettingsPage() {
               )}
 
               {usersLoading ? (
-                <div className="loading">Загрузка...</div>
+                <div className="loading-spinner">Загрузка...</div>
               ) : (
                 <div className="table-container">
                   <div className="table-scroll">

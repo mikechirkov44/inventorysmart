@@ -139,7 +139,7 @@ function ScanResult() {
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
   if (error && !data) return <div className="error">{error}</div>;
   if (!data) return <div className="error">Данные не найдены</div>;
 

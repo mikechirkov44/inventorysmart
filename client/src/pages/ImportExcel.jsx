@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { importAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function ImportExcel() {
   const [file, setFile] = useState(null);
@@ -8,6 +10,9 @@ function ImportExcel() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
+
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -33,15 +38,14 @@ function ImportExcel() {
       formData.append('file', file);
 
       const response = await importAPI.importExcel(formData);
-      setSuccess(response.data.message);
+      toast.success(response.data.message);
       setImportedCount(response.data.equipment.length);
       setFile(null);
       
-      // Reset file input
       const fileInput = document.getElementById('excel-file');
       if (fileInput) fileInput.value = '';
     } catch (err) {
-      setError('Ошибка импорта: ' + (err.response?.data?.error || err.message));
+      toast.error('Ошибка импорта: ' + (err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -59,7 +63,7 @@ function ImportExcel() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError('Ошибка скачивания шаблона');
+      toast.error('Ошибка скачивания шаблона');
     }
   };
 

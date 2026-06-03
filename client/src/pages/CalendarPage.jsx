@@ -87,7 +87,7 @@ function CalendarPage() {
             </div>
 
             {loading ? (
-              <div className="loading">...</div>
+              <div className="loading-spinner">Загрузка...</div>
             ) : (
               <div className="calendar-grid compact">
                 {DAYS.map(d => <div key={d} className="calendar-day-header">{d}</div>)}

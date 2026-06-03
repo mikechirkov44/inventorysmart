@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import Breadcrumb from '../components/Breadcrumb';
 
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
@@ -47,6 +50,9 @@ function EquipmentForm() {
   const [rooms, setRooms] = useState([]);
   const [works, setWorks] = useState([]);
 
+  const toast = useToast();
+  const confirm = useConfirm();
+
   useEffect(() => {
     Promise.all([roomsAPI.getAll(), worksAPI.getAll()])
       .then(([r, w]) => { setRooms(r.data); setWorks(w.data); });
@@ -69,7 +75,7 @@ function EquipmentForm() {
         setPhotoPreview(`/uploads/${response.data.photo}`);
       }
     } catch (err) {
-      setError('Ошибка загрузки данных');
+      toast.error('Ошибка', 'Ошибка загрузки данных');
     }
   };
 
@@ -128,13 +134,18 @@ function EquipmentForm() {
       }
       navigate('/');
     } catch (err) {
-      setError('Ошибка сохранения');
+      toast.error('Ошибка', 'Ошибка сохранения');
       setLoading(false);
     }
   };
 
   return (
     <div className="equipment-form">
+      <Breadcrumb items={[
+        { label: 'Главная', to: '/' },
+        { label: 'Оборудование', to: '/' },
+        { label: isEditing ? 'Редактирование' : 'Добавление' }
+      ]} />
       <div className="form-header">
         <Link to={isEditing ? `/equipment/${id}` : '/'} className="back-link">
           ← Назад

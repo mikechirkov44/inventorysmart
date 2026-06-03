@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import { SkeletonTable } from '../components/Skeleton';
 
 function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);
@@ -12,6 +15,9 @@ function WorkOrders() {
   const [filter, setFilter] = useState('all');
   const [completingId, setCompletingId] = useState(null);
   const [sparePartsSelection, setSparePartsSelection] = useState([]);
+
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchData();
@@ -94,7 +100,7 @@ function WorkOrders() {
       await workOrderAPI.update(id, { status: newStatus });
       fetchData();
     } catch (err) {
-      setError('Ошибка обновления статуса');
+      toast.error('Ошибка', 'Не удалось обновить статус');
     }
   };
 
@@ -109,7 +115,7 @@ function WorkOrders() {
       setSparePartsSelection([]);
       fetchData();
     } catch (err) {
-      setError('Ошибка обновления статуса');
+      toast.error('Ошибка', 'Не удалось обновить статус');
     }
   };
 
@@ -119,18 +125,18 @@ function WorkOrders() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту запись?')) {
-      try {
-        await workOrderAPI.delete(id);
-        fetchData();
-      } catch (err) {
-        setError('Ошибка удаления');
-      }
+    const confirmed = await confirm({ title: 'Удалить запись?', message: 'Запись журнала работ будет удалена.', type: 'danger' });
+    if (!confirmed) return;
+    try {
+      await workOrderAPI.delete(id);
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка', 'Не удалось удалить запись');
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) return <SkeletonTable rows={8} cols={6} />;
+  if (error) return null;
 
   return (
     <div className="work-orders">

@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLoc
 import { useState, useEffect, useRef } from 'react';
 import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './components/Toast';
+import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotificationBell from './components/NotificationBell';
 import LoginPage from './pages/LoginPage';
@@ -112,37 +114,46 @@ function TopHeader() {
   );
 }
 
+function PageWrapper({ children }) {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="page-enter">
+      {children}
+    </div>
+  );
+}
+
 function AppRoutes() {
   const { user, loading, canView } = useAuth();
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <Routes>
-      <Route path="/setup" element={<SetupPage />} />
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/setup" element={<PageWrapper><SetupPage /></PageWrapper>} />
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <PageWrapper><LoginPage /></PageWrapper>} />
 
       {/* User routes */}
-      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><EquipmentList /></ProtectedRoute>} />
-      <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><EquipmentTable /></ProtectedRoute>} />
-      <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><EquipmentDetail /></ProtectedRoute>} />
-      <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><EquipmentForm /></ProtectedRoute>} />
-      <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><EquipmentForm /></ProtectedRoute>} />
-      <Route path="/scan" element={<ProtectedRoute requiredPermission="scanner"><QRScanner /></ProtectedRoute>} />
-      <Route path="/scan/:qrCode" element={<ProtectedRoute requiredPermission="scanner"><ScanResult /></ProtectedRoute>} />
-      <Route path="/work-orders" element={<ProtectedRoute requiredPermission="workOrders"><WorkOrders /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentList /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentTable /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentDetail /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
+      <Route path="/scan" element={<ProtectedRoute requiredPermission="scanner"><PageWrapper><QRScanner /></PageWrapper></ProtectedRoute>} />
+      <Route path="/scan/:qrCode" element={<ProtectedRoute requiredPermission="scanner"><PageWrapper><ScanResult /></PageWrapper></ProtectedRoute>} />
+      <Route path="/work-orders" element={<ProtectedRoute requiredPermission="workOrders"><PageWrapper><WorkOrders /></PageWrapper></ProtectedRoute>} />
 
       {/* Resource routes */}
-      <Route path="/incidents" element={<ProtectedRoute requiredPermission="incidents"><IncidentsPage /></ProtectedRoute>} />
-      <Route path="/analytics" element={<ProtectedRoute requiredPermission="analytics"><AnalyticsPage /></ProtectedRoute>} />
-      <Route path="/schedule" element={<ProtectedRoute requiredPermission="schedule"><SchedulePage /></ProtectedRoute>} />
-      <Route path="/works" element={<ProtectedRoute requiredPermission="works"><WorksDirectory /></ProtectedRoute>} />
-      <Route path="/rooms" element={<ProtectedRoute requiredPermission="rooms"><RoomsDirectory /></ProtectedRoute>} />
-      <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><EmployeesDirectory /></ProtectedRoute>} />
-      <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><SparePartsDirectory /></ProtectedRoute>} />
-      <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><SparePartsReceipts /></ProtectedRoute>} />
-      <Route path="/import" element={<ProtectedRoute requiredPermission="import"><ImportExcel /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><SettingsPage /></ProtectedRoute>} />
+      <Route path="/incidents" element={<ProtectedRoute requiredPermission="incidents"><PageWrapper><IncidentsPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/analytics" element={<ProtectedRoute requiredPermission="analytics"><PageWrapper><AnalyticsPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/schedule" element={<ProtectedRoute requiredPermission="schedule"><PageWrapper><SchedulePage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/works" element={<ProtectedRoute requiredPermission="works"><PageWrapper><WorksDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/rooms" element={<ProtectedRoute requiredPermission="rooms"><PageWrapper><RoomsDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><PageWrapper><EmployeesDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><SparePartsDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><PageWrapper><SparePartsReceipts /></PageWrapper></ProtectedRoute>} />
+      <Route path="/import" element={<ProtectedRoute requiredPermission="import"><PageWrapper><ImportExcel /></PageWrapper></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -153,15 +164,19 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app">
-          <AppNav />
-          <div className="main-area">
-            <TopHeader />
-            <main className="main-content">
-              <AppRoutes />
-            </main>
-          </div>
-        </div>
+        <ToastProvider>
+          <ConfirmProvider>
+            <div className="app">
+              <AppNav />
+              <div className="main-area">
+                <TopHeader />
+                <main className="main-content">
+                  <AppRoutes />
+                </main>
+              </div>
+            </div>
+          </ConfirmProvider>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );

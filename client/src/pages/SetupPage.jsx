@@ -56,7 +56,7 @@ function SetupPage() {
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   if (!setupRequired) {
     return (

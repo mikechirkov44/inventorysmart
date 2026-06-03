@@ -142,13 +142,22 @@ function SchedulePage() {
     if (filterWork) rows = rows.filter(r => r.workName === filterWork);
     if (filterFrequency) rows = rows.filter(r => r.frequencyDays === parseInt(filterFrequency));
 
-    if (dateFrom) {
-      const from = new Date(dateFrom).getTime();
-      rows = rows.filter(r => !r.plannedDate || new Date(r.plannedDate).getTime() >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo).getTime() + 86400000;
-      rows = rows.filter(r => !r.plannedDate || new Date(r.plannedDate).getTime() <= to);
+    if (dateFrom || dateTo) {
+      const from = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
+      const to = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
+      rows = rows.filter(r => {
+        if (!r.plannedDate) return true;
+        const plannedMs = new Date(r.plannedDate).getTime();
+        const freq = r.frequencyDays || 30;
+        if (plannedMs >= from && plannedMs <= to) return true;
+        if (plannedMs < from && freq > 0) {
+          const diffDays = Math.floor((from - plannedMs) / 86400000);
+          const periodsForward = Math.ceil(diffDays / freq);
+          const nextOccurrence = plannedMs + periodsForward * freq * 86400000;
+          return nextOccurrence <= to;
+        }
+        return false;
+      });
     }
 
     if (search) {
@@ -353,7 +362,7 @@ function SchedulePage() {
 
   const hasActiveFilters = search || filterStatus || filterEquipment || filterRoom || filterWork || filterFrequency || dateFrom || dateTo;
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="schedule-page">

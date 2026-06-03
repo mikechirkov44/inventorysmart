@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI } from '../services/api';
 import EquipmentPassport from '../components/EquipmentPassport';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import { SkeletonPage } from '../components/Skeleton';
+import Breadcrumb from '../components/Breadcrumb';
 
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
@@ -39,6 +43,8 @@ function EquipmentDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPassport, setShowPassport] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchData();
@@ -78,10 +84,10 @@ function EquipmentDetail() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Удалить оборудование?')) {
-      try { await equipmentAPI.delete(id); navigate('/'); }
-      catch { setError('Ошибка удаления'); }
-    }
+    const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить. Все связанные данные будут удалены.', type: 'danger' });
+    if (!confirmed) return;
+    try { await equipmentAPI.delete(id); navigate('/'); }
+    catch { toast.error('Ошибка', 'Не удалось удалить оборудование'); }
   };
 
   const handlePrintQR = () => {
@@ -110,14 +116,19 @@ function EquipmentDetail() {
     win.document.close();
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
-  if (error) return <div className="error">{error}</div>;
-  if (!equipment) return <div className="error">Оборудование не найдено</div>;
+  if (loading) return <SkeletonPage />;
+  if (error) return null;
+  if (!equipment) return null;
 
   const st = STATUS_MAP[equipment.status] || STATUS_MAP.working;
 
   return (
     <div className="equipment-detail">
+      <Breadcrumb items={[
+        { label: 'Главная', to: '/' },
+        { label: 'Оборудование', to: '/' },
+        { label: equipment.name }
+      ]} />
       <div className="detail-header">
         <Link to="/" className="back-link">← Назад к списку</Link>
         <div className="detail-actions">

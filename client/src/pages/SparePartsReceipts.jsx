@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function SparePartsReceipts() {
   const [receipts, setReceipts] = useState([]);
@@ -21,6 +23,9 @@ function SparePartsReceipts() {
 
   const [spSearch, setSpSearch] = useState('');
 
+  const toast = useToast();
+  const confirm = useConfirm();
+
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
@@ -33,7 +38,7 @@ function SparePartsReceipts() {
       setAllSpareParts(spRes.data);
       setLoading(false);
     } catch {
-      setError('Ошибка загрузки');
+      toast.error('Ошибка загрузки');
       setLoading(false);
     }
   };
@@ -126,24 +131,23 @@ function SparePartsReceipts() {
     }
     try {
       await sparePartsReceiptsAPI.create(formData);
-      setSuccess('Документ создан, остатки обновлены');
+      toast.success('Документ создан, остатки обновлены');
       resetForm();
       fetchData();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Ошибка сохранения: ' + (err.response?.data?.error || err.message));
+      toast.error('Ошибка сохранения: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить документ? Остатки будут откачены.')) {
+    const confirmed = await confirm({ title: 'Удалить документ?', message: 'Остатки будут откачены.', type: 'danger' });
+    if (confirmed) {
       try {
         await sparePartsReceiptsAPI.delete(id);
-        setSuccess('Документ удалён, остатки откачены');
+        toast.success('Документ удалён, остатки откачены');
         fetchData();
-        setTimeout(() => setSuccess(''), 3000);
       } catch {
-        setError('Ошибка удаления');
+        toast.error('Ошибка удаления');
       }
     }
   };
@@ -153,7 +157,7 @@ function SparePartsReceipts() {
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(val);
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">

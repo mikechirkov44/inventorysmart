@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function RoomsDirectory() {
   const [rooms, setRooms] = useState([]);
@@ -7,7 +9,6 @@ function RoomsDirectory() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [filterBuilding, setFilterBuilding] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -15,6 +16,9 @@ function RoomsDirectory() {
   const [formData, setFormData] = useState({
     name: '', description: '', building: '', floor: '', responsibleEmployeeId: ''
   });
+
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchData(); }, []);
 
@@ -27,7 +31,7 @@ function RoomsDirectory() {
       setEquipment(equipRes.data);
       setEmployees(empRes.data);
       setLoading(false);
-    } catch { setError('Ошибка загрузки'); setLoading(false); }
+    } catch { toast.error('Ошибка', 'Ошибка загрузки'); setLoading(false); }
   };
 
   const buildings = useMemo(() => [...new Set(rooms.map(r => r.building).filter(Boolean))].sort(), [rooms]);
@@ -82,20 +86,20 @@ function RoomsDirectory() {
     e.preventDefault();
     if (!formData.name.trim()) { setError('Введите название помещения'); return; }
     try {
-      if (editId) { await roomsAPI.update(editId, formData); setSuccess('Помещение обновлено'); }
-      else { await roomsAPI.create(formData); setSuccess('Помещение добавлено'); }
-      resetForm(); fetchData(); setTimeout(() => setSuccess(''), 3000);
-    } catch { setError('Ошибка сохранения'); }
+      if (editId) { await roomsAPI.update(editId, formData); toast.success('Успех', 'Помещение обновлено'); }
+      else { await roomsAPI.create(formData); toast.success('Успех', 'Помещение добавлено'); }
+      resetForm(); fetchData();
+    } catch { toast.error('Ошибка', 'Ошибка сохранения'); }
   };
 
   const handleDelete = async (delId) => {
-    if (window.confirm('Удалить помещение?')) {
-      try { await roomsAPI.delete(delId); fetchData(); }
-      catch { setError('Ошибка удаления'); }
-    }
+    const confirmed = await confirm({ title: 'Удалить помещение?', message: 'Это действие нельзя отменить.', type: 'danger' });
+    if (!confirmed) return;
+    try { await roomsAPI.delete(delId); fetchData(); }
+    catch { toast.error('Ошибка', 'Ошибка удаления'); }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">
@@ -107,7 +111,6 @@ function RoomsDirectory() {
       </div>
 
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       {showForm && (
         <div className="directory-form-card">

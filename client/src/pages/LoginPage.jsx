@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
+import { Package, ArrowRight } from 'lucide-react';
 
 function LoginPage() {
   const { login, setupRequired } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,17 +16,42 @@ function LoginPage() {
   if (setupRequired) {
     return (
       <div className="login-page">
-        <div className="login-card">
-          <div className="login-header">
-            <h1>InventorySmart</h1>
-            <p>Система учета оборудования</p>
+        <div className="login-split">
+          <div className="login-left">
+            <div className="login-brand">
+              <Package size={48} strokeWidth={1.5} />
+              <h1>InventorySmart</h1>
+              <p>Система учёта оборудования и ЗИП</p>
+            </div>
+            <div className="login-features">
+              <div className="login-feature">
+                <div className="login-feature-icon">QR</div>
+                <span>QR-сканирование оборудования</span>
+              </div>
+              <div className="login-feature">
+                <div className="login-feature-icon">Gantt</div>
+                <span>План-график ремонтов</span>
+              </div>
+              <div className="login-feature">
+                <div className="login-feature-icon">ZIP</div>
+                <span>Учёт запасных частей</span>
+              </div>
+            </div>
           </div>
-          <div className="info">
-            Учётные записи ещё не созданы. Необходима первоначальная настройка.
+          <div className="login-right">
+            <div className="login-card">
+              <div className="login-header">
+                <h1>InventorySmart</h1>
+                <p>Первоначальная настройка системы</p>
+              </div>
+              <div className="info">
+                Учётные записи ещё не созданы. Необходима первоначальная настройка администратора.
+              </div>
+              <button onClick={() => navigate('/setup')} className="btn btn-primary btn-full">
+                Начать настройку <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
-          <button onClick={() => navigate('/setup')} className="btn btn-primary btn-full">
-            Перейти к настройке
-          </button>
         </div>
       </div>
     );
@@ -44,36 +72,61 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>InventorySmart</h1>
-          <p>Система учета оборудования</p>
+      <div className="login-split">
+        <div className="login-left">
+          <div className="login-brand">
+            <Package size={48} strokeWidth={1.5} />
+            <h1>InventorySmart</h1>
+            <p>Система учёта оборудования и ЗИП</p>
+          </div>
+          <div className="login-features">
+            <div className="login-feature">
+              <div className="login-feature-icon">QR</div>
+              <span>QR-сканирование оборудования</span>
+            </div>
+            <div className="login-feature">
+              <div className="login-feature-icon">Gantt</div>
+              <span>План-график ремонтов</span>
+            </div>
+            <div className="login-feature">
+              <div className="login-feature-icon">ZIP</div>
+              <span>Учёт запасных частей</span>
+            </div>
+          </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error">{error}</div>}
-          <div className="form-group">
-            <label>Логин</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Введите логин"
-              autoFocus
-            />
+        <div className="login-right">
+          <div className="login-card">
+            <div className="login-header">
+              <h1>Вход в систему</h1>
+              <p>Введите учётные данные для входа</p>
+            </div>
+            <form onSubmit={handleSubmit}>
+              {error && <div className="error">{error}</div>}
+              <div className="form-group">
+                <label>Логин</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Введите логин"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>Пароль</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Введите пароль"
+                />
+              </div>
+              <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+                {loading ? 'Вход...' : 'Войти'} {!loading && <ArrowRight size={16} />}
+              </button>
+            </form>
           </div>
-          <div className="form-group">
-            <label>Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Введите пароль"
-            />
-          </div>
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Вход...' : 'Войти'}
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

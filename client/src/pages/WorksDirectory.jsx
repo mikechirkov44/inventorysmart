@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { worksAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Ежедневно' },
@@ -21,8 +23,6 @@ function getFrequencyLabel(days) {
 function WorksDirectory() {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +33,8 @@ function WorksDirectory() {
     frequencyDays: 30,
     category: ''
   });
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchWorks(); }, []);
 
@@ -41,7 +43,7 @@ function WorksDirectory() {
       const response = await worksAPI.getAll();
       setWorks(response.data);
       setLoading(false);
-    } catch { setError('Ошибка загрузки справочника работ'); setLoading(false); }
+    } catch { toast.error('Ошибка загрузки справочника работ'); setLoading(false); }
   };
 
   const categories = useMemo(() => {
@@ -80,31 +82,31 @@ function WorksDirectory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) { setError('Введите название работы'); return; }
+    if (!formData.name.trim()) { toast.error('Введите название работы'); return; }
     try {
       if (editId) {
         await worksAPI.update(editId, formData);
-        setSuccess('Работа обновлена');
+        toast.success('Работа обновлена');
       } else {
         await worksAPI.create(formData);
-        setSuccess('Работа добавлена');
+        toast.success('Работа добавлена');
       }
       resetForm();
       fetchWorks();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Ошибка сохранения');
+      toast.error('Ошибка сохранения');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить работу из справочника?')) {
+    const ok = await confirm({ title: 'Удалить работу?', message: 'Удалить работу из справочника?', type: 'danger', confirmText: 'Удалить' });
+    if (ok) {
       try { await worksAPI.delete(id); fetchWorks(); }
-      catch { setError('Ошибка удаления'); }
+      catch { toast.error('Ошибка удаления'); }
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">
@@ -114,9 +116,6 @@ function WorksDirectory() {
           {showForm ? 'Закрыть' : '+ Добавить работу'}
         </button>
       </div>
-
-      {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       {showForm && (
         <div className="directory-form-card">

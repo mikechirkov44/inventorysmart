@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { employeesAPI, positionsAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function EmployeesDirectory() {
   const [employees, setEmployees] = useState([]);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [filterPosition, setFilterPosition] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -19,6 +20,8 @@ function EmployeesDirectory() {
     phone: '',
     email: ''
   });
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     Promise.all([fetchEmployees(), fetchPositions()]);
@@ -29,7 +32,7 @@ function EmployeesDirectory() {
       const response = await employeesAPI.getAll();
       setEmployees(response.data);
       setLoading(false);
-    } catch { setError('Ошибка загрузки'); setLoading(false); }
+    } catch { toast.error('Ошибка загрузки'); setLoading(false); }
   };
 
   const fetchPositions = async () => {
@@ -90,25 +93,24 @@ function EmployeesDirectory() {
       if (!data.positionId) delete data.positionId;
       if (editId) {
         await employeesAPI.update(editId, data);
-        setSuccess('Сотрудник обновлён');
+        toast.success('Сотрудник обновлён');
       } else {
         await employeesAPI.create(data);
-        setSuccess('Сотрудник добавлен');
+        toast.success('Сотрудник добавлен');
       }
       resetForm();
       fetchEmployees();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch { setError('Ошибка сохранения'); }
+    } catch { toast.error('Ошибка сохранения'); }
   };
 
   const handleDelete = async (delId) => {
-    if (window.confirm('Удалить сотрудника?')) {
+    if (await confirm({ title: 'Удалить сотрудника?', message: 'Это действие нельзя отменить.', type: 'danger' })) {
       try { await employeesAPI.delete(delId); fetchEmployees(); }
-      catch { setError('Ошибка удаления'); }
+      catch { toast.error('Ошибка удаления'); }
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">
@@ -120,7 +122,6 @@ function EmployeesDirectory() {
       </div>
 
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       {showForm && (
         <div className="directory-form-card">

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usersAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -14,6 +16,8 @@ function UsersPage() {
     fullName: '',
     role: 'user'
   });
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -23,7 +27,7 @@ function UsersPage() {
       setUsers(res.data);
       setLoading(false);
     } catch {
-      setError('Ошибка загрузки');
+      toast.error('Ошибка загрузки');
       setLoading(false);
     }
   };
@@ -42,8 +46,8 @@ function UsersPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.username.trim()) { setError('Введите логин'); return; }
-    if (!editId && !formData.password) { setError('Введите пароль'); return; }
+    if (!formData.username.trim()) { toast.error('Введите логин'); return; }
+    if (!editId && !formData.password) { toast.error('Введите пароль'); return; }
 
     try {
       const data = { ...formData };
@@ -51,31 +55,30 @@ function UsersPage() {
 
       if (editId) {
         await usersAPI.update(editId, data);
-        setSuccess('Пользователь обновлён');
+        toast.success('Пользователь обновлён');
       } else {
         await usersAPI.create(data);
-        setSuccess('Пользователь создан');
+        toast.success('Пользователь создан');
       }
       resetForm();
       fetchUsers();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка сохранения');
+      toast.error(err.response?.data?.error || 'Ошибка сохранения');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить пользователя?')) {
+    if (await confirm({ title: 'Удалить пользователя?', message: 'Это действие нельзя отменить.', type: 'danger' })) {
       try {
         await usersAPI.delete(id);
         fetchUsers();
       } catch (err) {
-        setError(err.response?.data?.error || 'Ошибка удаления');
+        toast.error(err.response?.data?.error || 'Ошибка удаления');
       }
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">

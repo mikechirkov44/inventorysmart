@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import { SkeletonTable } from '../components/Skeleton';
 
 const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
@@ -20,6 +23,9 @@ function EquipmentTable() {
   const [filterStatus, setFilterStatus] = useState('');
   const [sortField, setSortField] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     Promise.all([equipmentAPI.getAll(), roomsAPI.getAll(), worksAPI.getAll()])
@@ -88,15 +94,15 @@ function EquipmentTable() {
   };
 
   const handleDelete = async (delId) => {
-    if (window.confirm('Удалить оборудование?')) {
-      try { await equipmentAPI.delete(delId); setEquipment(prev => prev.filter(e => e.id !== delId)); }
-      catch { setError('Ошибка удаления'); }
-    }
+    const confirmed = await confirm({ title: 'Удалить оборудование?', message: 'Это действие нельзя отменить.', type: 'danger' });
+    if (!confirmed) return;
+    try { await equipmentAPI.delete(delId); setEquipment(prev => prev.filter(e => e.id !== delId)); }
+    catch { toast.error('Ошибка', 'Не удалось удалить оборудование'); }
   };
 
   const clearFilters = () => { setSearch(''); setFilterCategory(''); setFilterRoom(''); setFilterStatus(''); };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={10} cols={6} />;
 
   return (
     <div className="equipment-table-page">

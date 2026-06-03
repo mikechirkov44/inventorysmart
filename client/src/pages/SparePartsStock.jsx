@@ -1,15 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { sparePartsAPI } from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 function SparePartsStock() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [replenishMode, setReplenishMode] = useState(false);
   const [replenishData, setReplenishData] = useState({});
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -19,7 +22,7 @@ function SparePartsStock() {
       setItems(res.data);
       setLoading(false);
     } catch {
-      setError('Ошибка загрузки');
+      toast.error('Ошибка загрузки');
       setLoading(false);
     }
   };
@@ -75,17 +78,16 @@ function SparePartsStock() {
     }
     try {
       await sparePartsAPI.replenish(itemsToReplenish);
-      setSuccess(`Пополнено ${itemsToReplenish.length} позиций`);
+      toast.success(`Пополнено ${itemsToReplenish.length} позиций`);
       setReplenishMode(false);
       setReplenishData({});
       fetchItems();
-      setTimeout(() => setSuccess(''), 3000);
     } catch {
-      setError('Ошибка пополнения');
+      toast.error('Ошибка пополнения');
     }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
     <div className="directory-page">
@@ -99,7 +101,6 @@ function SparePartsStock() {
       </div>
 
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 16 }}>
         <div className="summary-card success">

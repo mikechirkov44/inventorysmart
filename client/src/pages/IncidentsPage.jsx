@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+import { SkeletonTable } from '../components/Skeleton';
 
 const STATUS_MAP = {
   new: { label: 'Новый', className: 'status-needs-repair' },
@@ -14,6 +17,8 @@ function IncidentsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchIncidents(); }, []);
 
@@ -35,16 +40,16 @@ function IncidentsPage() {
       setSelectedIncident(null);
       setAdminNotes('');
       fetchIncidents();
-    } catch {}
+    } catch { toast.error('Ошибка', 'Не удалось обновить статус'); }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Удалить инцидент?')) {
-      try { await api.delete(`/incidents/${id}`); fetchIncidents(); } catch {}
-    }
+    const confirmed = await confirm({ title: 'Удалить инцидент?', message: 'Инцидент будет удалён навсегда.', type: 'danger' });
+    if (!confirmed) return;
+    try { await api.delete(`/incidents/${id}`); fetchIncidents(); } catch { toast.error('Ошибка', 'Не удалось удалить инцидент'); }
   };
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={7} />;
 
   return (
     <div className="directory-page">
