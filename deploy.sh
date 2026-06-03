@@ -48,32 +48,51 @@ else
   cd "$APP_DIR"
 fi
 
-# 4. Запрос пароля администратора
+# 4. Запрос пароля администратора (если не задан через .env)
 echo ""
 echo "[4/6] Настройка администратора..."
-ADMIN_USER="admin"
-ADMIN_FULLNAME="Администратор"
 
-# Проверяем, есть ли уже пользователи в БД (после запуска контейнеров)
-# Пока просто запрашиваем пароль
-echo ""
-echo "  Создание учётной записи администратора."
-echo "  Логин: $ADMIN_USER"
-echo ""
-read -sp "  Пароль администратора (мин. 6 символов): " ADMIN_PASSWORD
-echo ""
-
-if [ ${#ADMIN_PASSWORD} -lt 6 ]; then
-  echo "  Ошибка: пароль должен быть не менее 6 символов."
-  exit 1
+# Загружаем .env если существует
+if [ -f .env ]; then
+  set -a; source .env; set +a
 fi
 
-read -sp "  Повторите пароль: " ADMIN_PASSWORD_CONFIRM
-echo ""
+if [ -z "$ADMIN_PASSWORD" ]; then
+  ADMIN_USER="admin"
+  ADMIN_FULLNAME="Администратор"
 
-if [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; then
-  echo "  Ошибка: пароли не совпадают."
-  exit 1
+  echo ""
+  echo "  Создание учётной записи администратора."
+  echo "  Логин: $ADMIN_USER"
+  echo ""
+  read -sp "  Пароль администратора (мин. 6 символов): " ADMIN_PASSWORD_INPUT
+  echo ""
+
+  if [ ${#ADMIN_PASSWORD_INPUT} -lt 6 ]; then
+    echo "  Ошибка: пароль должен быть не менее 6 символов."
+    exit 1
+  fi
+
+  read -sp "  Повторите пароль: " ADMIN_PASSWORD_CONFIRM
+  echo ""
+
+  if [ "$ADMIN_PASSWORD_INPUT" != "$ADMIN_PASSWORD_CONFIRM" ]; then
+    echo "  Ошибка: пароли не совпадают."
+    exit 1
+  fi
+
+  # Создаём .env для автосоздания при запуске контейнеров
+  if [ ! -f .env ]; then
+    cp .env.example .env
+  fi
+
+  # Записываем пароль в .env
+  sed -i "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$ADMIN_PASSWORD_INPUT/" .env 2>/dev/null || \
+    echo "ADMIN_PASSWORD=$ADMIN_PASSWORD_INPUT" >> .env
+
+  echo "  Пароль сохранён в .env"
+else
+  echo "  ADMIN_PASSWORD задан через окружение. Автосоздание при старте."
 fi
 
 # 5. Сборка и запуск контейнеров
@@ -82,7 +101,7 @@ echo "[5/6] Сборка и запуск контейнеров..."
 docker compose down 2>/dev/null || true
 docker compose up -d --build
 
-# 6. Ожидание готовности и создание администратора
+# 6. Ожидание готовности
 echo ""
 echo "[6/6] Ожидание готовности сервера..."
 sleep 3
@@ -95,23 +114,13 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
-# Проверяем, нужен ли setup
-SETUP_REQUIRED=$(curl -sf http://localhost:3001/api/setup | grep -o '"setupRequired":true' || true)
-
-if [ -n "$SETUP_REQUIRED" ]; then
-  echo "  Создание администратора..."
-  SETUP_RESULT=$(curl -sf -X POST http://localhost:3001/api/setup \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASSWORD\",\"fullName\":\"$ADMIN_FULLNAME\"}")
-
-  if echo "$SETUP_RESULT" | grep -q "token"; then
-    echo "  Администратор создан успешно."
-  else
-    echo "  Ошибка: $SETUP_RESULT"
-    echo "  Аккаунт администратора не создан. Создайте его через веб-интерфейс."
-  fi
-else
-  echo "  Администратор уже существует. Пропуск."
+# Проверяем статус
+SETUP_RESULT=$(curl -sf http://localhost:3001/api/setup 2>/dev/null || echo '{}')
+if echo "$SETUP_RESULT" | grep -q '"setupRequired":false'; then
+  echo "  Администратор создан автоматически."
+elif echo "$SETUP_RESULT" | grep -q '"setupRequired":true'; then
+  echo "  ВНИМАНИЕ: Администратор не создан!"
+  echo "  Создайте его через веб-интерфейс: http://$(hostname -I | awk '{print $1}')/setup"
 fi
 
 IP=$(hostname -I | awk '{print $1}')
@@ -123,10 +132,6 @@ echo "========================================="
 echo ""
 echo "  Приложение: http://$IP"
 echo "  API:        http://$IP/api/health"
-echo ""
-echo "  Учётные данные:"
-echo "    Логин:    $ADMIN_USER"
-echo "    Пароль:   ********"
 echo ""
 echo "  Управление:"
 echo "    docker compose ps          - статус"
