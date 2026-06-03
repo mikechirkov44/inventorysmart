@@ -1,0 +1,94 @@
+# ============================================
+# InventorySmart - CI/CD Pipeline
+# ============================================
+# Автоматический деплой на VPS при пуше в main.
+#
+# Перед использованием настройте secrets в GitHub:
+#   Settings → Secrets and variables → Actions → New repository secret
+#
+#   VPS_HOST    — IP-адрес сервера
+#   VPS_USER    — SSH пользователь (root или deploy)
+#   VPS_SSH_KEY — Приватный SSH ключ
+# ============================================
+
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            APP_DIR="/opt/inventorysmart"
+            echo "=== InventorySmart Deploy ==="
+            echo "Time: $(date)"
+            echo "Commit: ${{ github.sha }}"
+
+            # Переходим в директорию проекта
+            cd "$APP_DIR"
+
+            # Получаем свежий код
+            echo ""
+            echo "[1/4] Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Проверяем наличие .env
+            echo ""
+            echo "[2/4] Checking environment..."
+            if [ ! -f .env ]; then
+              echo "ERROR: .env file not found. Run deploy.sh first."
+              exit 1
+            fi
+
+            # Перезапускаем контейнеры
+            echo ""
+            echo "[3/4] Building and starting containers..."
+            docker compose down
+            docker compose up -d --build
+
+            # Ждём готовности сервера
+            echo ""
+            echo "[4/4] Waiting for server health check..."
+            sleep 10
+
+            HEALTH_OK=false
+            for i in 1 2 3 4 5 6 7 8; do
+              if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+                HEALTH_OK=true
+                break
+              fi
+              echo "  Attempt $i/8 - waiting..."
+              sleep 5
+            done
+
+            if [ "$HEALTH_OK" = true ]; then
+              echo ""
+              echo "=== Deploy successful ==="
+              curl -s http://localhost:3001/api/health
+            else
+              echo ""
+              echo "=== Deploy FAILED ==="
+              echo "Server logs:"
+              docker compose logs --tail=30
+              exit 1
+            fi

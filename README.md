@@ -97,6 +97,52 @@ docker compose up -d       # запуск
 docker compose up -d --build  # пересборка и запуск
 ```
 
+## CI/CD (GitHub Actions)
+
+Автоматический деплой при пуше в `main` ветку.
+
+### Настройка
+
+1. **Создайте SSH-ключ для деплоя:**
+```bash
+# На локальном компьютере
+ssh-keygen -t ed25519 -C "github-deploy" -f ~/.ssh/github_deploy
+# Скопируйте публичный ключ на VPS
+ssh-copy-id -i ~/.ssh/github_deploy.pub root@YOUR_VPS_IP
+```
+
+2. **Добавьте secrets в GitHub:**
+   - Перейдите в репозиторий → **Settings** → **Secrets and variables** → **Actions**
+   - Добавьте:
+     - `VPS_HOST` — IP-адрес сервера
+     - `VPS_USER` — SSH пользователь (обычно `root`)
+     - `VPS_SSH_KEY` — Содержимое приватного ключа (`cat ~/.ssh/github_deploy`)
+
+3. **Убедитесь что .env существует на VPS:**
+```bash
+# На VPS第一次 запустите deploy.sh для создания .env
+cd /opt/inventorysmart
+./deploy.sh
+```
+
+### Как работает
+
+```
+git push origin main
+       ↓
+GitHub Actions → SSH → VPS
+       ↓
+git pull → docker compose down → docker compose up -d --build
+       ↓
+Health check: curl localhost:3001/api/health
+       ↓
+✅ Деплой завершён
+```
+
+### Ручной запуск
+
+В GitHub: **Actions** → **Deploy to Production** → **Run workflow**
+
 ## Панель суперадминистратора
 
 Доступна по адресу `/admin/`. Суперадминистратор управляет:
