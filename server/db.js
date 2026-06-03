@@ -220,9 +220,10 @@ async function migrate() {
       ) WHERE company_id IS NULL
     `);
 
-    // Seed superadmin user (password: superadmin123)
+    // Seed superadmin user
     const bcrypt = require('bcryptjs');
-    const superadminHash = bcrypt.hashSync('superadmin123', 10);
+    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'superadmin123';
+    const superadminHash = bcrypt.hashSync(superadminPassword, 10);
     await client.query(`
       INSERT INTO users (username, password_hash, full_name, role)
       VALUES ('superadmin', $1, 'Суперадминистратор', 'superadmin')

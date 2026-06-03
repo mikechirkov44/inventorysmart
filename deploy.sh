@@ -48,51 +48,48 @@ else
   cd "$APP_DIR"
 fi
 
-# 4. Запрос пароля администратора (если не задан через .env)
+# 4. Запрос пароля суперадмина
 echo ""
-echo "[4/6] Настройка администратора..."
+echo "[4/6] Настройка суперадмина..."
 
 # Загружаем .env если существует
 if [ -f .env ]; then
   set -a; source .env; set +a
 fi
 
-if [ -z "$ADMIN_PASSWORD" ]; then
-  ADMIN_USER="admin"
-  ADMIN_FULLNAME="Администратор"
-
+if [ -z "$SUPERADMIN_PASSWORD" ]; then
   echo ""
-  echo "  Создание учётной записи администратора."
-  echo "  Логин: $ADMIN_USER"
+  echo "  Создание учётной записи суперадминистратора."
+  echo "  Логин: superadmin"
   echo ""
-  read -sp "  Пароль администратора (мин. 6 символов): " ADMIN_PASSWORD_INPUT
+  read -sp "  Пароль суперадмина (мин. 6 символов): " SA_PASSWORD_INPUT
   echo ""
 
-  if [ ${#ADMIN_PASSWORD_INPUT} -lt 6 ]; then
+  if [ ${#SA_PASSWORD_INPUT} -lt 6 ]; then
     echo "  Ошибка: пароль должен быть не менее 6 символов."
     exit 1
   fi
 
-  read -sp "  Повторите пароль: " ADMIN_PASSWORD_CONFIRM
+  read -sp "  Повторите пароль: " SA_PASSWORD_CONFIRM
   echo ""
 
-  if [ "$ADMIN_PASSWORD_INPUT" != "$ADMIN_PASSWORD_CONFIRM" ]; then
+  if [ "$SA_PASSWORD_INPUT" != "$SA_PASSWORD_CONFIRM" ]; then
     echo "  Ошибка: пароли не совпадают."
     exit 1
   fi
 
-  # Создаём .env для автосоздания при запуске контейнеров
+  # Создаём .env
   if [ ! -f .env ]; then
     cp .env.example .env
   fi
 
   # Записываем пароль в .env
-  sed -i "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$ADMIN_PASSWORD_INPUT/" .env 2>/dev/null || \
-    echo "ADMIN_PASSWORD=$ADMIN_PASSWORD_INPUT" >> .env
+  sed -i "s/^SUPERADMIN_PASSWORD=.*/SUPERADMIN_PASSWORD=$SA_PASSWORD_INPUT/" .env 2>/dev/null || \
+    echo "SUPERADMIN_PASSWORD=$SA_PASSWORD_INPUT" >> .env
 
-  echo "  Пароль сохранён в .env"
+  echo "  Пароль суперадмина сохранён в .env"
 else
-  echo "  ADMIN_PASSWORD задан через окружение. Автосоздание при старте."
+  echo "  SUPERADMIN_PASSWORD задан через окружение."
 fi
 
 # 5. Сборка и запуск контейнеров
@@ -114,15 +111,6 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
-# Проверяем статус
-SETUP_RESULT=$(curl -sf http://localhost:3001/api/setup 2>/dev/null || echo '{}')
-if echo "$SETUP_RESULT" | grep -q '"setupRequired":false'; then
-  echo "  Администратор создан автоматически."
-elif echo "$SETUP_RESULT" | grep -q '"setupRequired":true'; then
-  echo "  ВНИМАНИЕ: Администратор не создан!"
-  echo "  Создайте его через веб-интерфейс: http://$(hostname -I | awk '{print $1}')/setup"
-fi
-
 IP=$(hostname -I | awk '{print $1}')
 
 echo ""
@@ -136,8 +124,10 @@ echo "  API:           http://$IP/api/health"
 echo ""
 echo "  Суперадмин (панель /admin/):"
 echo "    Логин: superadmin"
-echo "    Пароль: superadmin123"
-echo "    (смените пароль после первого входа)"
+echo "    (пароль задан при деплое)"
+echo ""
+echo "  Админы порталов создаются через панель /admin/"
+echo "  суперадминистратором."
 echo ""
 echo "  Управление:"
 echo "    docker compose ps          - статус"

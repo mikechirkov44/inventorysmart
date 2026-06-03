@@ -116,10 +116,24 @@ function CompaniesTab() {
 
 function UsersTab() {
   const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ username: '', password: '', fullName: '', companyId: '', positionId: '' });
+  const [creating, setCreating] = useState(false);
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    Promise.all([
+      superadminAPI.getUsers(),
+      superadminAPI.getCompanies(),
+    ]).then(([usersRes, compRes]) => {
+      setUsers(usersRes.data);
+      setCompanies(compRes.data);
+    }).catch(() => setError('Ошибка загрузки данных'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -127,8 +141,25 @@ function UsersTab() {
       setUsers(res.data);
     } catch {
       setError('Ошибка загрузки пользователей');
+    }
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.username.trim() || !form.password || !form.companyId) return;
+    setCreating(true);
+    setError('');
+    try {
+      await superadminAPI.createUser(form);
+      setForm({ username: '', password: '', fullName: '', companyId: '', positionId: '' });
+      setShowForm(false);
+      setSuccess('Пользователь создан');
+      fetchUsers();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка создания');
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
@@ -138,9 +169,63 @@ function UsersTab() {
     <div>
       <div className="sa-section-header">
         <h3>Пользователи</h3>
+        <button className="btn btn-primary btn-small" onClick={() => setShowForm(!showForm)}>
+          <Plus size={14} /> {showForm ? 'Закрыть' : 'Добавить'}
+        </button>
       </div>
 
       {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="sa-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label>Логин</label>
+              <input
+                type="text"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder="admin_name"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Пароль</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Мин. 6 символов"
+                required
+              />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>ФИО</label>
+              <input
+                type="text"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                placeholder="Иванов Иван Иванович"
+              />
+            </div>
+            <div className="form-group">
+              <label>Компания (портал)</label>
+              <select value={form.companyId} onChange={(e) => setForm({ ...form, companyId: e.target.value })} required>
+                <option value="">Выберите компанию</option>
+                {companies.map(c => (
+                  <option key={c.companyId} value={c.companyId}>{c.companyName || 'Без названия'}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button type="submit" className="btn btn-primary btn-small" disabled={creating || !form.username.trim() || !form.password || !form.companyId}>
+            {creating ? 'Создание...' : 'Создать'}
+          </button>
+        </form>
+      )}
 
       <div className="sa-table-container">
         <table className="data-table">

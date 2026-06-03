@@ -102,4 +102,29 @@ module.exports = {
       [licenseKey, companyId]
     );
   },
+
+  createUser: async ({ username, password, fullName, companyId, positionId }) => {
+    const { rows: existing } = await query(
+      'SELECT id FROM users WHERE username = $1',
+      [username]
+    );
+    if (existing.length > 0) return null;
+
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const { rows } = await query(
+      `INSERT INTO users (username, password_hash, full_name, role, company_id, position_id)
+       VALUES ($1, $2, $3, 'user', $4, $5)
+       RETURNING id, username, full_name, role, company_id, position_id, created_at`,
+      [username, passwordHash, fullName, companyId, positionId]
+    );
+    return {
+      id: rows[0].id,
+      username: rows[0].username,
+      fullName: rows[0].full_name,
+      role: rows[0].role,
+      companyId: rows[0].company_id,
+      positionId: rows[0].position_id,
+      createdAt: rows[0].created_at,
+    };
+  },
 };

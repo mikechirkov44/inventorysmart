@@ -113,4 +113,36 @@ router.post('/generate-license', async (req, res) => {
   }
 });
 
+// Create a user for a specific company
+router.post('/users', async (req, res) => {
+  try {
+    const { username, password, fullName, companyId, positionId } = req.body;
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Введите логин' });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+    }
+    if (!companyId) {
+      return res.status(400).json({ error: 'Выберите компанию (портал)' });
+    }
+
+    const user = await SuperAdmin.createUser({
+      username: username.trim(),
+      password,
+      fullName: fullName ? fullName.trim() : username.trim(),
+      companyId,
+      positionId: positionId || null,
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

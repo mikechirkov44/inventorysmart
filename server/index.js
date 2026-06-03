@@ -15,36 +15,6 @@ async function start() {
   // Run database migrations
   await migrate();
 
-  // Auto-create admin from env vars if configured
-  const User = require('./models/user');
-  const Position = require('./models/position');
-
-  if (process.env.ADMIN_PASSWORD && await User.isSetupRequired()) {
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminFullname = process.env.ADMIN_FULLNAME || 'Администратор';
-
-    if (adminPassword.length >= 6) {
-      const adminPosition = await Position.findByName('Администратор');
-      const user = await User.create({
-        username: adminUsername,
-        password: adminPassword,
-        fullName: adminFullname,
-        positionId: adminPosition ? adminPosition.id : null
-      });
-
-      if (user) {
-        console.log(`Admin account created: ${adminUsername}`);
-      } else {
-        console.log(`Admin account ${adminUsername} already exists or creation failed.`);
-      }
-    } else {
-      console.error('ADMIN_PASSWORD must be at least 6 characters. Skipping auto-setup.');
-    }
-  }
-
-  await User.ensureAdmin();
-
   // Public routes (no auth)
   const authRoutes = require('./routes/auth');
   const setupRoutes = require('./routes/setup');
