@@ -121,7 +121,7 @@ function UsersTab() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ username: '', password: '', fullName: '', companyId: '', positionId: '' });
+  const [form, setForm] = useState({ username: '', password: '', fullName: '', companyId: '', positionId: '', isAdmin: true });
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -150,8 +150,15 @@ function UsersTab() {
     setCreating(true);
     setError('');
     try {
-      await superadminAPI.createUser(form);
-      setForm({ username: '', password: '', fullName: '', companyId: '', positionId: '' });
+      const payload = {
+        username: form.username,
+        password: form.password,
+        fullName: form.fullName,
+        companyId: form.companyId,
+        positionId: form.isAdmin ? undefined : form.positionId || undefined,
+      };
+      await superadminAPI.createUser(payload);
+      setForm({ username: '', password: '', fullName: '', companyId: '', positionId: '', isAdmin: true });
       setShowForm(false);
       setSuccess('Пользователь создан');
       fetchUsers();
@@ -178,7 +185,7 @@ function UsersTab() {
       {success && <div className="success">{success}</div>}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="sa-form">
+        <form onSubmit={handleCreate} className="sa-form-grid">
           <div className="form-row">
             <div className="form-group">
               <label>Логин</label>
@@ -219,6 +226,19 @@ function UsersTab() {
                   <option key={c.companyId} value={c.companyId}>{c.companyName || 'Без названия'}</option>
                 ))}
               </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.isAdmin}
+                  onChange={(e) => setForm({ ...form, isAdmin: e.target.checked })}
+                />
+                <span>Администратор компании</span>
+              </label>
+              <span className="field-hint">Полный доступ ко всем разделам</span>
             </div>
           </div>
           <button type="submit" className="btn btn-primary btn-small" disabled={creating || !form.username.trim() || !form.password || !form.companyId}>

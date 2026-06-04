@@ -310,6 +310,13 @@ input, textarea, select { font-family: inherit; }
   white-space: nowrap;
 }
 
+.top-header-company {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 .top-header-logout {
   color: var(--gray-500) !important;
   border-color: var(--gray-300) !important;

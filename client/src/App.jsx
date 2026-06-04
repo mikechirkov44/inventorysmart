@@ -114,6 +114,7 @@ function TopHeader() {
 
   return (
     <header className="top-header">
+      {user.companyName && <span className="top-header-company">{user.companyName}</span>}
       <div className="top-header-spacer" />
       <div className="top-header-user">
         <NotificationBell />

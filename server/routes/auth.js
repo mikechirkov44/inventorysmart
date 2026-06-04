@@ -8,6 +8,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { query } = require('../db');
 const { authenticate } = require('../middleware/auth');
 
 /**
@@ -16,20 +17,41 @@ const { authenticate } = require('../middleware/auth');
  * @param {Object} req.body - Данные для входа
  * @param {string} req.body.username - Логин пользователя
  * @param {string} req.body.password - Пароль пользователя
+ * @param {string} req.body.companyName - Наименование компании
  * @returns {Object} Объект с токеном и данными пользователя
  * @returns {string} return.token - JWT-токен для доступа
- * @returns {Object} return.user - Данные пользователя (id, username, fullName, role, positionId, permissions)
+ * @returns {Object} return.user - Данные пользователя (id, username, fullName, role, positionId, permissions, companyName)
  */
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, companyName } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ error: 'Введите логин и пароль' });
+    }
+    if (!companyName || !companyName.trim()) {
+      return res.status(400).json({ error: 'Введите наименование компании' });
     }
 
     const user = await User.findByUsername(username);
     if (!user || !User.verifyPassword(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
+    }
+
+    if (!user.company_id) {
+      return res.status(403).json({ error: 'Пользователь не привязан к компании' });
+    }
+
+    const { rows: companies } = await query(
+      'SELECT company_name FROM company_settings WHERE company_id = $1',
+      [user.company_id]
+    );
+    if (companies.length === 0) {
+      return res.status(403).json({ error: 'Компания пользователя не найдена' });
+    }
+
+    const actualCompanyName = companies[0].company_name;
+    if (actualCompanyName.trim().toLowerCase() !== companyName.trim().toLowerCase()) {
+      return res.status(403).json({ error: 'Неверное наименование компании' });
     }
 
     const permissions = user.position_permissions
@@ -46,6 +68,7 @@ router.post('/login', async (req, res) => {
         positionName: user.position_name,
         employeeId: user.employee_id,
         companyId: user.company_id,
+        companyName: actualCompanyName,
         permissions
       },
       User.JWT_SECRET,
@@ -63,6 +86,7 @@ router.post('/login', async (req, res) => {
         positionName: user.position_name,
         employeeId: user.employee_id,
         companyId: user.company_id,
+        companyName: actualCompanyName,
         permissions
       }
     });
@@ -83,8 +107,17 @@ router.get('/me', authenticate, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    let companyName = null;
+    if (user.companyId) {
+      const { rows } = await query(
+        'SELECT company_name FROM company_settings WHERE company_id = $1',
+        [user.companyId]
+      );
+      companyName = rows[0]?.company_name || null;
+    }
     res.json({
       ...user,
+      companyName,
       permissions: req.user.permissions || {}
     });
   } catch (error) {

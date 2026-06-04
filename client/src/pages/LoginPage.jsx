@@ -15,6 +15,7 @@ function LoginPage() {
   const toast = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -69,9 +70,9 @@ function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(username, password);
+      await login(username, password, companyName);
     } catch {
-      setError('Неверное имя пользователя или пароль');
+      setError('Неверное имя пользователя, пароль или наименование компании');
     } finally {
       setLoading(false);
     }
@@ -110,13 +111,22 @@ function LoginPage() {
             <form onSubmit={handleSubmit}>
               {error && <div className="error">{error}</div>}
               <div className="form-group">
+                <label>Компания</label>
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Введите наименование компании"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
                 <label>Логин</label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Введите логин"
-                  autoFocus
                 />
               </div>
               <div className="form-group">

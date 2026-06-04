@@ -82,6 +82,12 @@ input, select { font-family: inherit; }
 .sa-form { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 16px; }
 .sa-form input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); font-size: 14px; }
 .sa-form input:focus { outline: none; border-color: var(--primary); }
+.sa-form-grid { margin-bottom: 16px; }
+.sa-form-grid .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.sa-form-grid .form-row .form-group { flex: 1; }
+.checkbox-label { display: flex !important; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+.field-hint { display: block; font-size: 12px; color: var(--gray-400); margin-top: 4px; }
 .sa-table-container { overflow-x: auto; }
 .sa-license-form { max-width: 500px; margin-bottom: 16px; }
 .sa-license-form .form-row { display: flex; gap: 12px; }
@@ -96,6 +102,7 @@ input, select { font-family: inherit; }
   .sa-tabs { overflow-x: auto; }
   .sa-tab { white-space: nowrap; }
   .sa-form { flex-direction: column; }
+  .sa-form-grid .form-row { flex-direction: column; }
   .sa-license-form .form-row { flex-direction: column; }
   .sa-key-row { flex-direction: column; }
   .form-row { flex-direction: column; }
