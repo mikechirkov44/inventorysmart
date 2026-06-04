@@ -36,8 +36,10 @@ superadminApi.interceptors.response.use(
 export const superadminAPI = {
   login: (username, password) => superadminApi.post('/superadmin/login', { username, password }),
   getCompanies: () => superadminApi.get('/superadmin/companies'),
-  getUsers: () => superadminApi.get('/superadmin/users'),
   createCompany: (companyName) => superadminApi.post('/superadmin/companies', { companyName }),
+  updateCompany: (companyId, companyName) => superadminApi.put(`/superadmin/companies/${companyId}`, { companyName }),
+  deleteCompany: (companyId) => superadminApi.delete(`/superadmin/companies/${companyId}`),
+  getUsers: () => superadminApi.get('/superadmin/users'),
   generateLicense: (companyId, plan, daysValid) => superadminApi.post('/superadmin/generate-license', { companyId, plan, daysValid }),
   createUser: (data) => superadminApi.post('/superadmin/users', data),
 };

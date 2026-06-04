@@ -121,6 +121,42 @@ router.post('/companies', async (req, res) => {
 });
 
 /**
+ * @route PUT /superadmin/companies/:companyId
+ * @description Обновление названия компании
+ */
+router.put('/companies/:companyId', async (req, res) => {
+  try {
+    const { companyName } = req.body;
+    if (!companyName || !companyName.trim()) {
+      return res.status(400).json({ error: 'Введите название компании' });
+    }
+    const company = await SuperAdmin.updateCompany(req.params.companyId, companyName.trim());
+    if (!company) {
+      return res.status(404).json({ error: 'Компания не найдена' });
+    }
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route DELETE /superadmin/companies/:companyId
+ * @description Удаление компании
+ */
+router.delete('/companies/:companyId', async (req, res) => {
+  try {
+    const deleted = await SuperAdmin.deleteCompany(req.params.companyId);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Компания не найдена' });
+    }
+    res.json({ message: 'Компания удалена' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * @route POST /superadmin/generate-license
  * @description Генерация лицензионного ключа для компании
  * @requires authenticate

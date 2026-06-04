@@ -133,6 +133,41 @@ module.exports = {
   },
 
   /**
+   * Обновляет название компании.
+   * @async
+   * @param {string} companyId - company_id компании
+   * @param {string} companyName - Новое название
+   * @returns {Promise<Object|null>} Обновлённая компания или null
+   */
+  updateCompany: async (companyId, companyName) => {
+    const { rows } = await query(
+      'UPDATE company_settings SET company_name = $1, updated_at = NOW() WHERE company_id = $2 RETURNING *',
+      [companyName, companyId]
+    );
+    if (rows.length === 0) return null;
+    return {
+      id: rows[0].id,
+      companyId: rows[0].company_id,
+      companyName: rows[0].company_name,
+      createdAt: rows[0].created_at,
+    };
+  },
+
+  /**
+   * Удаляет компанию по company_id.
+   * @async
+   * @param {string} companyId - company_id компании
+   * @returns {Promise<boolean>} true если удалена
+   */
+  deleteCompany: async (companyId) => {
+    const { rowCount } = await query(
+      'DELETE FROM company_settings WHERE company_id = $1',
+      [companyId]
+    );
+    return rowCount > 0;
+  },
+
+  /**
    * Обновляет лицензионный ключ компании.
    * @async
    * @param {string} companyId - Идентификатор компании

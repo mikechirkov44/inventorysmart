@@ -17,6 +17,8 @@ function CompaniesTab() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => { fetchCompanies(); }, []);
 
@@ -48,6 +50,39 @@ function CompaniesTab() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleUpdate = async (companyId) => {
+    if (!editName.trim()) return;
+    setError('');
+    try {
+      await superadminAPI.updateCompany(companyId, editName.trim());
+      setEditingId(null);
+      setEditName('');
+      setSuccess('Компания обновлена');
+      fetchCompanies();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка обновления');
+    }
+  };
+
+  const handleDelete = async (companyId, companyName) => {
+    if (!confirm(`Удалить компанию "${companyName}"? Все пользователи будут отвязаны.`)) return;
+    setError('');
+    try {
+      await superadminAPI.deleteCompany(companyId);
+      setSuccess('Компания удалена');
+      fetchCompanies();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка удаления');
+    }
+  };
+
+  const startEdit = (c) => {
+    setEditingId(c.companyId);
+    setEditName(c.companyName || '');
   };
 
   if (loading) return <div className="loading">Загрузка...</div>;
@@ -86,14 +121,28 @@ function CompaniesTab() {
               <th>Пользователей</th>
               <th>Лицензия</th>
               <th>Создана</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             {companies.length === 0 ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--gray-400)' }}>Нет компаний</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--gray-400)' }}>Нет компаний</td></tr>
             ) : companies.map(c => (
               <tr key={c.id}>
-                <td className="td-bold">{c.companyName || 'Без названия'}</td>
+                <td className="td-bold">
+                  {editingId === c.companyId ? (
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleUpdate(c.companyId); if (e.key === 'Escape') setEditingId(null); }}
+                      autoFocus
+                      className="inline-edit"
+                    />
+                  ) : (
+                    c.companyName || 'Без названия'
+                  )}
+                </td>
                 <td>{c.userCount}</td>
                 <td>
                   {c.license ? (
@@ -105,6 +154,19 @@ function CompaniesTab() {
                   )}
                 </td>
                 <td>{new Date(c.createdAt).toLocaleDateString('ru-RU')}</td>
+                <td>
+                  {editingId === c.companyId ? (
+                    <div className="sa-actions-inline">
+                      <button className="btn btn-primary btn-tiny" onClick={() => handleUpdate(c.companyId)}>Сохранить</button>
+                      <button className="btn btn-secondary btn-tiny" onClick={() => setEditingId(null)}>Отмена</button>
+                    </div>
+                  ) : (
+                    <div className="sa-actions-inline">
+                      <button className="btn btn-secondary btn-tiny" onClick={() => startEdit(c)}>Ред.</button>
+                      <button className="btn btn-danger btn-tiny" onClick={() => handleDelete(c.companyId, c.companyName)}>Удал.</button>
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
