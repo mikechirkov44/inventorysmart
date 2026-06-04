@@ -641,7 +641,7 @@ function SettingsPage() {
               </div>
 
               <div className="settings-card settings-card-highlight">
-                {license && (
+                {license && license.plan && license.plan.toUpperCase() !== 'DEMO' && (
                   <div className="plan-info">
                     <span className="plan-badge">{license.plan}</span>
                     <span className="plan-text">Тариф активен до {new Date(license.expiresAt).toLocaleDateString('ru-RU')}</span>
