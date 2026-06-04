@@ -15,7 +15,7 @@ echo "========================================="
 
 # 1. Установка Docker
 echo ""
-echo "[1/8] Проверка Docker..."
+echo "[1/9] Проверка Docker..."
 if ! command -v docker &> /dev/null; then
   echo "Установка Docker..."
   curl -fsSL https://get.docker.com | sh
@@ -26,7 +26,7 @@ echo "Docker $(docker -v | cut -d' ' -f3 | tr -d ',')"
 
 # 2. Установка Docker Compose
 echo ""
-echo "[2/8] Проверка Docker Compose..."
+echo "[2/9] Проверка Docker Compose..."
 if ! docker compose version &> /dev/null; then
   echo "Установка Docker Compose plugin..."
   sudo apt update -y
@@ -36,7 +36,7 @@ echo "Docker Compose $(docker compose version --short)"
 
 # 3. Получение кода
 echo ""
-echo "[3/8] Получение кода..."
+echo "[3/9] Получение кода..."
 
 if [ -d "$APP_DIR" ]; then
   echo "Обновление существующей директории..."
@@ -80,7 +80,7 @@ fi
 
 # 4. Настройка переменных окружения
 echo ""
-echo "[4/8] Настройка переменных окружения..."
+echo "[4/9] Настройка переменных окружения..."
 
 # Загружаем .env если существует
 if [ -f .env ]; then
@@ -116,7 +116,7 @@ grep -q "^CORS_ORIGINS=" .env 2>/dev/null || echo "CORS_ORIGINS=" >> .env
 
 # 5. Запрос пароля суперадмина
 echo ""
-echo "[5/8] Настройка суперадмина..."
+echo "[5/9] Настройка суперадмина..."
 
 if [ -z "$SUPERADMIN_PASSWORD" ]; then
   echo ""
@@ -152,15 +152,30 @@ else
   echo "  SUPERADMIN_PASSWORD задан через окружение."
 fi
 
-# 6. Сборка и запуск контейнеров
+# 6. Генерация SSL-сертификата (для доступа к камере)
 echo ""
-echo "[6/8] Сборка и запуск контейнеров..."
-docker compose down 2>/dev/null || true
-docker compose up -d --build
+echo "[6/9] Проверка SSL-сертификата..."
 
-# 7. Ожидание готовности
+if [ ! -f server.crt ] || [ ! -f server.key ]; then
+  echo "Генерация самоподписанного SSL-сертификата (10 лет)..."
+  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout server.key -out server.crt \
+    -subj "/CN=$(hostname -I | awk '{print $1}')/O=InventorySmart/C=RU" 2>/dev/null
+  echo "  SSL-сертификат создан: server.crt, server.key"
+else
+  echo "  SSL-сертификат уже существует."
+fi
+
+# 7. Сборка и запуск контейнеров
 echo ""
-echo "[7/8] Ожидание готовности сервера..."
+echo "[7/9] Сборка и запуск контейнеров..."
+docker compose down 2>/dev/null || true
+docker compose build --no-cache client
+docker compose up -d
+
+# 8. Ожидание готовности
+echo ""
+echo "[8/9] Ожидание готовности сервера..."
 sleep 3
 
 for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -171,9 +186,9 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
-# 8. Проверка результата
+# 9. Проверка результата
 echo ""
-echo "[8/8] Проверка..."
+echo "[9/9] Проверка..."
 
 IP=$(hostname -I | awk '{print $1}')
 
@@ -189,9 +204,14 @@ echo "  Деплой завершён!"
 echo "========================================="
 echo ""
 echo "  Статус:        $STATUS"
-echo "  Приложение:    http://$IP"
-echo "  Панель админа: http://$IP:8080/"
+echo "  Приложение:    https://$IP (HTTP: http://$IP)"
+echo "  Панель админа: https://$IP:8443 (HTTP: http://$IP:8080)"
 echo "  API:           http://$IP:3001/api/health"
+echo ""
+echo "  ВАЖНО: При первом входе по HTTPS браузер покажет"
+echo "  предупреждение о сертификате. Нажмите"
+echo "  'Дополнительно' -> 'Перейти к сайту'."
+echo "  Это необходимо для работы камеры (QR-сканер)."
 echo ""
 echo "  Суперадмин (панель /admin/):"
 echo "    Логин: superadmin"
