@@ -227,7 +227,7 @@ async function migrate() {
       await client.query(`
         DO $$ BEGIN
           IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '${table}' AND column_name = 'company_id') THEN
-            ALTER TABLE ${table} ADD COLUMN company_id UUID REFERENCES company_settings(company_id) ON DELETE CASCADE;
+            ALTER TABLE ${table} ADD COLUMN company_id UUID;
             UPDATE ${table} SET company_id = (SELECT company_id FROM company_settings ORDER BY created_at LIMIT 1) WHERE company_id IS NULL;
           END IF;
         END $$;
