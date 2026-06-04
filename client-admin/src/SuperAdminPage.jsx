@@ -409,12 +409,15 @@ function LicensesTab() {
 
 function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState('companies');
+  const [authorized, setAuthorized] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('superadmin_token');
     if (!token) {
-      navigate('/login');
+      navigate('/login', { replace: true });
+    } else {
+      setAuthorized(true);
     }
   }, [navigate]);
 
@@ -423,6 +426,8 @@ function SuperAdminPage() {
     localStorage.removeItem('superadmin_user');
     navigate('/login');
   };
+
+  if (!authorized) return null;
 
   return (
     <div className="sa-page">
