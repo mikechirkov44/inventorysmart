@@ -10,6 +10,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
+import Toggle from '../components/Toggle';
+import PasswordInput from '../components/PasswordInput';
 
 /** Список доступных часовых поясов */
 const TIMEZONES = [
@@ -287,22 +290,21 @@ function PositionsTab() {
                     <div key={key} className="permission-row">
                       <span className="permission-label">{label}</span>
                       {isBoolean ? (
-                        <select
-                          value={val === undefined ? 'false' : String(val)}
-                          onChange={(e) => handlePermChange(key, e.target.value === 'true')}
-                        >
-                          <option value="true">Да</option>
-                          <option value="false">Нет</option>
-                        </select>
+                        <Toggle
+                          checked={val === true}
+                          onChange={(checked) => handlePermChange(key, checked)}
+                          label=""
+                        />
                       ) : (
-                        <select
+                        <CustomSelect
                           value={val || 'none'}
-                          onChange={(e) => handlePermChange(key, e.target.value)}
-                        >
-                          <option value="full">Полный доступ</option>
-                          <option value="view">Только чтение</option>
-                          <option value="none">Нет доступа</option>
-                        </select>
+                          onChange={(v) => handlePermChange(key, v)}
+                          options={[
+                            { value: 'full', label: 'Полный доступ' },
+                            { value: 'view', label: 'Только чтение' },
+                            { value: 'none', label: 'Нет доступа' },
+                          ]}
+                        />
                       )}
                     </div>
                   );
@@ -672,30 +674,22 @@ function SettingsPage() {
 
                 <div className="form-group">
                   <label>Часовой пояс</label>
-                  <select
-                    value={companyData.timezone}
-                    onChange={(e) => setCompanyData({ ...companyData, timezone: e.target.value })}
-                    disabled={isSettingsReadOnly}
-                  >
-                    {TIMEZONES.map(tz => (
-                      <option key={tz.value} value={tz.value}>{tz.label}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                  value={companyData.timezone}
+                  onChange={(tz) => setCompanyData({ ...companyData, timezone: tz })}
+                  options={TIMEZONES.map(tz => ({ value: tz.value, label: tz.label }))}
+                  disabled={isSettingsReadOnly}
+                />
                 </div>
 
                 <div className="form-group">
-                  <label className="checkbox-label-inline">
-                    <input
-                      type="checkbox"
-                      checked={companyData.allowInspectionWithoutQr}
-                      onChange={(e) => setCompanyData({ ...companyData, allowInspectionWithoutQr: e.target.checked })}
-                      disabled={isSettingsReadOnly}
-                    />
-                    <span className="checkbox-text">
-                      <span className="checkbox-text-main">Разрешить осмотры и запросы без QR-кода</span>
-                      <span className="checkbox-text-hint">Разрешить выполнение осмотров и создание проблем без сканирования QR оборудования</span>
-                    </span>
-                  </label>
+                  <Toggle
+                    checked={companyData.allowInspectionWithoutQr}
+                    onChange={(checked) => setCompanyData({ ...companyData, allowInspectionWithoutQr: checked })}
+                    label="Разрешить осмотры и запросы без QR-кода"
+                    disabled={isSettingsReadOnly}
+                  />
+                  <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>Разрешить выполнение осмотров и создание проблем без сканирования QR оборудования</span>
                 </div>
               </div>
 
@@ -735,7 +729,7 @@ function SettingsPage() {
                       </div>
                       <div className="form-group">
                         <label>{editUserId ? 'Новый пароль (пусто = без изменений)' : 'Пароль *'}</label>
-                        <input type="password" value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })} />
+                        <PasswordInput value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })} />
                       </div>
                     </div>
                     <div className="form-row">
@@ -745,21 +739,23 @@ function SettingsPage() {
                       </div>
                       <div className="form-group">
                         <label>Должность</label>
-                        <select value={userFormData.positionId} onChange={(e) => setUserFormData({ ...userFormData, positionId: e.target.value })}>
-                          <option value="">Не назначена</option>
-                          {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
+                        <CustomSelect
+                          value={userFormData.positionId}
+                          onChange={(v) => setUserFormData({ ...userFormData, positionId: v })}
+                          placeholder="Не назначена"
+                          options={positions.map(p => ({ value: p.id, label: p.name }))}
+                        />
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>Сотрудник</label>
-                        <select value={userFormData.employeeId} onChange={(e) => setUserFormData({ ...userFormData, employeeId: e.target.value })}>
-                          <option value="">Не привязан</option>
-                          {employees.map(emp => (
-                            <option key={emp.id} value={emp.id}>{emp.lastName} {emp.firstName} {emp.middleName}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          value={userFormData.employeeId}
+                          onChange={(v) => setUserFormData({ ...userFormData, employeeId: v })}
+                          placeholder="Не привязан"
+                          options={employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName}` }))}
+                        />
                       </div>
                       <div className="form-group" />
                     </div>

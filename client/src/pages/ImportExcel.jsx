@@ -4,11 +4,12 @@
  * данные оборудования в систему.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { importAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import { Upload } from 'lucide-react';
 
 /** Компонент импорта из Excel */
 function ImportExcel() {
@@ -17,18 +18,49 @@ function ImportExcel() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
   const toast = useToast();
   const confirm = useConfirm();
 
-  /** Обработка выбора файла */
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+  const handleFiles = (selectedFile) => {
     if (selectedFile) {
       setFile(selectedFile);
       setError(null);
       setSuccess(null);
     }
+  };
+
+  /** Обработка выбора файла */
+  const handleFileChange = (e) => {
+    handleFiles(e.target.files[0]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      handleFiles(droppedFile);
+    }
+  };
+
+  const handleZoneClick = () => {
+    fileInputRef.current?.click();
   };
 
   /** Отправка файла на сервер для импорта */
@@ -51,8 +83,7 @@ function ImportExcel() {
       setImportedCount(response.data.equipment.length);
       setFile(null);
       
-      const fileInput = document.getElementById('excel-file');
-      if (fileInput) fileInput.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       toast.error('Ошибка импорта: ' + (err.response?.data?.error || err.message));
     } finally {
@@ -109,20 +140,30 @@ function ImportExcel() {
         {/* Секция загрузки файла */}
         <div className="upload-section">
           <h3>Загрузка файла</h3>
-          <div className="file-upload">
+          <div
+            className={`file-upload-zone ${dragging ? 'file-dragging' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleZoneClick}
+          >
+            <Upload size={32} className="file-upload-icon" />
+            <p>{file ? file.name : 'Перетащите файл сюда или нажмите для выбора'}</p>
+            <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>Поддерживаются форматы: .xlsx, .xls, .csv</p>
             <input
+              ref={fileInputRef}
               type="file"
               id="excel-file"
               accept=".xlsx,.xls,.csv"
               onChange={handleFileChange}
+              style={{ display: 'none' }}
             />
-            {file && (
-              <div className="file-info">
-                <p>Выбран файл: {file.name}</p>
-                <p>Размер: {(file.size / 1024).toFixed(2)} КБ</p>
-              </div>
-            )}
           </div>
+          {file && (
+            <div className="file-info">
+              <p>Размер: {(file.size / 1024).toFixed(2)} КБ</p>
+            </div>
+          )}
           
           <button
             onClick={handleImport}

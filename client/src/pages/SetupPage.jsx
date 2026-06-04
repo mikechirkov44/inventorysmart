@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import PasswordInput from '../components/PasswordInput';
 
 function SetupPage() {
   /** Получение метода автоматического входа из AuthContext */
@@ -114,8 +115,7 @@ function SetupPage() {
           </div>
           <div className="form-group">
             <label>Пароль *</label>
-            <input
-              type="password"
+            <PasswordInput
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Минимум 6 символов"
@@ -123,8 +123,7 @@ function SetupPage() {
           </div>
           <div className="form-group">
             <label>Повторите пароль *</label>
-            <input
-              type="password"
+            <PasswordInput
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               placeholder="Повторите пароль"

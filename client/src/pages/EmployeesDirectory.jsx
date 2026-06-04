@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { employeesAPI, positionsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент справочника сотрудников */
 function EmployeesDirectory() {
@@ -160,10 +161,12 @@ function EmployeesDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Должность</label>
-                <select value={formData.positionId} onChange={(e) => setFormData({ ...formData, positionId: e.target.value })}>
-                  <option value="">Не назначена</option>
-                  {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <CustomSelect
+                  value={formData.positionId}
+                  onChange={(v) => setFormData({ ...formData, positionId: v })}
+                  placeholder="Не назначена"
+                  options={positions.map(p => ({ value: p.id, label: p.name }))}
+                />
               </div>
               <div className="form-group">
                 <label>Телефон</label>
@@ -186,10 +189,12 @@ function EmployeesDirectory() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по ФИО, должности..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <select value={filterPosition} onChange={(e) => setFilterPosition(e.target.value)}>
-            <option value="">Все должности</option>
-            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <CustomSelect
+            value={filterPosition}
+            onChange={setFilterPosition}
+            placeholder="Все должности"
+            options={positions.map(p => ({ value: p.id, label: p.name }))}
+          />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {employees.length}</div>
       </div>

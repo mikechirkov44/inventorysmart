@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Варианты периодичности работ */
 const FREQUENCY_OPTIONS = [
@@ -150,11 +151,11 @@ function WorksDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Периодичность *</label>
-                <select value={formData.frequencyDays} onChange={(e) => setFormData({ ...formData, frequencyDays: parseInt(e.target.value) })}>
-                  {FREQUENCY_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={formData.frequencyDays}
+                  onChange={(v) => setFormData({ ...formData, frequencyDays: v })}
+                  options={FREQUENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+                />
               </div>
               <div className="form-group flex-1">
                 <label>Описание</label>
@@ -172,10 +173,12 @@ function WorksDirectory() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по названию или описанию..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-            <option value="">Все категории</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <CustomSelect
+            value={filterCategory}
+            onChange={setFilterCategory}
+            placeholder="Все категории"
+            options={categories.map(c => ({ value: c, label: c }))}
+          />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {works.length}</div>
       </div>

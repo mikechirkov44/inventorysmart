@@ -8,6 +8,7 @@ import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
+import CustomSelect from '../components/CustomSelect';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -130,18 +131,24 @@ function EquipmentTable() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-            <option value="">Все категории</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
-            <option value="">Все помещения</option>
-            {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">Все статусы</option>
-            {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
+          <CustomSelect
+            value={filterCategory}
+            onChange={setFilterCategory}
+            placeholder="Все категории"
+            options={categories.map(c => ({ value: c, label: c }))}
+          />
+          <CustomSelect
+            value={filterRoom}
+            onChange={setFilterRoom}
+            placeholder="Все помещения"
+            options={rooms.map(r => ({ value: r.id, label: r.name }))}
+          />
+          <CustomSelect
+            value={filterStatus}
+            onChange={setFilterStatus}
+            placeholder="Все статусы"
+            options={Object.entries(STATUS_MAP).map(([k, v]) => ({ value: k, label: v.label }))}
+          />
           <button onClick={clearFilters} className="btn btn-small">Сбросить</button>
         </div>
         <div className="filter-summary">

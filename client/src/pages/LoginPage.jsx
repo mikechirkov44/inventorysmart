@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { Package, ArrowRight } from 'lucide-react';
+import PasswordInput from '../components/PasswordInput';
 
 function LoginPage() {
   /** Получение метода входа и флага необходимости настройки из AuthContext */
@@ -131,8 +132,7 @@ function LoginPage() {
               </div>
               <div className="form-group">
                 <label>Пароль</label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Введите пароль"
