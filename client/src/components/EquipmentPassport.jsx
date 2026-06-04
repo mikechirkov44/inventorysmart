@@ -7,6 +7,7 @@
  */
 
 import { useRef, useState } from 'react';
+import { Printer, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -159,11 +160,11 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
   return (
     <div className="passport-wrapper">
       <div className="passport-actions no-print">
-        <button onClick={handlePrint} className="btn btn-secondary">
-          🖨 Печать
+        <button onClick={handlePrint} className="btn-icon" title="Печать">
+          <Printer size={18} />
         </button>
-        <button onClick={handleDownloadPDF} className="btn btn-primary" disabled={generating}>
-          {generating ? 'Генерация...' : '📥 Скачать PDF'}
+        <button onClick={handleDownloadPDF} className="btn-icon" disabled={generating} title="Скачать PDF">
+          <Download size={18} />
         </button>
       </div>
 
