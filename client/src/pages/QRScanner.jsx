@@ -38,6 +38,11 @@ function QRScanner() {
       if (!el) return;
       el.innerHTML = '';
 
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Камера не поддерживается в этом браузере. Используйте ручной ввод.');
+        return;
+      }
+
       const qr = new Html5Qrcode("qr-reader");
       scannerRef.current = qr;
       busyRef.current = false;
@@ -50,7 +55,22 @@ function QRScanner() {
       );
       setScanning(true);
     } catch (err) {
-      const msg = err?.message || err || 'неизвестная ошибка';
+      console.error('Camera error:', err);
+      let msg = 'неизвестная ошибка';
+      if (typeof err === 'string') {
+        msg = err;
+      } else if (err instanceof Error) {
+        msg = err.message || err.toString();
+      } else if (err && typeof err === 'object') {
+        msg = JSON.stringify(err);
+      }
+      if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
+        msg = 'Доступ к камере запрещён. Разрешите доступ к камере в настройках браузера.';
+      } else if (msg.includes('NotFoundError') || msg.includes('DevicesNotFound')) {
+        msg = 'Камера не найдена. Подключите камеру и попробуйте снова.';
+      } else if (msg.includes('NotReadableError') || msg.includes('TrackStartError')) {
+        msg = 'Камера используется другим приложением. Закройте другие программы, использующие камеру.';
+      }
       setError('Не удалось запустить камеру: ' + msg);
       setScanning(false);
     }
