@@ -880,12 +880,11 @@ input, textarea, select { font-family: inherit; }
 }
 
 .detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
 }
 
 .detail-actions {
@@ -2211,6 +2210,7 @@ input, textarea, select { font-family: inherit; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
+  .detail-header,
   .detail-content,
   .form-content {
     grid-template-columns: 1fr;

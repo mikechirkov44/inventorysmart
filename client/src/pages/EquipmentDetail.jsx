@@ -139,7 +139,9 @@ function EquipmentDetail() {
         { label: equipment.name }
       ]} />
       <div className="detail-header">
-        <Link to="/" className="back-link">← Назад к списку</Link>
+        <div className="detail-header-main">
+          <Link to="/" className="back-link">← Назад к списку</Link>
+        </div>
         <div className="detail-actions">
           <button onClick={() => setShowPassport(!showPassport)} className="btn btn-secondary">
             {showPassport ? '← Назад к карточке' : '📄 Паспорт'}
