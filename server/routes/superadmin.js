@@ -350,9 +350,9 @@ router.get('/companies/:companyId/stats', async (req, res) => {
       query('SELECT COUNT(*)::int as count FROM spare_part_receipts WHERE company_id = $1', [companyId]),
     ]);
 
-    // Get overdue work orders
-    const overdueRes = await query(
-      "SELECT COUNT(*)::int as count FROM work_orders WHERE company_id = $1 AND status != 'completed' AND due_date < NOW()",
+    // Get pending work orders
+    const pendingRes = await query(
+      "SELECT COUNT(*)::int as count FROM work_orders WHERE company_id = $1 AND status != 'completed'",
       [companyId]
     );
 
@@ -374,7 +374,7 @@ router.get('/companies/:companyId/stats', async (req, res) => {
         users: usersRes.rows[0].count,
         sparePartsReceipts: receiptsRes.rows[0].count,
       },
-      overdueWorkOrders: overdueRes.rows[0].count,
+      pendingWorkOrders: pendingRes.rows[0].count,
       license,
       createdAt: found.createdAt,
     });

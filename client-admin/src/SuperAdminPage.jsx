@@ -220,8 +220,8 @@ function CompaniesTab() {
               <span className="sa-stat-label">Заявки</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].overdueWorkOrders ?? 0}</span>
-              <span className="sa-stat-label">Просроченные</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].pendingWorkOrders ?? 0}</span>
+              <span className="sa-stat-label">Незавершённые заявки</span>
             </div>
             <div className="sa-stat-card">
               <span className="sa-stat-value">{companyStats[expandedCompany].counts?.users ?? 0}</span>
