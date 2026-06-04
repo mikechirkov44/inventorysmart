@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { usersAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент управления пользователями */
 function UsersPage() {
@@ -126,10 +127,10 @@ function UsersPage() {
               </div>
               <div className="form-group">
                 <label>Роль</label>
-                <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
-                  <option value="user">Пользователь</option>
-                  <option value="admin">Администратор</option>
-                </select>
+                <CustomSelect value={formData.role} onChange={(val) => setFormData({ ...formData, role: val })} options={[
+                  { value: 'user', label: 'Пользователь' },
+                  { value: 'admin', label: 'Администратор' }
+                ]} />
               </div>
             </div>
             <div className="form-actions-inline">

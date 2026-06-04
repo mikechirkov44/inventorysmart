@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
+import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 
@@ -73,12 +74,12 @@ function IncidentsPage() {
       {/* Панель фильтрации по статусу */}
       <div className="filters-panel">
         <div className="filter-row">
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">Все статусы</option>
-            <option value="new">Новые</option>
-            <option value="in_progress">В работе</option>
-            <option value="resolved">Решённые</option>
-          </select>
+          <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
+            { value: '', label: 'Все статусы' },
+            { value: 'new', label: 'Новые' },
+            { value: 'in_progress', label: 'В работе' },
+            { value: 'resolved', label: 'Решённые' }
+          ]} />
           <span className="filter-summary">Найдено: <strong>{incidents.length}</strong></span>
         </div>
       </div>

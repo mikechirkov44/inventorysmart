@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Варианты периодичности работ для отображения */
 const FREQUENCY_OPTIONS = [
@@ -195,14 +196,10 @@ function ScanResult() {
 
           <div className="master-input-row">
             <label>Работы выполнил: </label>
-            <select value={executorId} onChange={(e) => setExecutorId(e.target.value)}>
-              <option value="">— Выберите сотрудника —</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.lastName} {emp.firstName} {emp.middleName || ''}{emp.position ? ` (${emp.position})` : ''}
-                </option>
-              ))}
-            </select>
+            <CustomSelect value={executorId} onChange={setExecutorId} placeholder="— Выберите сотрудника —" options={[
+              { value: '', label: '— Выберите сотрудника —' },
+              ...employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName || ''}${emp.position ? ` (${emp.position})` : ''}` }))
+            ]} />
           </div>
 
           <div className="today-task-list">

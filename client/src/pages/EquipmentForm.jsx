@@ -8,6 +8,7 @@ import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
+import CustomSelect from '../components/CustomSelect';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -182,12 +183,10 @@ function EquipmentForm() {
             <div className="form-row">
               <div className="form-group">
                 <label>Помещение *</label>
-                <select name="roomId" value={formData.roomId} onChange={handleChange} required>
-                  <option value="">— Выберите помещение —</option>
-                  {rooms.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
-                  ))}
-                </select>
+                <CustomSelect value={formData.roomId} onChange={(val) => setFormData(prev => ({ ...prev, roomId: val }))} placeholder="— Выберите помещение —" options={[
+                  { value: '', label: '— Выберите помещение —' },
+                  ...rooms.map(r => ({ value: r.id, label: `${r.name}${r.building ? ` (${r.building})` : ''}` }))
+                ]} />
               </div>
 
               <div className="form-group">
@@ -198,11 +197,7 @@ function EquipmentForm() {
 
             <div className="form-group">
               <label>Состояние</label>
-              <select name="status" value={formData.status} onChange={handleChange}>
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
+              <CustomSelect value={formData.status} onChange={(val) => setFormData(prev => ({ ...prev, status: val }))} options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))} />
             </div>
 
             <div className="form-group">

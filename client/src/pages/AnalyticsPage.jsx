@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '../services/api';
 import { sparePartsAPI } from '../services/api';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент горизонтальной диаграммы эффективности сотрудников */
 function PerformanceChart({ data }) {
@@ -147,12 +148,12 @@ function StockReport() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по наименованию, артикулу..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">Все</option>
-            <option value="ok">В норме</option>
-            <option value="low">Мало</option>
-            <option value="empty">Нет на складе</option>
-          </select>
+          <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все" options={[
+            { value: '', label: 'Все' },
+            { value: 'ok', label: 'В норме' },
+            { value: 'low', label: 'Мало' },
+            { value: 'empty', label: 'Нет на складе' }
+          ]} />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {items.length}</div>
       </div>

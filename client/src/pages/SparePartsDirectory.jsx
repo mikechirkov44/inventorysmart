@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент справочника запасных частей */
 function SparePartsDirectory() {
@@ -181,16 +182,16 @@ function SparePartsDirectory() {
               </div>
               <div className="form-group">
                 <label>Ед. изм.</label>
-                <select value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value })}>
-                  <option value="шт">шт</option>
-                  <option value="м">м</option>
-                  <option value="м2">м²</option>
-                  <option value="м3">м³</option>
-                  <option value="кг">кг</option>
-                  <option value="л">л</option>
-                  <option value="компл">компл</option>
-                  <option value="упак">упак</option>
-                </select>
+                <CustomSelect value={formData.unit} onChange={(val) => setFormData({ ...formData, unit: val })} options={[
+                  { value: 'шт', label: 'шт' },
+                  { value: 'м', label: 'м' },
+                  { value: 'м2', label: 'м²' },
+                  { value: 'м3', label: 'м³' },
+                  { value: 'кг', label: 'кг' },
+                  { value: 'л', label: 'л' },
+                  { value: 'компл', label: 'компл' },
+                  { value: 'упак', label: 'упак' }
+                ]} />
               </div>
               <div className="form-group">
                 <label>Кол-во на складе</label>

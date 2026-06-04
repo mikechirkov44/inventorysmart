@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент справочника помещений */
 function RoomsDirectory() {
@@ -153,12 +154,10 @@ function RoomsDirectory() {
               </div>
               <div className="form-group">
                 <label>Ответственный</label>
-                <select value={formData.responsibleEmployeeId} onChange={(e) => setFormData({ ...formData, responsibleEmployeeId: e.target.value })}>
-                  <option value="">— Не выбран —</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.lastName} {emp.firstName} {emp.middleName ? emp.middleName : ''}</option>
-                  ))}
-                </select>
+                <CustomSelect value={formData.responsibleEmployeeId} onChange={(val) => setFormData({ ...formData, responsibleEmployeeId: val })} placeholder="— Не выбран —" options={[
+                  { value: '', label: '— Не выбран —' },
+                  ...employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName ? emp.middleName : ''}` }))
+                ]} />
               </div>
             </div>
             <div className="form-group">
@@ -177,10 +176,10 @@ function RoomsDirectory() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <select value={filterBuilding} onChange={(e) => setFilterBuilding(e.target.value)}>
-            <option value="">Все здания</option>
-            {buildings.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
+          <CustomSelect value={filterBuilding} onChange={setFilterBuilding} placeholder="Все здания" options={[
+            { value: '', label: 'Все здания' },
+            ...buildings.map(b => ({ value: b, label: b }))
+          ]} />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {rooms.length}</div>
       </div>

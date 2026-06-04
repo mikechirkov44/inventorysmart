@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import CustomSelect from '../components/CustomSelect';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -396,49 +397,49 @@ function SchedulePage() {
             <div className="filter-row">
               <div className="filter-group">
                 <label>Группировка</label>
-                <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
-                  <option value="employee">По ответственным</option>
-                  <option value="month">По месяцам</option>
-                  <option value="none">Без группировки</option>
-                </select>
+                <CustomSelect value={groupBy} onChange={setGroupBy} options={[
+                  { value: 'employee', label: 'По ответственным' },
+                  { value: 'month', label: 'По месяцам' },
+                  { value: 'none', label: 'Без группировки' }
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Статус</label>
-                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                  <option value="">Все</option>
-                  <option value="planned">Запланировано</option>
-                  <option value="upcoming">Близко</option>
-                  <option value="overdue">Просрочено</option>
-                  <option value="never">Не выполнялось</option>
-                </select>
+                <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  { value: 'planned', label: 'Запланировано' },
+                  { value: 'upcoming', label: 'Близко' },
+                  { value: 'overdue', label: 'Просрочено' },
+                  { value: 'never', label: 'Не выполнялось' }
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Оборудование</label>
-                <select value={filterEquipment} onChange={(e) => setFilterEquipment(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueEquipment.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterEquipment} onChange={setFilterEquipment} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueEquipment.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Помещение</label>
-                <select value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueRooms.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueRooms.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Работа</label>
-                <select value={filterWork} onChange={(e) => setFilterWork(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueWorks.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterWork} onChange={setFilterWork} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueWorks.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Периодичность</label>
-                <select value={filterFrequency} onChange={(e) => setFilterFrequency(e.target.value)}>
-                  <option value="">Все</option>
-                  {FREQUENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                <CustomSelect value={filterFrequency} onChange={setFilterFrequency} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...FREQUENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))
+                ]} />
               </div>
               <div className="filter-group-actions">
                 {hasActiveFilters && (
@@ -528,31 +529,31 @@ function SchedulePage() {
             <div className="filter-row">
               <div className="filter-group">
                 <label>Оборудование</label>
-                <select value={filterEquipment} onChange={(e) => setFilterEquipment(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueEquipment.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterEquipment} onChange={setFilterEquipment} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueEquipment.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Помещение</label>
-                <select value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueRooms.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueRooms.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Работа</label>
-                <select value={filterWork} onChange={(e) => setFilterWork(e.target.value)}>
-                  <option value="">Все</option>
-                  {uniqueWorks.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <CustomSelect value={filterWork} onChange={setFilterWork} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...uniqueWorks.map(name => ({ value: name, label: name }))
+                ]} />
               </div>
               <div className="filter-group">
                 <label>Периодичность</label>
-                <select value={filterFrequency} onChange={(e) => setFilterFrequency(e.target.value)}>
-                  <option value="">Все</option>
-                  {FREQUENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                <CustomSelect value={filterFrequency} onChange={setFilterFrequency} placeholder="Все" options={[
+                  { value: '', label: 'Все' },
+                  ...FREQUENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))
+                ]} />
               </div>
               <div className="filter-group-actions">
                 {hasActiveFilters && (

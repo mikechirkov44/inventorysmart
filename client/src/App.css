@@ -103,7 +103,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ===== SIDEBAR ===== */
@@ -247,8 +247,8 @@ input, textarea, select { font-family: inherit; }
   top: 0;
   left: 100%;
   min-width: 220px;
-  background-color: #ffffff !important;
-  background: #ffffff !important;
+  background-color: #ffffff;
+  background: #ffffff;
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
   border: 1px solid var(--gray-200);
@@ -256,6 +256,10 @@ input, textarea, select { font-family: inherit; }
   padding: 6px;
   z-index: 9999;
   margin-left: 4px;
+  opacity: 1;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .nav-dropdown-menu li a {
@@ -2304,6 +2308,8 @@ input, textarea, select { font-family: inherit; }
     min-width: auto;
     max-height: 50vh;
     overflow-y: auto;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
   }
 
   .top-header {
