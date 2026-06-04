@@ -21,7 +21,8 @@ router.get('/', async (req, res) => {
     const workOrders = await WorkOrder.findAll();
     res.json(workOrders);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -40,7 +41,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(workOrder);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -55,7 +57,8 @@ router.get('/equipment/:equipmentId', async (req, res) => {
     const workOrders = await WorkOrder.findByEquipmentId(req.params.equipmentId);
     res.json(workOrders);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -75,7 +78,8 @@ router.post('/', imageUpload.array('photos', 10), async (req, res) => {
     const workOrder = await WorkOrder.create(workOrderData);
     res.status(201).json(workOrder);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -129,7 +133,8 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
 
     res.json(workOrder);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -148,7 +153,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Work order deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

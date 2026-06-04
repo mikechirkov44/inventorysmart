@@ -18,7 +18,8 @@ router.get('/', async (req, res) => {
     const positions = await Position.findAll();
     res.json(positions);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -35,7 +36,8 @@ router.get('/:id', async (req, res) => {
     if (!position) return res.status(404).json({ error: 'Должность не найдена' });
     res.json(position);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -60,7 +62,8 @@ router.post('/', async (req, res) => {
     const position = await Position.create({ name: req.body.name.trim(), permissions: req.body.permissions });
     res.status(201).json(position);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -78,7 +81,8 @@ router.put('/:id', async (req, res) => {
     if (!position) return res.status(404).json({ error: 'Должность не найдена' });
     res.json(position);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -95,7 +99,8 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) return res.status(404).json({ error: 'Должность не найдена' });
     res.json({ message: 'Должность удалена' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

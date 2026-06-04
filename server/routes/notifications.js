@@ -66,7 +66,8 @@ router.get('/', async (req, res) => {
     const notifications = await Notification.findByUser(userId);
     res.json(notifications);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -91,7 +92,8 @@ router.get('/unread-count', async (req, res) => {
     const unread = await Notification.findUnread(userId);
     res.json({ count: unread.length });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -108,7 +110,8 @@ router.put('/:id/read', async (req, res) => {
     if (!notif) return res.status(404).json({ error: 'Not found' });
     res.json(notif);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -122,7 +125,8 @@ router.put('/read-all', async (req, res) => {
     await Notification.markAllRead(req.user.id);
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -139,7 +143,8 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

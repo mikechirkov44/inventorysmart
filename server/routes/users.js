@@ -28,7 +28,8 @@ router.get('/', async (req, res) => {
     const users = await User.findAllByCompany(companyId);
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -49,7 +50,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -80,7 +82,8 @@ router.post('/', async (req, res) => {
     }
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -113,7 +116,8 @@ router.put('/:id', async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -138,7 +142,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'User deleted' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

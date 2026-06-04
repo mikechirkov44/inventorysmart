@@ -28,7 +28,8 @@ router.get('/', async (req, res) => {
     const events = await getCalendarEvents(year, month);
     res.json(events);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

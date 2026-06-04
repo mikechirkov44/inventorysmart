@@ -44,7 +44,8 @@ router.get('/', async (req, res) => {
 
     res.json(equipment);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -63,7 +64,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(equipment);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -103,7 +105,8 @@ router.get('/:id/qr', async (req, res) => {
       scanUrl: qrUrl
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -128,7 +131,8 @@ router.post('/', imageUpload.single('photo'), async (req, res) => {
     const equipment = await Equipment.create(equipmentData);
     res.status(201).json(equipment);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -158,7 +162,8 @@ router.put('/:id', imageUpload.single('photo'), async (req, res) => {
     }
     res.json(equipment);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -177,7 +182,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Equipment deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

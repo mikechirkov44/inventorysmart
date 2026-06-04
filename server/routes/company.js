@@ -20,7 +20,8 @@ router.get('/', authenticate, async (req, res) => {
     const license = await Company.getLicenseStatus(req.user.companyId);
     res.json({ ...company, license });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -33,7 +34,8 @@ router.get('/license-status', authenticate, async (req, res) => {
     const license = await Company.getLicenseStatus(req.user.companyId);
     res.json(license);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -63,7 +65,8 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
     const company = await Company.update(data);
     res.json(company);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -111,7 +114,8 @@ router.post('/activate-license', authenticate, requirePermission('settings', 'ed
       expiresAt: decoded.expiresAt,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

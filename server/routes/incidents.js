@@ -61,7 +61,8 @@ router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
 
     res.status(201).json(incident);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -100,7 +101,8 @@ router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
 
     res.json(enriched);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -129,7 +131,8 @@ router.get('/:id', async (req, res) => {
       inventoryNumber: equipment ? equipment.inventoryNumber : null,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -167,7 +170,8 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
 
     res.json(incident);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -185,7 +189,8 @@ router.delete('/:id', requirePermission('incidents', 'delete'), async (req, res)
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

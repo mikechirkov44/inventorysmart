@@ -32,7 +32,8 @@ router.get('/', async (req, res) => {
     }
     res.json(items);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -49,7 +50,8 @@ router.get('/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -64,7 +66,8 @@ router.post('/', async (req, res) => {
     const item = await SparePart.create(req.body);
     res.status(201).json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -82,7 +85,8 @@ router.put('/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -99,7 +103,8 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -119,7 +124,8 @@ router.post('/replenish', async (req, res) => {
     const updated = await SparePart.replenishStock(items);
     res.json({ updated });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

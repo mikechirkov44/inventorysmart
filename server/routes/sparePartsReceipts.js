@@ -18,7 +18,8 @@ router.get('/', async (req, res) => {
     const receipts = await SparePartReceipt.findAll();
     res.json(receipts);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -33,7 +34,8 @@ router.get('/next-number', async (req, res) => {
     const number = await SparePartReceipt.generateDocumentNumber();
     res.json({ number });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -50,7 +52,8 @@ router.get('/:id', async (req, res) => {
     if (!receipt) return res.status(404).json({ error: 'Not found' });
     res.json(receipt);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -65,7 +68,8 @@ router.post('/', async (req, res) => {
     const receipt = await SparePartReceipt.create(req.body);
     res.status(201).json(receipt);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -82,7 +86,8 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

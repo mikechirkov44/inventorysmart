@@ -38,7 +38,8 @@ router.get('/', async (req, res) => {
 
     res.json(rooms);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -57,7 +58,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(room);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -72,7 +74,8 @@ router.post('/', async (req, res) => {
     const room = await Room.create(req.body);
     res.status(201).json(room);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -92,7 +95,8 @@ router.put('/:id', async (req, res) => {
     }
     res.json(room);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -111,7 +115,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Room deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

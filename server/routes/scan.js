@@ -139,8 +139,9 @@ router.get('/:code', async (req, res) => {
       completedTotal: workOrders.filter(wo => wo.status === 'completed').length,
     });
   } catch (error) {
-    console.error('SCAN ERROR:', error.message, error.stack);
-    res.status(500).json({ error: error.message });
+    console.error('Scan error:', error.message);
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -186,7 +187,8 @@ router.post('/complete', async (req, res) => {
 
     res.status(201).json({ workOrder, sparePartsDeducted });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

@@ -136,8 +136,8 @@ router.get('/', async (req, res) => {
 
     res.json({ rows, groups, total: rows.length });
   } catch (error) {
-    console.error('Schedule error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

@@ -37,7 +37,8 @@ router.get('/', async (req, res) => {
 
     res.json(works);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -56,7 +57,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(work);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -71,7 +73,8 @@ router.post('/', async (req, res) => {
     const work = await Work.create(req.body);
     res.status(201).json(work);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -91,7 +94,8 @@ router.put('/:id', async (req, res) => {
     }
     res.json(work);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -110,7 +114,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Work deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
