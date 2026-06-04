@@ -27,7 +27,7 @@ superadminApi.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('superadmin_token');
       localStorage.removeItem('superadmin_user');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
