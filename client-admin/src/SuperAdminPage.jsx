@@ -196,41 +196,43 @@ function CompaniesTab() {
           <h4>Статистика: {companies.find(c => c.companyId === expandedCompany)?.companyName || ''}</h4>
           <div className="sa-stats-grid">
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].equipmentCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.equipment ?? 0}</span>
               <span className="sa-stat-label">Оборудование</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].employeesCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.employees ?? 0}</span>
               <span className="sa-stat-label">Сотрудники</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].worksCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.works ?? 0}</span>
               <span className="sa-stat-label">Работы</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].roomsCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.rooms ?? 0}</span>
               <span className="sa-stat-label">Помещения</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].sparePartsCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.spareParts ?? 0}</span>
               <span className="sa-stat-label">Запчасти</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].workOrdersCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.workOrders ?? 0}</span>
               <span className="sa-stat-label">Заявки</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].overdueWorkOrdersCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].overdueWorkOrders ?? 0}</span>
               <span className="sa-stat-label">Просроченные</span>
             </div>
             <div className="sa-stat-card">
-              <span className="sa-stat-value">{companyStats[expandedCompany].usersCount ?? 0}</span>
+              <span className="sa-stat-value">{companyStats[expandedCompany].counts?.users ?? 0}</span>
               <span className="sa-stat-label">Пользователи</span>
             </div>
             <div className="sa-stat-card">
               <span className="sa-stat-value">
-                {companyStats[expandedCompany].licenseActive ? (
+                {companyStats[expandedCompany].license?.status === 'active' ? (
                   <span className="sa-badge sa-badge-success">Активна</span>
+                ) : companyStats[expandedCompany].license?.status === 'demo' ? (
+                  <span className="sa-badge sa-badge-warning">DEMO</span>
                 ) : (
                   <span className="sa-badge sa-badge-gray">Нет</span>
                 )}
