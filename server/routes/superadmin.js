@@ -187,12 +187,20 @@ router.post('/users', async (req, res) => {
       return res.status(400).json({ error: 'Выберите компанию (портал)' });
     }
 
+    let effectivePositionId = positionId || null;
+    if (!effectivePositionId) {
+      const { rows } = await require('../db').query(
+        "SELECT id FROM positions WHERE name = 'Администратор' LIMIT 1"
+      );
+      effectivePositionId = rows[0]?.id || null;
+    }
+
     const user = await SuperAdmin.createUser({
       username: username.trim(),
       password,
       fullName: fullName ? fullName.trim() : username.trim(),
       companyId,
-      positionId: positionId || null,
+      positionId: effectivePositionId,
     });
 
     if (!user) {
