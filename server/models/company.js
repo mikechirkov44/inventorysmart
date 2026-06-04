@@ -7,6 +7,9 @@
 
 const { query } = require('../db');
 
+/** Количество рабочих дней в демо-режиме */
+const DEMO_WORKING_DAYS = 5;
+
 /**
  * Преобразует строку из БД в объект компании.
  * @param {Object|null} row - Строка из таблицы company_settings
@@ -23,6 +26,93 @@ function mapRow(row) {
     licenseKey: row.license_key || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+/**
+ * Подсчитывает количество рабочих дней между двумя датами.
+ * Рабочие дни — Пн-Пт.
+ * @param {Date} from - Начальная дата
+ * @param {Date} to - Конечная дата
+ * @returns {number} Количество рабочих дней
+ */
+function countWorkingDays(from, to) {
+  let count = 0;
+  const current = new Date(from);
+  current.setHours(0, 0, 0, 0);
+  const endDate = new Date(to);
+  endDate.setHours(0, 0, 0, 0);
+  while (current <= endDate) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) count++;
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
+}
+
+/**
+ * Получает дату окончания демо-режима (created_at + 5 рабочих дней).
+ * @param {Date} createdAt - Дата создания компании
+ * @returns {Date} Дата окончания демо
+ */
+function getDemoEndDate(createdAt) {
+  let count = 0;
+  const current = new Date(createdAt);
+  current.setHours(0, 0, 0, 0);
+  while (count < DEMO_WORKING_DAYS) {
+    current.setDate(current.getDate() + 1);
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return current;
+}
+
+/**
+ * Проверяет статус лицензии компании.
+ * @param {Object} company - Объект компании
+ * @returns {Object} Статус лицензии
+ */
+function checkLicense(company) {
+  if (company.licenseKey) {
+    try {
+      const json = Buffer.from(company.licenseKey, 'base64').toString('utf-8');
+      const decoded = JSON.parse(json);
+      const expiresAt = new Date(decoded.expiresAt);
+      if (!isNaN(expiresAt.getTime()) && expiresAt > new Date()) {
+        return {
+          status: 'active',
+          plan: decoded.plan,
+          expiresAt: decoded.expiresAt,
+          message: `Полная лицензия — ${decoded.plan} до ${expiresAt.toLocaleDateString('ru-RU')}`
+        };
+      }
+      return { status: 'expired', message: 'Срок действия лицензии истёк' };
+    } catch {
+      return { status: 'invalid', message: 'Неверный лицензионный ключ' };
+    }
+  }
+
+  if (!company.createdAt) {
+    return { status: 'demo', daysLeft: DEMO_WORKING_DAYS, message: 'Демо-режим' };
+  }
+
+  const createdAt = new Date(company.createdAt);
+  const usedDays = countWorkingDays(createdAt, new Date());
+  const daysLeft = Math.max(0, DEMO_WORKING_DAYS - usedDays + 1);
+  const demoEnd = getDemoEndDate(createdAt);
+
+  if (daysLeft <= 0) {
+    return {
+      status: 'blocked',
+      message: `Демо-режим истёк ${demoEnd.toLocaleDateString('ru-RU')}. Введите лицензионный ключ.`
+    };
+  }
+
+  return {
+    status: 'demo',
+    daysLeft,
+    demoEnd: demoEnd.toISOString().split('T')[0],
+    message: `Демо-режим — ${daysLeft} раб. дн.`
   };
 }
 
@@ -60,7 +150,7 @@ module.exports = {
    * @returns {Promise<Object>} Обновлённые настройки компании
    */
   update: async (data) => {
-    const existing = await module.exports.get();
+    const existing = await module.exports.get(data.companyId);
     const mapped = {};
     if (data.companyName !== undefined) mapped.company_name = data.companyName;
     if (data.logo !== undefined) mapped.logo = data.logo;
@@ -79,5 +169,28 @@ module.exports = {
       vals
     );
     return mapRow(rows[0]);
-  }
+  },
+
+  /**
+   * Получает статус лицензии компании.
+   * @async
+   * @param {string} companyId - Идентификатор компании
+   * @returns {Promise<Object>} Статус лицензии
+   */
+  getLicenseStatus: async (companyId) => {
+    const company = await module.exports.get(companyId);
+    if (!company) {
+      return { status: 'blocked', message: 'Компания не найдена' };
+    }
+    return checkLicense(company);
+  },
+
+  /** Количество рабочих дней в демо-режиме */
+  DEMO_WORKING_DAYS,
+
+  /** Функция подсчёта рабочих дней */
+  countWorkingDays,
+
+  /** Функция проверки лицензии */
+  checkLicense
 };

@@ -109,12 +109,20 @@ function AppNav() {
 
 /** Верхняя шапка с уведомлениями и информацией о пользователе */
 function TopHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, license } = useAuth();
   if (!user) return null;
 
   return (
     <header className="top-header">
       {user.companyName && <span className="top-header-company">{user.companyName}</span>}
+      {license && (
+        <span className={`license-badge ${license.status === 'demo' ? 'license-demo' : license.status === 'active' ? 'license-active' : 'license-blocked'}`}>
+          {license.status === 'demo' && `DEMO — ${license.daysLeft} раб. дн.`}
+          {license.status === 'active' && `Полная лицензия до ${new Date(license.expiresAt).toLocaleDateString('ru-RU')}`}
+          {license.status === 'blocked' && 'Демо истёк'}
+          {license.status === 'expired' && 'Лицензия истекла'}
+        </span>
+      )}
       <div className="top-header-spacer" />
       <div className="top-header-user">
         <NotificationBell />
@@ -122,6 +130,26 @@ function TopHeader() {
         <button onClick={logout} className="btn btn-small top-header-logout">Выйти</button>
       </div>
     </header>
+  );
+}
+
+/** Экран блокировки при истёкшем демо */
+function LicenseBlockScreen() {
+  const { logout } = useAuth();
+  return (
+    <div className="login-page">
+      <div className="login-card" style={{ maxWidth: 480, textAlign: 'center' }}>
+        <div className="login-header">
+          <h1>Демо-режим истёк</h1>
+          <p>Срок действия демонстрационного доступа (5 рабочих дней) истёк.</p>
+        </div>
+        <p style={{ color: 'var(--gray-500)', marginBottom: 24 }}>
+          Обратитесь к суперадминистратору для получения лицензионного ключа,
+          затем введите его в разделе «Настройки → Компания».
+        </p>
+        <button onClick={logout} className="btn btn-primary btn-full">Выйти</button>
+      </div>
+    </div>
   );
 }
 
@@ -137,9 +165,13 @@ function PageWrapper({ children }) {
 
 /** Маршруты приложения. Каждый маршрут защищён ProtectedRoute. */
 function AppRoutes() {
-  const { user, loading, canView } = useAuth();
+  const { user, loading, canView, license } = useAuth();
 
   if (loading) return <div className="loading-spinner">Загрузка...</div>;
+
+  if (user && license && license.status === 'blocked') {
+    return <LicenseBlockScreen />;
+  }
 
   return (
     <Routes>

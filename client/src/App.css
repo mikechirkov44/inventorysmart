@@ -317,6 +317,29 @@ input, textarea, select { font-family: inherit; }
   white-space: nowrap;
 }
 
+.license-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.license-demo {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.license-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.license-blocked, .license-expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .top-header-logout {
   color: var(--gray-500) !important;
   border-color: var(--gray-300) !important;

@@ -13,13 +13,25 @@ const { imageUpload } = require('../utils/upload');
 /**
  * @route GET /company
  * @description Получение данных текущей компании
- * @requires authenticate
- * @returns {Object} Данные компании (название, часовой пояс, лицензия и т.д.)
  */
 router.get('/', authenticate, async (req, res) => {
   try {
     const company = await Company.get(req.user.companyId);
-    res.json(company);
+    const license = await Company.getLicenseStatus(req.user.companyId);
+    res.json({ ...company, license });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route GET /company/license-status
+ * @description Получение статуса лицензии компании
+ */
+router.get('/license-status', authenticate, async (req, res) => {
+  try {
+    const license = await Company.getLicenseStatus(req.user.companyId);
+    res.json(license);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

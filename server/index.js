@@ -39,6 +39,7 @@ async function start() {
   });
 
   const { authenticate } = require('./middleware/auth');
+  const Company = require('./models/company');
 
   app.use('/api', (req, res, next) => {
     if (req.method === 'OPTIONS') return next();
@@ -47,6 +48,31 @@ async function start() {
     if (req.path === '/health') return next();
     if (req.path === '/superadmin' || req.path.startsWith('/superadmin/')) return next();
     authenticate(req, res, next);
+  });
+
+  // License check — block access if demo expired (skip for company endpoints and auth)
+  app.use('/api', async (req, res, next) => {
+    if (req.method === 'OPTIONS') return next();
+    if (req.path === '/company' || req.path.startsWith('/company/')) return next();
+    if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
+    if (req.path === '/setup' || req.path.startsWith('/setup/')) return next();
+    if (req.path === '/health') return next();
+    if (!req.user || !req.user.companyId) return next();
+
+    try {
+      const license = await Company.getLicenseStatus(req.user.companyId);
+      if (license.status === 'blocked') {
+        return res.status(403).json({
+          error: 'Демо-режим истёк',
+          message: license.message,
+          licenseBlocked: true
+        });
+      }
+      req.license = license;
+      next();
+    } catch {
+      next();
+    }
   });
 
   // Protected routes

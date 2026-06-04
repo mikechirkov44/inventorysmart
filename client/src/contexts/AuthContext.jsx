@@ -22,11 +22,17 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [setupRequired, setSetupRequired] = useState(false);
+  const [license, setLicense] = useState(null);
 
   useEffect(() => {
     if (token) {
       api.get('/auth/me')
-        .then(res => { setUser(res.data); setLoading(false); })
+        .then(res => {
+          setUser(res.data);
+          setLoading(false);
+          return api.get('/company/license-status');
+        })
+        .then(res => setLicense(res.data))
         .catch(() => { logout(); setLoading(false); });
     } else {
       api.get('/setup')
@@ -79,7 +85,7 @@ export function AuthProvider({ children }) {
   const canEdit = (resource) => can(resource, 'edit');
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, setupRequired, login, logout, permissions, can, canView, canEdit }}>
+    <AuthContext.Provider value={{ user, token, loading, setupRequired, login, logout, permissions, can, canView, canEdit, license, setLicense }}>
       {children}
     </AuthContext.Provider>
   );
