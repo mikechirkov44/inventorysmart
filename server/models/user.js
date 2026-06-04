@@ -50,6 +50,31 @@ module.exports = {
   },
 
   /**
+   * Получает всех пользователей компании (кроме суперадминов) с должностями.
+   * @async
+   * @param {string} companyId - Идентификатор компании
+   * @returns {Promise<Array<Object>>} Список пользователей компании
+   */
+  findAllByCompany: async (companyId) => {
+    const { rows } = await query(`
+      SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.created_at, u.updated_at,
+             p.name as position_name, p.permissions as position_permissions,
+             e.first_name, e.last_name
+      FROM users u
+      LEFT JOIN positions p ON u.position_id = p.id
+      LEFT JOIN employees e ON u.employee_id = e.id
+      WHERE u.company_id = $1 AND u.role != 'superadmin'
+      ORDER BY u.created_at
+    `, [companyId]);
+    return rows.map(r => ({
+      ...mapRow(r),
+      positionName: r.position_name || null,
+      positionPermissions: r.position_permissions ? (typeof r.position_permissions === 'string' ? JSON.parse(r.position_permissions) : r.position_permissions) : null,
+      employeeName: r.first_name && r.last_name ? `${r.last_name} ${r.first_name}` : null
+    }));
+  },
+
+  /**
    * Получает всех пользователей с должностями и именами сотрудников.
    * @async
    * @returns {Promise<Array<Object>>} Список пользователей

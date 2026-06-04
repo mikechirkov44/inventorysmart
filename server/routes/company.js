@@ -18,7 +18,7 @@ const { imageUpload } = require('../utils/upload');
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    const company = await Company.get();
+    const company = await Company.get(req.user.companyId);
     res.json(company);
   } catch (error) {
     res.status(500).json({ error: error.message });

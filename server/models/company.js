@@ -28,11 +28,16 @@ function mapRow(row) {
 
 module.exports = {
   /**
-   * Получает настройки компании. Если записей нет — создаёт дефолтную.
+   * Получает настройки компании по company_id. Если записей нет — создаёт дефолтную.
    * @async
+   * @param {string} [companyId] - Идентификатор компании
    * @returns {Promise<Object>} Настройки компании
    */
-  get: async () => {
+  get: async (companyId) => {
+    if (companyId) {
+      const { rows } = await query('SELECT * FROM company_settings WHERE company_id = $1 LIMIT 1', [companyId]);
+      if (rows.length > 0) return mapRow(rows[0]);
+    }
     const { rows } = await query('SELECT * FROM company_settings LIMIT 1');
     if (rows.length === 0) {
       const { rows: inserted } = await query(

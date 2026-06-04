@@ -21,7 +21,11 @@ router.use(authenticate, requirePermission('settings', 'edit'));
  */
 router.get('/', async (req, res) => {
   try {
-    const users = await User.findAll();
+    const companyId = req.user.companyId;
+    if (!companyId) {
+      return res.json([]);
+    }
+    const users = await User.findAllByCompany(companyId);
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
