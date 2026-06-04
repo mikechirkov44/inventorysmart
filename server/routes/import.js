@@ -67,7 +67,8 @@ router.post('/excel', excelUpload.single('file'), async (req, res) => {
       equipment: created
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -87,20 +88,13 @@ router.get('/template', (req, res) => {
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     XLSX.utils.book_append_sheet(wb, ws, 'Оборудование');
     
-    const tempPath = path.join(__dirname, '..', 'uploads', 'template.xlsx');
-    XLSX.writeFile(wb, tempPath);
-    
-    res.download(tempPath, 'equipment_template.xlsx', (err) => {
-      if (err) {
-        console.error('Download error:', err);
-      }
-      const fs = require('fs');
-      if (fs.existsSync(tempPath)) {
-        fs.unlinkSync(tempPath);
-      }
-    });
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=equipment_template.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Template generation error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

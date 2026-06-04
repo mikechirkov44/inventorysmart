@@ -5,16 +5,49 @@
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { migrate } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security headers
+app.use(helmet());
+
+// CORS — restrict to known origins
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
+if (ALLOWED_ORIGINS.length > 0) {
+  app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+} else {
+  app.use(cors());
+}
+
+// Body size limit
+app.use(express.json({ limit: '1mb' }));
+
+// Static files — require auth via separate route (uploads served through authenticated proxy)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Global rate limiter — 200 req/min per IP
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много запросов. Попробуйте позже.' }
+});
+app.use('/api', globalLimiter);
+
+// Strict rate limiter for auth endpoints — 10 req/min per IP
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много попыток входа. Попробуйте через минуту.' }
+});
 
 /**
  * Инициализирует сервер: выполняет миграции БД, регистрирует
@@ -25,13 +58,13 @@ async function start() {
   // Run database migrations
   await migrate();
 
-  // Public routes (no auth)
+  // Public routes (no auth) — with strict rate limiting
   const authRoutes = require('./routes/auth');
   const setupRoutes = require('./routes/setup');
   const superadminRoutes = require('./routes/superadmin');
-  app.use('/api/auth', authRoutes);
-  app.use('/api/setup', setupRoutes);
-  app.use('/api/superadmin', superadminRoutes);
+  app.use('/api/auth', authLimiter, authRoutes);
+  app.use('/api/setup', authLimiter, setupRoutes);
+  app.use('/api/superadmin', authLimiter, superadminRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {
@@ -50,7 +83,7 @@ async function start() {
     authenticate(req, res, next);
   });
 
-  // License check — block access if demo expired (skip for company endpoints and auth)
+  // License check — block access if demo expired
   app.use('/api', async (req, res, next) => {
     if (req.method === 'OPTIONS') return next();
     if (req.path === '/company' || req.path.startsWith('/company/')) return next();
@@ -71,7 +104,7 @@ async function start() {
       req.license = license;
       next();
     } catch {
-      next();
+      res.status(500).json({ error: 'Ошибка проверки лицензии' });
     }
   });
 
@@ -112,8 +145,14 @@ async function start() {
   app.use('/api/company', companyRoutes);
   app.use('/api/positions', positionsRoutes);
 
+  // Global error handler — never leak internals
+  app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  });
+
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 

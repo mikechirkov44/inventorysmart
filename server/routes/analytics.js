@@ -176,7 +176,7 @@ router.get('/', async (req, res) => {
     res.json(analytics);
   } catch (error) {
     console.error('Analytics error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -212,7 +212,7 @@ router.get('/summary', async (req, res) => {
     });
   } catch (error) {
     console.error('Analytics summary error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

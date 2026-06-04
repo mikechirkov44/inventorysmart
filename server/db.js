@@ -237,15 +237,22 @@ async function migrate() {
       ) WHERE company_id IS NULL
     `);
 
-    // Seed superadmin user
+    // Seed superadmin user — only create if not exists, never overwrite password
     const bcrypt = require('bcryptjs');
-    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'superadmin123';
-    const superadminHash = bcrypt.hashSync(superadminPassword, 10);
-    await client.query(`
-      INSERT INTO users (username, password_hash, full_name, role)
-      VALUES ('superadmin', $1, 'Суперадминистратор', 'superadmin')
-      ON CONFLICT (username) DO UPDATE SET role = 'superadmin'
-    `, [superadminHash]);
+    const { rows: saExists } = await client.query("SELECT id FROM users WHERE username = 'superadmin'");
+    if (saExists.length === 0) {
+      const superadminPassword = process.env.SUPERADMIN_PASSWORD;
+      if (!superadminPassword) {
+        console.error('FATAL: SUPERADMIN_PASSWORD must be set for initial setup');
+        process.exit(1);
+      }
+      const superadminHash = bcrypt.hashSync(superadminPassword, 10);
+      await client.query(`
+        INSERT INTO users (username, password_hash, full_name, role)
+        VALUES ('superadmin', $1, 'Суперадминистратор', 'superadmin')
+      `, [superadminHash]);
+      console.log('Superadmin user created');
+    }
 
     // Seed default positions
     const { rows: posCount } = await client.query('SELECT COUNT(*) FROM positions');

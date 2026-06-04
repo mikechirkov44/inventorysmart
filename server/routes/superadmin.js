@@ -59,7 +59,7 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -78,7 +78,7 @@ router.get('/companies', async (req, res) => {
     const companies = await SuperAdmin.getCompanies();
     res.json(companies);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -94,7 +94,7 @@ router.get('/users', async (req, res) => {
     const users = await SuperAdmin.getAllUsers();
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -116,7 +116,7 @@ router.post('/companies', async (req, res) => {
     const company = await SuperAdmin.createCompany(companyName.trim());
     res.json(company);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -136,7 +136,7 @@ router.put('/companies/:companyId', async (req, res) => {
     }
     res.json(company);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -152,7 +152,7 @@ router.delete('/companies/:companyId', async (req, res) => {
     }
     res.json({ message: 'Компания удалена' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -193,7 +193,7 @@ router.post('/generate-license', async (req, res) => {
       companyId,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -216,8 +216,11 @@ router.post('/users', async (req, res) => {
     if (!username || !username.trim()) {
       return res.status(400).json({ error: 'Введите логин' });
     }
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+    if (!password || password.length < 8) {
+      return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
+    }
+    if (!/[a-zA-Zа-яА-Я]/.test(password) || !/[0-9]/.test(password)) {
+      return res.status(400).json({ error: 'Пароль должен содержать буквы и цифры' });
     }
     if (!companyId) {
       return res.status(400).json({ error: 'Выберите компанию (портал)' });
@@ -245,7 +248,7 @@ router.post('/users', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

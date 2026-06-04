@@ -7,7 +7,9 @@ RUN npm install --omit=dev
 
 COPY server/ ./server/
 
-RUN mkdir -p server/uploads
+RUN mkdir -p server/uploads && chown -R node:node /app
+
+USER node
 
 EXPOSE 3001
 

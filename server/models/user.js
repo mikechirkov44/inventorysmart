@@ -9,7 +9,11 @@ const { query } = require('../db');
 const bcrypt = require('bcryptjs');
 
 /** @constant {string} JWT_SECRET Секретный ключ для JWT-токенов */
-const JWT_SECRET = process.env.JWT_SECRET || 'inventorysmart-secret-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
 /** @constant {string} JWT_EXPIRES Срок действия JWT-токена */
 const JWT_EXPIRES = '24h';
 

@@ -91,7 +91,8 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -105,7 +106,7 @@ router.get('/me', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     let companyName = null;
     if (user.companyId) {
@@ -121,7 +122,8 @@ router.get('/me', authenticate, async (req, res) => {
       permissions: req.user.permissions || {}
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -131,7 +133,7 @@ router.get('/me', authenticate, async (req, res) => {
  * @requires authenticate
  * @param {Object} req.body - Данные для смены пароля
  * @param {string} req.body.currentPassword - Текущий пароль
- * @param {string} req.body.newPassword - Новый пароль (минимум 6 символов)
+ * @param {string} req.body.newPassword - Новый пароль (минимум 8 символов, буква+цифра)
  * @returns {Object} Сообщение об успешной смене пароля
  */
 router.put('/change-password', authenticate, async (req, res) => {
@@ -140,8 +142,11 @@ router.put('/change-password', authenticate, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Текущий и новый пароль обязательны' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Новый пароль должен быть не менее 6 символов' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
+    }
+    if (!/[a-zA-Zа-яА-Я]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'Пароль должен содержать буквы и цифры' });
     }
 
     const user = await User.findByUsername(req.user.username);
@@ -153,7 +158,8 @@ router.put('/change-password', authenticate, async (req, res) => {
 
     res.json({ message: 'Пароль успешно изменён' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
