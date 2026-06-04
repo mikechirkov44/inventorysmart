@@ -328,6 +328,7 @@ router.delete('/users/:userId', async (req, res) => {
 router.get('/companies/:companyId/stats', async (req, res) => {
   try {
     const { companyId } = req.params;
+    console.log('Stats request for companyId:', companyId);
     const { query } = require('../db');
 
     // Verify company exists
@@ -379,7 +380,7 @@ router.get('/companies/:companyId/stats', async (req, res) => {
       createdAt: found.createdAt,
     });
   } catch (error) {
-    console.error('Company stats error:', error);
+    console.error('Company stats error:', error.message, error.stack);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });

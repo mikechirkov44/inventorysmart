@@ -27,8 +27,10 @@ function CompaniesTab() {
   const fetchCompanies = async () => {
     try {
       const res = await superadminAPI.getCompanies();
+      console.log('fetchCompanies OK', res.data.length, 'companies');
       setCompanies(res.data);
-    } catch {
+    } catch (err) {
+      console.error('fetchCompanies ERROR', err.response?.status, err.message);
       setError('Ошибка загрузки компаний');
     } finally {
       setLoading(false);
@@ -36,6 +38,7 @@ function CompaniesTab() {
   };
 
   const fetchStats = async (companyId) => {
+    console.log('fetchStats called for', companyId);
     if (expandedCompany === companyId) {
       setExpandedCompany(null);
       return;
@@ -44,8 +47,10 @@ function CompaniesTab() {
     if (companyStats[companyId]) return;
     try {
       const res = await superadminAPI.getCompanyStats(companyId);
+      console.log('fetchStats OK', res.data);
       setCompanyStats(prev => ({ ...prev, [companyId]: res.data }));
     } catch (err) {
+      console.error('fetchStats ERROR', err.response?.status, err.response?.data, err.message);
       setError(err.response?.data?.error || 'Ошибка загрузки статистики');
     }
   };
