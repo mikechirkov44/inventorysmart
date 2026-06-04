@@ -50,7 +50,8 @@ function QRScanner() {
       );
       setScanning(true);
     } catch (err) {
-      setError('Не удалось запустить камеру: ' + err.message);
+      const msg = err?.message || err || 'неизвестная ошибка';
+      setError('Не удалось запустить камеру: ' + msg);
       setScanning(false);
     }
   }
