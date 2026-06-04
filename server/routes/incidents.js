@@ -33,16 +33,16 @@ router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
       employeeName,
       description,
       photos
-    });
+    }, req.user.companyId);
 
-    const equipment = await Equipment.findById(equipmentId);
+    const equipment = await Equipment.findById(equipmentId, req.user.companyId);
     if (equipment) {
-      await Equipment.update(equipmentId, { status: 'needs_repair' });
+      await Equipment.update(equipmentId, { status: 'needs_repair' }, req.user.companyId);
     }
 
     const User = require('../models/user');
     const Position = require('../models/position');
-    const allUsers = await User.findAll();
+    const allUsers = await User.findAllByCompany(req.user.companyId);
     const admins = allUsers.filter(u => {
       if (!u.positionPermissions) return false;
       const perm = u.positionPermissions.incidents;
@@ -76,13 +76,13 @@ router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
  */
 router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
   try {
-    let incidents = await Incident.findAll();
+    let incidents = await Incident.findAll(req.user.companyId);
     const { status, equipmentId } = req.query;
 
     if (status) incidents = incidents.filter(i => i.status === status);
     if (equipmentId) incidents = incidents.filter(i => i.equipmentId === equipmentId);
 
-    const equipment = await Equipment.findAll();
+    const equipment = await Equipment.findAll(req.user.companyId);
     const eqMap = {};
     equipment.forEach(e => { eqMap[e.id] = e; });
 
@@ -115,7 +115,7 @@ router.get('/', requirePermission('incidents', 'view'), async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const incident = await Incident.findById(req.params.id);
+    const incident = await Incident.findById(req.params.id, req.user.companyId);
     if (!incident) return res.status(404).json({ error: 'Not found' });
 
     let photos = incident.photos;
@@ -123,7 +123,7 @@ router.get('/:id', async (req, res) => {
       try { photos = JSON.parse(photos); } catch (_) { photos = []; }
     }
 
-    const equipment = await Equipment.findById(incident.equipmentId);
+    const equipment = await Equipment.findById(incident.equipmentId, req.user.companyId);
     res.json({
       ...incident,
       photos,
@@ -154,7 +154,7 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
     if (status) updateData.status = status;
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
-    const incident = await Incident.update(req.params.id, updateData);
+    const incident = await Incident.update(req.params.id, updateData, req.user.companyId);
     if (!incident) return res.status(404).json({ error: 'Not found' });
 
     if (status === 'resolved' && incident.employeeId) {
@@ -185,7 +185,7 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
  */
 router.delete('/:id', requirePermission('incidents', 'delete'), async (req, res) => {
   try {
-    const deleted = await Incident.remove(req.params.id);
+    const deleted = await Incident.remove(req.params.id, req.user.companyId);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {

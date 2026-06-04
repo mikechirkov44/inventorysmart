@@ -31,8 +31,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список работ
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM works ORDER BY name');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM works WHERE company_id = $1 ORDER BY name', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -42,8 +42,8 @@ module.exports = {
    * @param {number} id - Идентификатор работы
    * @returns {Promise<Object|null>} Объект работы или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM works WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM works WHERE id = $1 AND company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -57,10 +57,10 @@ module.exports = {
    * @param {string} [data.category] - Категория
    * @returns {Promise<Object>} Созданная работа
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO works (name, description, frequency_days, category) VALUES ($1, $2, $3, $4) RETURNING *',
-      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '']
+      'INSERT INTO works (name, description, frequency_days, category, company_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '', companyId]
     );
     return mapRow(rows[0]);
   },
@@ -72,7 +72,7 @@ module.exports = {
    * @param {Object} data - Данные для обновления
    * @returns {Promise<Object|null>} Обновлённая работа или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { frequencyDays: 'frequency_days' };
     const fields = [];
     const values = [];
@@ -87,7 +87,8 @@ module.exports = {
     if (fields.length === 0) return null;
     fields.push(`updated_at = NOW()`);
     values.push(id);
-    const { rows } = await query(`UPDATE works SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values);
+    values.push(companyId);
+    const { rows } = await query(`UPDATE works SET ${fields.join(', ')} WHERE id = $${i} AND company_id = $${i + 1} RETURNING *`, values);
     return mapRow(rows[0]);
   },
 
@@ -97,8 +98,8 @@ module.exports = {
    * @param {number} id - Идентификатор работы
    * @returns {Promise<boolean>} true если удалена, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM works WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM works WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   },
 
@@ -108,9 +109,9 @@ module.exports = {
    * @param {Array<Object>} items - Массив данных работ (см. create)
    * @returns {Promise<Array<Object>>} Список созданных работ
    */
-  createMany: async (items) => {
+  createMany: async (items, companyId) => {
     const results = [];
-    for (const item of items) { results.push(await module.exports.create(item)); }
+    for (const item of items) { results.push(await module.exports.create(item, companyId)); }
     return results;
   }
 };

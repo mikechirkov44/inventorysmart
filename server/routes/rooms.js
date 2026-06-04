@@ -18,7 +18,7 @@ const Room = require('../models/room');
  */
 router.get('/', async (req, res) => {
   try {
-    let rooms = await Room.findAll();
+    let rooms = await Room.findAll(req.user.companyId);
     const { name, building, search } = req.query;
 
     if (search) {
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id);
+    const room = await Room.findById(req.params.id, req.user.companyId);
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
@@ -71,7 +71,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const room = await Room.create(req.body);
+    const room = await Room.create(req.body, req.user.companyId);
     res.status(201).json(room);
   } catch (error) {
     console.error('Route error:', error);
@@ -89,7 +89,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const room = await Room.update(req.params.id, req.body);
+    const room = await Room.update(req.params.id, req.body, req.user.companyId);
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
@@ -109,7 +109,7 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Room.remove(req.params.id);
+    const deleted = await Room.remove(req.params.id, req.user.companyId);
     if (!deleted) {
       return res.status(404).json({ error: 'Room not found' });
     }

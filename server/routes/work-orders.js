@@ -18,7 +18,7 @@ const { imageUpload } = require('../utils/upload');
  */
 router.get('/', async (req, res) => {
   try {
-    const workOrders = await WorkOrder.findAll();
+    const workOrders = await WorkOrder.findAll(req.user.companyId);
     res.json(workOrders);
   } catch (error) {
     console.error('Route error:', error);
@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const workOrder = await WorkOrder.findById(req.params.id);
+    const workOrder = await WorkOrder.findById(req.params.id, req.user.companyId);
     if (!workOrder) {
       return res.status(404).json({ error: 'Work order not found' });
     }
@@ -54,7 +54,7 @@ router.get('/:id', async (req, res) => {
  */
 router.get('/equipment/:equipmentId', async (req, res) => {
   try {
-    const workOrders = await WorkOrder.findByEquipmentId(req.params.equipmentId);
+    const workOrders = await WorkOrder.findByEquipmentId(req.params.equipmentId, req.user.companyId);
     res.json(workOrders);
   } catch (error) {
     console.error('Route error:', error);
@@ -75,7 +75,7 @@ router.post('/', imageUpload.array('photos', 10), async (req, res) => {
     if (req.files && req.files.length > 0) {
       workOrderData.photos = req.files.map(file => file.filename);
     }
-    const workOrder = await WorkOrder.create(workOrderData);
+    const workOrder = await WorkOrder.create(workOrderData, req.user.companyId);
     res.status(201).json(workOrder);
   } catch (error) {
     console.error('Route error:', error);
@@ -98,7 +98,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
   try {
     const workOrderData = req.body;
     if (req.files && req.files.length > 0) {
-      const existingWorkOrder = await WorkOrder.findById(req.params.id);
+      const existingWorkOrder = await WorkOrder.findById(req.params.id, req.user.companyId);
       let existingPhotos = [];
       if (existingWorkOrder && existingWorkOrder.photos) {
         existingPhotos = typeof existingWorkOrder.photos === 'string'
@@ -108,7 +108,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
       workOrderData.photos = [...existingPhotos, ...req.files.map(file => file.filename)];
     }
 
-    const existingOrder = await WorkOrder.findById(req.params.id);
+    const existingOrder = await WorkOrder.findById(req.params.id, req.user.companyId);
     const wasPending = existingOrder && existingOrder.status === 'pending';
     const isNowCompleted = workOrderData.status === 'completed';
 
@@ -116,7 +116,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
       try { workOrderData.sparePartsUsed = JSON.parse(workOrderData.sparePartsUsed); } catch (_) { workOrderData.sparePartsUsed = []; }
     }
 
-    const workOrder = await WorkOrder.update(req.params.id, workOrderData);
+    const workOrder = await WorkOrder.update(req.params.id, workOrderData, req.user.companyId);
     if (!workOrder) {
       return res.status(404).json({ error: 'Work order not found' });
     }
@@ -127,7 +127,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
     }
 
     if (wasPending && isNowCompleted && sparePartsUsed && sparePartsUsed.length > 0) {
-      const deducted = await SparePart.deductStock(sparePartsUsed);
+      const deducted = await SparePart.deductStock(sparePartsUsed, req.user.companyId);
       return res.json({ workOrder, sparePartsDeducted: deducted });
     }
 
@@ -147,7 +147,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await WorkOrder.remove(req.params.id);
+    const deleted = await WorkOrder.remove(req.params.id, req.user.companyId);
     if (!deleted) {
       return res.status(404).json({ error: 'Work order not found' });
     }

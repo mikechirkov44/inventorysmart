@@ -252,4 +252,136 @@ router.post('/users', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /superadmin/users/:userId
+ * @description Обновление пользователя суперадминистратором
+ */
+router.put('/users/:userId', async (req, res) => {
+  try {
+    const { fullName, companyId, positionId, password } = req.body;
+    const userId = req.params.userId;
+
+    // Verify user exists
+    const existingUser = await require('../db').query('SELECT id, username FROM users WHERE id = $1', [userId]);
+    if (existingUser.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const updates = {};
+    if (fullName !== undefined) updates.full_name = fullName.trim();
+    if (companyId !== undefined) updates.company_id = companyId || null;
+    if (positionId !== undefined) updates.position_id = positionId || null;
+    
+    if (password) {
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
+      }
+      if (!/[a-zA-Zа-яА-Я]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({ error: 'Пароль должен содержать буквы и цифры' });
+      }
+      const bcrypt = require('bcryptjs');
+      updates.password_hash = bcrypt.hashSync(password, 10);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Нет данных для обновления' });
+    }
+
+    const keys = Object.keys(updates);
+    const sets = keys.map((k, i) => `${k} = $${i + 1}`);
+    const vals = keys.map(k => updates[k]);
+    vals.push(userId);
+
+    const { rows } = await require('../db').query(
+      `UPDATE users SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING id, username, full_name, role, company_id, position_id`,
+      vals
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route DELETE /superadmin/users/:userId
+ * @description Удаление пользователя суперадминистратором
+ */
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const deleted = await SuperAdmin.deleteUser(req.params.userId);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Пользователь не найден или является суперадминистратором' });
+    }
+    res.json({ message: 'Пользователь удалён' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route GET /superadmin/companies/:companyId/stats
+ * @description Получение статистики по компании для суперадминистратора
+ */
+router.get('/companies/:companyId/stats', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const { query } = require('../db');
+
+    // Verify company exists
+    const companies = await SuperAdmin.getCompanies();
+    const found = companies.find(c => c.companyId === companyId);
+    if (!found) {
+      return res.status(404).json({ error: 'Компания не найдена' });
+    }
+
+    // Get counts from all tables
+    const [equipRes, empRes, worksRes, roomsRes, spareRes, ordersRes, incidentsRes, usersRes, receiptsRes] = await Promise.all([
+      query('SELECT COUNT(*)::int as count FROM equipment WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM employees WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM works WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM rooms WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM spare_parts WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM work_orders WHERE company_id = $1', [companyId]),
+      query('SELECT COUNT(*)::int as count FROM incidents WHERE company_id = $1', [companyId]),
+      query("SELECT COUNT(*)::int as count FROM users WHERE company_id = $1 AND role != 'superadmin'", [companyId]),
+      query('SELECT COUNT(*)::int as count FROM spare_part_receipts WHERE company_id = $1', [companyId]),
+    ]);
+
+    // Get overdue work orders
+    const overdueRes = await query(
+      "SELECT COUNT(*)::int as count FROM work_orders WHERE company_id = $1 AND status != 'completed' AND due_date < NOW()",
+      [companyId]
+    );
+
+    // Get license status
+    const Company = require('../models/company');
+    const license = await Company.getLicenseStatus(companyId);
+
+    res.json({
+      companyId,
+      companyName: found.companyName,
+      counts: {
+        equipment: equipRes.rows[0].count,
+        employees: empRes.rows[0].count,
+        works: worksRes.rows[0].count,
+        rooms: roomsRes.rows[0].count,
+        spareParts: spareRes.rows[0].count,
+        workOrders: ordersRes.rows[0].count,
+        incidents: incidentsRes.rows[0].count,
+        users: usersRes.rows[0].count,
+        sparePartsReceipts: receiptsRes.rows[0].count,
+      },
+      overdueWorkOrders: overdueRes.rows[0].count,
+      license,
+      createdAt: found.createdAt,
+    });
+  } catch (error) {
+    console.error('Company stats error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 module.exports = router;

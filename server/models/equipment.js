@@ -35,8 +35,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список оборудования с полем workIds
    */
-  findAll: async () => {
-    const { rows: equipment } = await query('SELECT * FROM equipment ORDER BY name');
+  findAll: async (companyId) => {
+    const { rows: equipment } = await query('SELECT * FROM equipment WHERE company_id = $1 ORDER BY name', [companyId]);
     const { rows: eqWorks } = await query('SELECT * FROM equipment_works');
     return equipment.map(eq => ({
       ...mapRow(eq),
@@ -50,8 +50,8 @@ module.exports = {
    * @param {number} id - Идентификатор оборудования
    * @returns {Promise<Object|null>} Оборудование с workIds или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM equipment WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM equipment WHERE id = $1 AND company_id = $2', [id, companyId]);
     if (!rows[0]) return null;
     const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [id]);
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
@@ -97,13 +97,13 @@ module.exports = {
    * @param {Array<number>} [data.workIds] - Массив ID связанных работ
    * @returns {Promise<Object>} Созданное оборудование с workIds
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     let workIds = data.workIds || [];
     if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
 
     const { rows } = await query(
-      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [data.name, data.inventoryNumber || '', data.description || '', data.photo || null, data.roomId || null, data.category || '', data.status || 'working']
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [data.name, data.inventoryNumber || '', data.description || '', data.photo || null, data.roomId || null, data.category || '', data.status || 'working', companyId]
     );
     const eq = rows[0];
 
@@ -122,7 +122,7 @@ module.exports = {
    * @param {Array<number>} [data.workIds] - Новый список ID работ (полная замена)
    * @returns {Promise<Object|null>} Обновлённое оборудование или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { inventoryNumber: 'inventory_number', roomId: 'room_id' };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
@@ -137,7 +137,8 @@ module.exports = {
       const sets = keys.map((k, i) => `${k} = $${i + 1}`);
       const vals = keys.map(k => mapped[k]);
       vals.push(id);
-      await query(`UPDATE equipment SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
+      vals.push(companyId);
+      await query(`UPDATE equipment SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length}`, vals);
     }
 
     if (data.workIds !== undefined) {
@@ -158,8 +159,8 @@ module.exports = {
    * @param {number} id - Идентификатор оборудования
    * @returns {Promise<boolean>} true если удалено, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM equipment WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM equipment WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   },
 

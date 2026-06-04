@@ -17,7 +17,7 @@ const SparePart = require('../models/sparePart');
  */
 router.get('/', async (req, res) => {
   try {
-    let items = await SparePart.findAll();
+    let items = await SparePart.findAll(req.user.companyId);
     const { search, equipmentId } = req.query;
     if (search) {
       const s = search.toLowerCase();
@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const item = await SparePart.findById(req.params.id);
+    const item = await SparePart.findById(req.params.id, req.user.companyId);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const item = await SparePart.create(req.body);
+    const item = await SparePart.create(req.body, req.user.companyId);
     res.status(201).json(item);
   } catch (error) {
     console.error('Route error:', error);
@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const item = await SparePart.update(req.params.id, req.body);
+    const item = await SparePart.update(req.params.id, req.body, req.user.companyId);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch (error) {
@@ -99,7 +99,7 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await SparePart.remove(req.params.id);
+    const deleted = await SparePart.remove(req.params.id, req.user.companyId);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {
@@ -121,7 +121,7 @@ router.post('/replenish', async (req, res) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'items array is required' });
     }
-    const updated = await SparePart.replenishStock(items);
+    const updated = await SparePart.replenishStock(items, req.user.companyId);
     res.json({ updated });
   } catch (error) {
     console.error('Route error:', error);

@@ -18,7 +18,7 @@ const Employee = require('../models/employee');
  */
 router.get('/', async (req, res) => {
   try {
-    let employees = await Employee.findAll();
+    let employees = await Employee.findAll(req.user.companyId);
     const { lastName, positionId, search } = req.query;
 
     if (search) {
@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id);
+    const employee = await Employee.findById(req.params.id, req.user.companyId);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
@@ -70,7 +70,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const employee = await Employee.create(req.body);
+    const employee = await Employee.create(req.body, req.user.companyId);
     res.status(201).json(employee);
   } catch (error) {
     console.error('Route error:', error);
@@ -88,7 +88,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const employee = await Employee.update(req.params.id, req.body);
+    const employee = await Employee.update(req.params.id, req.body, req.user.companyId);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
@@ -108,7 +108,7 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Employee.remove(req.params.id);
+    const deleted = await Employee.remove(req.params.id, req.user.companyId);
     if (!deleted) {
       return res.status(404).json({ error: 'Employee not found' });
     }

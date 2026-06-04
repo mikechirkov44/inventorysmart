@@ -32,8 +32,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список помещений
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM rooms ORDER BY name');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM rooms WHERE company_id = $1 ORDER BY name', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -43,8 +43,8 @@ module.exports = {
    * @param {number} id - Идентификатор помещения
    * @returns {Promise<Object|null>} Объект помещения или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM rooms WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM rooms WHERE id = $1 AND company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -59,10 +59,10 @@ module.exports = {
    * @param {number} [data.responsibleEmployeeId] - ID ответственного сотрудника
    * @returns {Promise<Object>} Созданное помещение
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO rooms (name, description, building, floor, responsible_employee_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [data.name || '', data.description || '', data.building || '', data.floor || '', data.responsibleEmployeeId || null]
+      'INSERT INTO rooms (name, description, building, floor, responsible_employee_id, company_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [data.name || '', data.description || '', data.building || '', data.floor || '', data.responsibleEmployeeId || null, companyId]
     );
     return mapRow(rows[0]);
   },
@@ -74,7 +74,7 @@ module.exports = {
    * @param {Object} data - Данные для обновления
    * @returns {Promise<Object|null>} Обновлённое помещение или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { responsibleEmployeeId: 'responsible_employee_id' };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
@@ -87,7 +87,8 @@ module.exports = {
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const vals = keys.map(k => mapped[k]);
     vals.push(id);
-    const { rows } = await query(`UPDATE rooms SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals);
+    vals.push(companyId);
+    const { rows } = await query(`UPDATE rooms SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length} RETURNING *`, vals);
     return mapRow(rows[0]);
   },
 
@@ -97,8 +98,8 @@ module.exports = {
    * @param {number} id - Идентификатор помещения
    * @returns {Promise<boolean>} true если удалено, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM rooms WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM rooms WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   },
 
@@ -108,9 +109,9 @@ module.exports = {
    * @param {Array<Object>} items - Массив данных помещений (см. create)
    * @returns {Promise<Array<Object>>} Список созданных помещений
    */
-  createMany: async (items) => {
+  createMany: async (items, companyId) => {
     const results = [];
-    for (const item of items) { results.push(await module.exports.create(item)); }
+    for (const item of items) { results.push(await module.exports.create(item, companyId)); }
     return results;
   }
 };

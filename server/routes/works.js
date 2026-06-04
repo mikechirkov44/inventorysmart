@@ -18,7 +18,7 @@ const Work = require('../models/work');
  */
 router.get('/', async (req, res) => {
   try {
-    let works = await Work.findAll();
+    let works = await Work.findAll(req.user.companyId);
     const { name, category, search } = req.query;
 
     if (search) {
@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const work = await Work.findById(req.params.id);
+    const work = await Work.findById(req.params.id, req.user.companyId);
     if (!work) {
       return res.status(404).json({ error: 'Work not found' });
     }
@@ -70,7 +70,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const work = await Work.create(req.body);
+    const work = await Work.create(req.body, req.user.companyId);
     res.status(201).json(work);
   } catch (error) {
     console.error('Route error:', error);
@@ -88,7 +88,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const work = await Work.update(req.params.id, req.body);
+    const work = await Work.update(req.params.id, req.body, req.user.companyId);
     if (!work) {
       return res.status(404).json({ error: 'Work not found' });
     }
@@ -108,7 +108,7 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Work.remove(req.params.id);
+    const deleted = await Work.remove(req.params.id, req.user.companyId);
     if (!deleted) {
       return res.status(404).json({ error: 'Work not found' });
     }

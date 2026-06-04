@@ -36,30 +36,34 @@ router.get('/:code', async (req, res) => {
 
     if (uuidRegex.test(code)) {
       equipment = await Equipment.findByQrCode(code);
-      if (!equipment) equipment = await Equipment.findById(code);
+      if (!equipment) equipment = await Equipment.findById(code, req.user.companyId);
     }
     if (!equipment) equipment = await Equipment.findByInventoryNumber(code);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
+    if (equipment.company_id !== req.user.companyId) {
+      return res.status(404).json({ error: 'Equipment not found' });
+    }
+
     let room = null;
     let responsibleEmployee = null;
     if (equipment.roomId) {
-      room = await Room.findById(equipment.roomId);
+      room = await Room.findById(equipment.roomId, req.user.companyId);
       if (room && room.responsibleEmployeeId) {
-        responsibleEmployee = await Employee.findById(room.responsibleEmployeeId);
+        responsibleEmployee = await Employee.findById(room.responsibleEmployeeId, req.user.companyId);
       }
     }
 
-    const allWorks = await Work.findAll();
+    const allWorks = await Work.findAll(req.user.companyId);
     const workMap = {};
     allWorks.forEach(w => { workMap[w.id] = w; });
 
-    const allSpareParts = await SparePart.findAll();
+    const allSpareParts = await SparePart.findAll(req.user.companyId);
     const sparePartsForEquipment = allSpareParts.filter(sp => (sp.equipmentIds || []).includes(equipment.id));
 
-    const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
+    const workOrders = await WorkOrder.findByEquipmentId(equipment.id, req.user.companyId);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -161,12 +165,16 @@ router.post('/complete', async (req, res) => {
   try {
     const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;
 
-    const equipment = await Equipment.findById(equipmentId);
+    const equipment = await Equipment.findById(equipmentId, req.user.companyId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
-    const allWorks = await Work.findAll();
+    if (equipment.company_id !== req.user.companyId) {
+      return res.status(404).json({ error: 'Equipment not found' });
+    }
+
+    const allWorks = await Work.findAll(req.user.companyId);
     const work = allWorks.find(w => w.id === workId);
     const taskName = work ? work.name : workId;
 
@@ -178,11 +186,11 @@ router.post('/complete', async (req, res) => {
       notes,
       sparePartsUsed: sparePartsUsed || [],
       status: 'completed'
-    });
+    }, req.user.companyId);
 
     let sparePartsDeducted = [];
     if (sparePartsUsed && sparePartsUsed.length > 0) {
-      sparePartsDeducted = await SparePart.deductStock(sparePartsUsed);
+      sparePartsDeducted = await SparePart.deductStock(sparePartsUsed, req.user.companyId);
     }
 
     res.status(201).json({ workOrder, sparePartsDeducted });

@@ -42,4 +42,7 @@ export const superadminAPI = {
   getUsers: () => superadminApi.get('/superadmin/users'),
   generateLicense: (companyId, plan, daysValid) => superadminApi.post('/superadmin/generate-license', { companyId, plan, daysValid }),
   createUser: (data) => superadminApi.post('/superadmin/users', data),
+  updateUser: (userId, data) => superadminApi.put(`/superadmin/users/${userId}`, data),
+  deleteUser: (userId) => superadminApi.delete(`/superadmin/users/${userId}`),
+  getCompanyStats: (companyId) => superadminApi.get(`/superadmin/companies/${companyId}/stats`),
 };

@@ -15,7 +15,7 @@ const SparePartReceipt = require('../models/sparePartReceipt');
  */
 router.get('/', async (req, res) => {
   try {
-    const receipts = await SparePartReceipt.findAll();
+    const receipts = await SparePartReceipt.findAll(req.user.companyId);
     res.json(receipts);
   } catch (error) {
     console.error('Route error:', error);
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/next-number', async (req, res) => {
   try {
-    const number = await SparePartReceipt.generateDocumentNumber();
+    const number = await SparePartReceipt.generateDocumentNumber(req.user.companyId);
     res.json({ number });
   } catch (error) {
     console.error('Route error:', error);
@@ -48,7 +48,7 @@ router.get('/next-number', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const receipt = await SparePartReceipt.findById(req.params.id);
+    const receipt = await SparePartReceipt.findById(req.params.id, req.user.companyId);
     if (!receipt) return res.status(404).json({ error: 'Not found' });
     res.json(receipt);
   } catch (error) {
@@ -65,7 +65,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const receipt = await SparePartReceipt.create(req.body);
+    const receipt = await SparePartReceipt.create(req.body, req.user.companyId);
     res.status(201).json(receipt);
   } catch (error) {
     console.error('Route error:', error);
@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await SparePartReceipt.remove(req.params.id);
+    const deleted = await SparePartReceipt.remove(req.params.id, req.user.companyId);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
   } catch (error) {

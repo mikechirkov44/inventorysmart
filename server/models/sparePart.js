@@ -34,8 +34,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список запчастей
    */
-  findAll: async () => {
-    const { rows: parts } = await query('SELECT * FROM spare_parts ORDER BY name');
+  findAll: async (companyId) => {
+    const { rows: parts } = await query('SELECT * FROM spare_parts WHERE company_id = $1 ORDER BY name', [companyId]);
     const { rows: spEq } = await query('SELECT * FROM spare_parts_equipment');
     const { rows: spWk } = await query('SELECT * FROM spare_parts_works');
     return parts.map(sp => ({
@@ -51,8 +51,8 @@ module.exports = {
    * @param {number} id - Идентификатор запчасти
    * @returns {Promise<Object|null>} Объект запчасти или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM spare_parts WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM spare_parts WHERE id = $1 AND company_id = $2', [id, companyId]);
     if (!rows[0]) return null;
     const { rows: spEq } = await query('SELECT equipment_id FROM spare_parts_equipment WHERE spare_part_id = $1', [id]);
     const { rows: spWk } = await query('SELECT work_id, quantity FROM spare_parts_works WHERE spare_part_id = $1', [id]);
@@ -77,7 +77,7 @@ module.exports = {
    * @param {Array<Object>} [data.workLinks] - Связи с работами [{workId, quantity}]
    * @returns {Promise<Object>} Созданная запчасть со связями
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     let equipmentIds = data.equipmentIds || [];
     let workLinks = data.workLinks || [];
     if (typeof equipmentIds === 'string') { try { equipmentIds = JSON.parse(equipmentIds); } catch (_) { equipmentIds = []; } }
@@ -90,8 +90,8 @@ module.exports = {
     }
 
     const { rows } = await query(
-      'INSERT INTO spare_parts (name, article, manufacturer, unit, min_stock, quantity) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [data.name || '', data.article || '', data.manufacturer || '', data.unit || 'шт', parseInt(data.minStock) || 0, parseInt(data.quantity) || 0]
+      'INSERT INTO spare_parts (name, article, manufacturer, unit, min_stock, quantity, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.name || '', data.article || '', data.manufacturer || '', data.unit || 'шт', parseInt(data.minStock) || 0, parseInt(data.quantity) || 0, companyId]
     );
     const sp = rows[0];
 
@@ -102,7 +102,7 @@ module.exports = {
       await query('INSERT INTO spare_parts_works (spare_part_id, work_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (spare_part_id, work_id) DO UPDATE SET quantity = $3', [sp.id, wl.workId, parseInt(wl.quantity) || 0]);
     }
 
-    return await module.exports.findById(sp.id);
+    return await module.exports.findById(sp.id, companyId);
   },
 
   /**
@@ -114,7 +114,7 @@ module.exports = {
    * @param {Array<Object>} [data.workLinks] - Новый список связей с работами
    * @returns {Promise<Object|null>} Обновлённая запчасть или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { minStock: 'min_stock' };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
@@ -129,7 +129,8 @@ module.exports = {
       const sets = keys.map((k, i) => `${k} = $${i + 1}`);
       const vals = keys.map(k => mapped[k]);
       vals.push(id);
-      await query(`UPDATE spare_parts SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
+      vals.push(companyId);
+      await query(`UPDATE spare_parts SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length}`, vals);
     }
 
     if (data.equipmentIds !== undefined) {
@@ -156,7 +157,7 @@ module.exports = {
       }
     }
 
-    return await module.exports.findById(id);
+    return await module.exports.findById(id, companyId);
   },
 
   /**
@@ -165,8 +166,8 @@ module.exports = {
    * @param {number} id - Идентификатор запчасти
    * @returns {Promise<boolean>} true если удалена, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM spare_parts WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM spare_parts WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   },
 
@@ -176,14 +177,14 @@ module.exports = {
    * @param {Array<Object>} items - Список к списанию [{sparePartId, quantity}]
    * @returns {Promise<Array<Object>>} Обновлённые запчасти
    */
-  deductStock: async (items) => {
+  deductStock: async (items, companyId) => {
     const updated = [];
     for (const { sparePartId, quantity } of items) {
       const qty = parseInt(quantity) || 0;
       if (qty <= 0) continue;
       const { rows } = await query(
-        'UPDATE spare_parts SET quantity = GREATEST(0, quantity - $1), updated_at = NOW() WHERE id = $2 RETURNING *',
-        [qty, sparePartId]
+        'UPDATE spare_parts SET quantity = GREATEST(0, quantity - $1), updated_at = NOW() WHERE id = $2 AND company_id = $3 RETURNING *',
+        [qty, sparePartId, companyId]
       );
       if (rows[0]) updated.push(mapRow(rows[0]));
     }
@@ -196,14 +197,14 @@ module.exports = {
    * @param {Array<Object>} items - Список к пополнению [{sparePartId, quantity}]
    * @returns {Promise<Array<Object>>} Обновлённые запчасти
    */
-  replenishStock: async (items) => {
+  replenishStock: async (items, companyId) => {
     const updated = [];
     for (const { sparePartId, quantity } of items) {
       const qty = parseInt(quantity) || 0;
       if (qty <= 0) continue;
       const { rows } = await query(
-        'UPDATE spare_parts SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-        [qty, sparePartId]
+        'UPDATE spare_parts SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2 AND company_id = $3 RETURNING *',
+        [qty, sparePartId, companyId]
       );
       if (rows[0]) updated.push(mapRow(rows[0]));
     }

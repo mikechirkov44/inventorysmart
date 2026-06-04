@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { superadminAPI } from './api';
-import { Building2, Users, Key, Plus, Copy, CheckCircle } from 'lucide-react';
+import { Building2, Users, Key, Plus, Copy, CheckCircle, Pencil, Trash2, BarChart3 } from 'lucide-react';
 
 const SA_TABS = [
   { id: 'companies', label: 'Компании', icon: Building2 },
@@ -19,6 +19,8 @@ function CompaniesTab() {
   const [success, setSuccess] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [expandedCompany, setExpandedCompany] = useState(null);
+  const [companyStats, setCompanyStats] = useState({});
 
   useEffect(() => { fetchCompanies(); }, []);
 
@@ -30,6 +32,21 @@ function CompaniesTab() {
       setError('Ошибка загрузки компаний');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async (companyId) => {
+    if (expandedCompany === companyId) {
+      setExpandedCompany(null);
+      return;
+    }
+    setExpandedCompany(companyId);
+    if (companyStats[companyId]) return;
+    try {
+      const res = await superadminAPI.getCompanyStats(companyId);
+      setCompanyStats(prev => ({ ...prev, [companyId]: res.data }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка загрузки статистики');
     }
   };
 
@@ -162,8 +179,9 @@ function CompaniesTab() {
                     </div>
                   ) : (
                     <div className="sa-actions-inline">
-                      <button className="btn btn-secondary btn-tiny" onClick={() => startEdit(c)}>Ред.</button>
-                      <button className="btn btn-danger btn-tiny" onClick={() => handleDelete(c.companyId, c.companyName)}>Удал.</button>
+                      <button className="btn btn-secondary btn-tiny" onClick={() => startEdit(c)} title="Редактировать"><Pencil size={12} /></button>
+                      <button className="btn btn-danger btn-tiny" onClick={() => handleDelete(c.companyId, c.companyName)} title="Удалить"><Trash2 size={12} /></button>
+                      <button className="btn btn-secondary btn-tiny" onClick={() => fetchStats(c.companyId)} title="Статистика"><BarChart3 size={12} /></button>
                     </div>
                   )}
                 </td>
@@ -172,6 +190,56 @@ function CompaniesTab() {
           </tbody>
         </table>
       </div>
+
+      {expandedCompany && companyStats[expandedCompany] && (
+        <div className="sa-stats-panel">
+          <h4>Статистика: {companies.find(c => c.companyId === expandedCompany)?.companyName || ''}</h4>
+          <div className="sa-stats-grid">
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].equipmentCount ?? 0}</span>
+              <span className="sa-stat-label">Оборудование</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].employeesCount ?? 0}</span>
+              <span className="sa-stat-label">Сотрудники</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].worksCount ?? 0}</span>
+              <span className="sa-stat-label">Работы</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].roomsCount ?? 0}</span>
+              <span className="sa-stat-label">Помещения</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].sparePartsCount ?? 0}</span>
+              <span className="sa-stat-label">Запчасти</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].workOrdersCount ?? 0}</span>
+              <span className="sa-stat-label">Заявки</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].overdueWorkOrdersCount ?? 0}</span>
+              <span className="sa-stat-label">Просроченные</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">{companyStats[expandedCompany].usersCount ?? 0}</span>
+              <span className="sa-stat-label">Пользователи</span>
+            </div>
+            <div className="sa-stat-card">
+              <span className="sa-stat-value">
+                {companyStats[expandedCompany].licenseActive ? (
+                  <span className="sa-badge sa-badge-success">Активна</span>
+                ) : (
+                  <span className="sa-badge sa-badge-gray">Нет</span>
+                )}
+              </span>
+              <span className="sa-stat-label">Лицензия</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -185,6 +253,8 @@ function UsersTab() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ username: '', password: '', fullName: '', companyId: '', positionId: '', isAdmin: true });
   const [creating, setCreating] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ fullName: '', companyId: '', positionId: '', newPassword: '' });
 
   useEffect(() => {
     Promise.all([
@@ -229,6 +299,55 @@ function UsersTab() {
       setError(err.response?.data?.error || 'Ошибка создания');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const startEdit = (u) => {
+    setEditingUser(u.id);
+    setEditForm({
+      fullName: u.fullName || '',
+      companyId: u.companyId || '',
+      positionId: u.positionId || '',
+      newPassword: '',
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingUser(null);
+    setEditForm({ fullName: '', companyId: '', positionId: '', newPassword: '' });
+  };
+
+  const handleUpdate = async (userId) => {
+    setError('');
+    try {
+      const payload = {
+        fullName: editForm.fullName,
+        companyId: editForm.companyId,
+        positionId: editForm.positionId || undefined,
+      };
+      if (editForm.newPassword.trim()) {
+        payload.password = editForm.newPassword;
+      }
+      await superadminAPI.updateUser(userId, payload);
+      setEditingUser(null);
+      setSuccess('Пользователь обновлён');
+      fetchUsers();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка обновления');
+    }
+  };
+
+  const handleDelete = async (userId, username) => {
+    if (!confirm(`Удалить пользователя "${username}"?`)) return;
+    setError('');
+    try {
+      await superadminAPI.deleteUser(userId);
+      setSuccess('Пользователь удалён');
+      fetchUsers();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка удаления');
     }
   };
 
@@ -318,22 +437,89 @@ function UsersTab() {
               <th>Компания</th>
               <th>Должность</th>
               <th>Создан</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--gray-400)' }}>Нет пользователей</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--gray-400)' }}>Нет пользователей</td></tr>
             ) : users.map(u => (
               <tr key={u.id}>
-                <td className="td-bold">{u.username}</td>
-                <td>{u.fullName || '—'}</td>
-                <td>{u.companyName || '—'}</td>
-                <td>
-                  {u.positionName ? (
-                    <span className="sa-badge sa-badge-primary">{u.positionName}</span>
-                  ) : <span className="sa-badge sa-badge-gray">Не назначена</span>}
-                </td>
-                <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+                {editingUser === u.id ? (
+                  <>
+                    <td className="td-bold">{u.username}</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editForm.fullName}
+                        onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                        className="inline-edit"
+                        placeholder="ФИО"
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={editForm.companyId}
+                        onChange={(e) => setEditForm({ ...editForm, companyId: e.target.value })}
+                        className="inline-edit"
+                      >
+                        <option value="">Без компании</option>
+                        {companies.map(c => (
+                          <option key={c.companyId} value={c.companyId}>{c.companyName || 'Без названия'}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={editForm.positionId}
+                        onChange={(e) => setEditForm({ ...editForm, positionId: e.target.value })}
+                        className="inline-edit"
+                      >
+                        <option value="">Не назначена</option>
+                        {companies.find(c => c.companyId === editForm.companyId)?.positions?.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="password"
+                        value={editForm.newPassword}
+                        onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
+                        className="inline-edit"
+                        placeholder="Новый пароль (необязательно)"
+                      />
+                    </td>
+                    <td>
+                      <div className="sa-actions-inline">
+                        <button className="btn btn-primary btn-tiny" onClick={() => handleUpdate(u.id)}>Сохранить</button>
+                        <button className="btn btn-secondary btn-tiny" onClick={cancelEdit}>Отмена</button>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="td-bold">{u.username}</td>
+                    <td>{u.fullName || '—'}</td>
+                    <td>{u.companyName || '—'}</td>
+                    <td>
+                      {u.positionName ? (
+                        <span className="sa-badge sa-badge-primary">{u.positionName}</span>
+                      ) : <span className="sa-badge sa-badge-gray">Не назначена</span>}
+                    </td>
+                    <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td>
+                      <div className="sa-actions-inline">
+                        <button className="btn btn-secondary btn-tiny" onClick={() => startEdit(u)} title="Редактировать">
+                          <Pencil size={12} />
+                        </button>
+                        <button className="btn btn-danger btn-tiny" onClick={() => handleDelete(u.id, u.username)} title="Удалить">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

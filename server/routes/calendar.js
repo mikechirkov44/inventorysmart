@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'month and year required' });
     }
 
-    const events = await getCalendarEvents(year, month);
+    const events = await getCalendarEvents(year, month, req.user.companyId);
     res.json(events);
   } catch (error) {
     console.error('Route error:', error);

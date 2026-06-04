@@ -21,7 +21,7 @@ const { imageUpload } = require('../utils/upload');
  */
 router.get('/', async (req, res) => {
   try {
-    let equipment = await Equipment.findAll();
+    let equipment = await Equipment.findAll(req.user.companyId);
     const { name, category, location, search } = req.query;
 
     if (search) {
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const equipment = await Equipment.findById(req.params.id);
+    const equipment = await Equipment.findById(req.params.id, req.user.companyId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -82,7 +82,7 @@ router.get('/:id', async (req, res) => {
  */
 router.get('/:id/qr', async (req, res) => {
   try {
-    const equipment = await Equipment.findById(req.params.id);
+    const equipment = await Equipment.findById(req.params.id, req.user.companyId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -128,7 +128,7 @@ router.post('/', imageUpload.single('photo'), async (req, res) => {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
     }
     
-    const equipment = await Equipment.create(equipmentData);
+    const equipment = await Equipment.create(equipmentData, req.user.companyId);
     res.status(201).json(equipment);
   } catch (error) {
     console.error('Route error:', error);
@@ -156,7 +156,7 @@ router.put('/:id', imageUpload.single('photo'), async (req, res) => {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
     }
     
-    const equipment = await Equipment.update(req.params.id, equipmentData);
+    const equipment = await Equipment.update(req.params.id, equipmentData, req.user.companyId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
@@ -176,7 +176,7 @@ router.put('/:id', imageUpload.single('photo'), async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Equipment.remove(req.params.id);
+    const deleted = await Equipment.remove(req.params.id, req.user.companyId);
     if (!deleted) {
       return res.status(404).json({ error: 'Equipment not found' });
     }

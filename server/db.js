@@ -218,6 +218,22 @@ async function migrate() {
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_id UUID;
     `);
 
+    // Multi-tenant: add company_id to all data tables and backfill
+    const tables = [
+      'equipment', 'employees', 'works', 'rooms', 'spare_parts',
+      'spare_part_receipts', 'work_orders', 'incidents'
+    ];
+    for (const table of tables) {
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '${table}' AND column_name = 'company_id') THEN
+            ALTER TABLE ${table} ADD COLUMN company_id UUID REFERENCES company_settings(company_id) ON DELETE CASCADE;
+            UPDATE ${table} SET company_id = (SELECT company_id FROM company_settings ORDER BY created_at LIMIT 1) WHERE company_id IS NULL;
+          END IF;
+        END $$;
+      `);
+    }
+
     // Seed default company for existing data
     const { rows: csCount } = await client.query('SELECT COUNT(*) FROM company_settings');
     if (parseInt(csCount[0].count) === 0) {

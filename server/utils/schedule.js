@@ -14,8 +14,8 @@ const Employee = require('../models/employee');
  * ключом которого является id работы
  * @returns {Promise<Record<string, import('../models/work')>>} Словарь работ по ID
  */
-async function getWorkMap() {
-  const allWorks = await Work.findAll();
+async function getWorkMap(companyId) {
+  const allWorks = await Work.findAll(companyId);
   const map = {};
   allWorks.forEach(w => { map[w.id] = w; });
   return map;
@@ -30,8 +30,8 @@ async function getWorkMap() {
  *   frequencyDays: number, category: string, lastCompleted: string|null,
  *   nextDue: string|null, isOverdue: boolean}>>} Список задач с датами
  */
-async function getEquipmentSchedule(equipment, workMap) {
-  const workOrders = await WorkOrder.findByEquipmentId(equipment.id);
+async function getEquipmentSchedule(equipment, workMap, companyId) {
+  const workOrders = await WorkOrder.findByEquipmentId(equipment.id, companyId);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -85,11 +85,11 @@ async function getEquipmentSchedule(equipment, workMap) {
  *   lastCompleted: string|null, roomName: string|null,
  *   employeeName: string|null}>>>} События, сгруппированные по дням (YYYY-MM-DD)
  */
-async function getCalendarEvents(year, month) {
-  const allEquipment = await Equipment.findAll();
-  const workMap = await getWorkMap();
-  const allRooms = await Room.findAll();
-  const allEmployees = await Employee.findAll();
+async function getCalendarEvents(year, month, companyId) {
+  const allEquipment = await Equipment.findAll(companyId);
+  const workMap = await getWorkMap(companyId);
+  const allRooms = await Room.findAll(companyId);
+  const allEmployees = await Employee.findAll(companyId);
 
   const roomMap = {};
   allRooms.forEach(r => { roomMap[r.id] = r; });
@@ -99,7 +99,7 @@ async function getCalendarEvents(year, month) {
   const events = {};
 
   for (const equip of allEquipment) {
-    const tasks = await getEquipmentSchedule(equip, workMap);
+    const tasks = await getEquipmentSchedule(equip, workMap, companyId);
     const room = equip.room_id ? roomMap[equip.room_id] : null;
     const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
 
@@ -140,11 +140,11 @@ async function getCalendarEvents(year, month) {
  *   roomName: string|null, employeeId: string|null,
  *   employeeName: string|null}>>} Отсортированный список задач
  */
-async function getUpcomingTasks(daysAhead = 7) {
-  const allEquipment = await Equipment.findAll();
-  const workMap = await getWorkMap();
-  const allRooms = await Room.findAll();
-  const allEmployees = await Employee.findAll();
+async function getUpcomingTasks(daysAhead = 7, companyId) {
+  const allEquipment = await Equipment.findAll(companyId);
+  const workMap = await getWorkMap(companyId);
+  const allRooms = await Room.findAll(companyId);
+  const allEmployees = await Employee.findAll(companyId);
 
   const roomMap = {};
   allRooms.forEach(r => { roomMap[r.id] = r; });
@@ -159,7 +159,7 @@ async function getUpcomingTasks(daysAhead = 7) {
   const upcoming = [];
 
   for (const equip of allEquipment) {
-    const tasks = await getEquipmentSchedule(equip, workMap);
+    const tasks = await getEquipmentSchedule(equip, workMap, companyId);
     const room = equip.room_id ? roomMap[equip.room_id] : null;
     const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
 

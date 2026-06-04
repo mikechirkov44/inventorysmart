@@ -25,11 +25,11 @@ const Employee = require('../models/employee');
 router.get('/', async (req, res) => {
   try {
     const groupBy = req.query.group || 'employee';
-    const allEquipment = await Equipment.findAll();
-    const allWorks = await Work.findAll();
-    const allWorkOrders = await WorkOrder.findAll();
-    const allRooms = await Room.findAll();
-    const allEmployees = await Employee.findAll();
+    const allEquipment = await Equipment.findAll(req.user.companyId);
+    const allWorks = await Work.findAll(req.user.companyId);
+    const allWorkOrders = await WorkOrder.findAll(req.user.companyId);
+    const allRooms = await Room.findAll(req.user.companyId);
+    const allEmployees = await Employee.findAll(req.user.companyId);
 
     const workMap = {};
     allWorks.forEach(w => { workMap[w.id] = w; });

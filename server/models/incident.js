@@ -38,8 +38,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список инцидентов
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM incidents ORDER BY created_at DESC');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM incidents WHERE company_id = $1 ORDER BY created_at DESC', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -49,8 +49,8 @@ module.exports = {
    * @param {number} id - Идентификатор инцидента
    * @returns {Promise<Object|null>} Объект инцидента или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM incidents WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM incidents WHERE id = $1 AND company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -76,10 +76,10 @@ module.exports = {
    * @param {Array<string>} [data.photos] - Массив путей к фотографиям
    * @returns {Promise<Object>} Созданный инцидент (статус: new)
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '']
+      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '', companyId]
     );
     return mapRow(rows[0]);
   },
@@ -91,7 +91,7 @@ module.exports = {
    * @param {Object} data - Данные для обновления (status, adminNotes, photos и т.д.)
    * @returns {Promise<Object|null>} Обновлённый инцидент или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { adminNotes: 'admin_notes' };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
@@ -109,7 +109,8 @@ module.exports = {
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const vals = keys.map(k => mapped[k]);
     vals.push(id);
-    const { rows } = await query(`UPDATE incidents SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals);
+    vals.push(companyId);
+    const { rows } = await query(`UPDATE incidents SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length} RETURNING *`, vals);
     return mapRow(rows[0]);
   },
 
@@ -119,8 +120,8 @@ module.exports = {
    * @param {number} id - Идентификатор инцидента
    * @returns {Promise<boolean>} true если удалён, иначе false
    */
-  remove: async (id) => {
-    const incident = await module.exports.findById(id);
+  remove: async (id, companyId) => {
+    const incident = await module.exports.findById(id, companyId);
     if (incident && incident.photos) {
       let photos = incident.photos;
       if (typeof photos === 'string') { try { photos = JSON.parse(photos); } catch (_) { photos = []; } }
@@ -131,7 +132,7 @@ module.exports = {
         });
       }
     }
-    const { rowCount } = await query('DELETE FROM incidents WHERE id = $1', [id]);
+    const { rowCount } = await query('DELETE FROM incidents WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   }
 };

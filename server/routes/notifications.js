@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
       return res.json(all);
     }
 
-    const employee = await Employee.findById(userId);
+    const employee = await Employee.findById(userId, req.user.companyId);
     if (!employee) {
       return res.json(await Notification.findByUser(userId));
     }

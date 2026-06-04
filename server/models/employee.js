@@ -32,8 +32,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список сотрудников
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM employees ORDER BY last_name, first_name');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM employees WHERE company_id = $1 ORDER BY last_name, first_name', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -43,8 +43,8 @@ module.exports = {
    * @param {number} id - Идентификатор сотрудника
    * @returns {Promise<Object|null>} Объект сотрудника или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM employees WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM employees WHERE id = $1 AND company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -60,10 +60,10 @@ module.exports = {
    * @param {string} [data.email] - Email
    * @returns {Promise<Object>} Созданный сотрудник
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO employees (first_name, last_name, middle_name, position_id, phone, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.phone || '', data.email || '']
+      'INSERT INTO employees (first_name, last_name, middle_name, position_id, phone, email, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.phone || '', data.email || '', companyId]
     );
     return mapRow(rows[0]);
   },
@@ -75,7 +75,7 @@ module.exports = {
    * @param {Object} data - Данные для обновления (любые поля таблицы employees)
    * @returns {Promise<Object|null>} Обновлённый сотрудник или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id' };
     const fields = [];
     const values = [];
@@ -90,7 +90,8 @@ module.exports = {
     if (fields.length === 0) return null;
     fields.push('updated_at = NOW()');
     values.push(id);
-    const { rows } = await query(`UPDATE employees SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values);
+    values.push(companyId);
+    const { rows } = await query(`UPDATE employees SET ${fields.join(', ')} WHERE id = $${i} AND company_id = $${i + 1} RETURNING *`, values);
     return mapRow(rows[0]);
   },
 
@@ -100,8 +101,8 @@ module.exports = {
    * @param {number} id - Идентификатор сотрудника
    * @returns {Promise<boolean>} true если удалён, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM employees WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM employees WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   }
 };

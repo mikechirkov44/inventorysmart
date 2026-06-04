@@ -48,14 +48,14 @@ function mapItemRow(row) {
  * @async
  * @returns {string} Номер документа
  */
-async function generateDocumentNumber() {
+async function generateDocumentNumber(companyId) {
   const year = new Date().getFullYear();
   const prefix = `ПЗИП-${year}-`;
   const { rows } = await query(
     `SELECT document_number FROM spare_part_receipts
-     WHERE document_number LIKE $1
+     WHERE document_number LIKE $1 AND company_id = $2
      ORDER BY document_number DESC LIMIT 1`,
-    [`${prefix}%`]
+    [`${prefix}%`, companyId]
   );
   if (rows.length === 0) {
     return `${prefix}001`;
@@ -71,8 +71,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список поступлений с полем items
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM spare_part_receipts ORDER BY date DESC, created_at DESC');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM spare_part_receipts WHERE company_id = $1 ORDER BY date DESC, created_at DESC', [companyId]);
     const receipts = rows.map(mapRow);
 
     for (const r of receipts) {
@@ -100,8 +100,8 @@ module.exports = {
    * @param {number} id - Идентификатор поступления
    * @returns {Promise<Object|null>} Объект поступления или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM spare_part_receipts WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM spare_part_receipts WHERE id = $1 AND company_id = $2', [id, companyId]);
     const receipt = mapRow(rows[0]);
     if (!receipt) return null;
 
@@ -143,15 +143,15 @@ module.exports = {
    * @param {number} [data.items[].unitPrice] - Цена за единицу
    * @returns {Promise<Object>} Созданное поступление с позициями
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const client = await require('../db').pool.connect();
     try {
       await client.query('BEGIN');
 
-      const docNumber = data.documentNumber || await generateDocumentNumber();
+      const docNumber = data.documentNumber || await generateDocumentNumber(companyId);
       const { rows: receiptRows } = await client.query(
-        'INSERT INTO spare_part_receipts (document_number, date, supplier, notes) VALUES ($1, $2, $3, $4) RETURNING *',
-        [docNumber, data.date || new Date().toISOString().split('T')[0], data.supplier || '', data.notes || '']
+        'INSERT INTO spare_part_receipts (document_number, date, supplier, notes, company_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [docNumber, data.date || new Date().toISOString().split('T')[0], data.supplier || '', data.notes || '', companyId]
       );
       const receipt = receiptRows[0];
 
@@ -174,7 +174,7 @@ module.exports = {
       }
 
       await client.query('COMMIT');
-      return await module.exports.findById(receipt.id);
+      return await module.exports.findById(receipt.id, companyId);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -189,7 +189,7 @@ module.exports = {
    * @param {number} id - Идентификатор поступления
    * @returns {Promise<boolean>} true если удалено, иначе false
    */
-  remove: async (id) => {
+  remove: async (id, companyId) => {
     const client = await require('../db').pool.connect();
     try {
       await client.query('BEGIN');
@@ -207,7 +207,7 @@ module.exports = {
       }
 
       await client.query('DELETE FROM spare_part_receipt_items WHERE receipt_id = $1', [id]);
-      const { rowCount } = await client.query('DELETE FROM spare_part_receipts WHERE id = $1', [id]);
+      const { rowCount } = await client.query('DELETE FROM spare_part_receipts WHERE id = $1 AND company_id = $2', [id, companyId]);
 
       await client.query('COMMIT');
       return rowCount > 0;

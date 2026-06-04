@@ -40,8 +40,8 @@ module.exports = {
    * @async
    * @returns {Promise<Array<Object>>} Список нарядов-заказов
    */
-  findAll: async () => {
-    const { rows } = await query('SELECT * FROM work_orders ORDER BY created_at DESC');
+  findAll: async (companyId) => {
+    const { rows } = await query('SELECT * FROM work_orders WHERE company_id = $1 ORDER BY created_at DESC', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -51,8 +51,8 @@ module.exports = {
    * @param {number} id - Идентификатор наряда-заказа
    * @returns {Promise<Object|null>} Объект наряда-заказа или null
    */
-  findById: async (id) => {
-    const { rows } = await query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  findById: async (id, companyId) => {
+    const { rows } = await query('SELECT * FROM work_orders WHERE id = $1 AND company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -62,8 +62,8 @@ module.exports = {
    * @param {number} equipmentId - ID оборудования
    * @returns {Promise<Array<Object>>} Список нарядов-заказов
    */
-  findByEquipmentId: async (equipmentId) => {
-    const { rows } = await query('SELECT * FROM work_orders WHERE equipment_id = $1 ORDER BY created_at DESC', [equipmentId]);
+  findByEquipmentId: async (equipmentId, companyId) => {
+    const { rows } = await query('SELECT * FROM work_orders WHERE equipment_id = $1 AND company_id = $2 ORDER BY created_at DESC', [equipmentId, companyId]);
     return rows.map(mapRow);
   },
 
@@ -81,10 +81,10 @@ module.exports = {
    * @param {Array<Object>} [data.sparePartsUsed] - Использованные запчасти
    * @returns {Promise<Object>} Созданный наряд-заказ
    */
-  create: async (data) => {
+  create: async (data, companyId) => {
     const status = data.status || 'pending';
     const { rows } = await query(
-      'INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      'INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
       [
         data.equipmentId,
         data.taskId || null,
@@ -94,7 +94,8 @@ module.exports = {
         data.notes || '',
         JSON.stringify(data.photos || []),
         JSON.stringify(data.sparePartsUsed || []),
-        status === 'completed' ? new Date().toISOString() : null
+        status === 'completed' ? new Date().toISOString() : null,
+        companyId
       ]
     );
     return mapRow(rows[0]);
@@ -108,7 +109,7 @@ module.exports = {
    * @param {Object} data - Данные для обновления
    * @returns {Promise<Object|null>} Обновлённый наряд-заказ или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const fieldMap = {
       equipmentId: 'equipment_id', taskId: 'task_id', taskName: 'task_name',
       masterName: 'master_name', sparePartsUsed: 'spare_parts_used', completedAt: 'completed_at'
@@ -138,7 +139,8 @@ module.exports = {
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const vals = keys.map(k => mapped[k]);
     vals.push(id);
-    const { rows } = await query(`UPDATE work_orders SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals);
+    vals.push(companyId);
+    const { rows } = await query(`UPDATE work_orders SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length} RETURNING *`, vals);
     return mapRow(rows[0]);
   },
 
@@ -148,8 +150,8 @@ module.exports = {
    * @param {number} id - Идентификатор наряда-заказа
    * @returns {Promise<boolean>} true если удалён, иначе false
    */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM work_orders WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const { rowCount } = await query('DELETE FROM work_orders WHERE id = $1 AND company_id = $2', [id, companyId]);
     return rowCount > 0;
   },
 
@@ -159,9 +161,9 @@ module.exports = {
    * @param {Array<Object>} items - Массив данных нарядов-заказов (см. create)
    * @returns {Promise<Array<Object>>} Список созданных нарядов-заказов
    */
-  createMany: async (items) => {
+  createMany: async (items, companyId) => {
     const results = [];
-    for (const item of items) { results.push(await module.exports.create(item)); }
+    for (const item of items) { results.push(await module.exports.create(item, companyId)); }
     return results;
   }
 };

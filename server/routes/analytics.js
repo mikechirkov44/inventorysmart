@@ -19,12 +19,12 @@ const Position = require('../models/position');
  * @function getAnalytics
  * @returns {Promise<Array>} Массив статистики по каждому сотруднику
  */
-async function getAnalytics() {
-  const allEquipment = await Equipment.findAll();
-  const allWorks = await Work.findAll();
-  const allWorkOrders = await WorkOrder.findAll();
-  const allRooms = await Room.findAll();
-  const allEmployees = await Employee.findAll();
+async function getAnalytics(companyId) {
+  const allEquipment = await Equipment.findAll(companyId);
+  const allWorks = await Work.findAll(companyId);
+  const allWorkOrders = await WorkOrder.findAll(companyId);
+  const allRooms = await Room.findAll(companyId);
+  const allEmployees = await Employee.findAll(companyId);
   const allPositions = await Position.findAll();
 
   const workMap = {};
@@ -172,7 +172,7 @@ async function getAnalytics() {
  */
 router.get('/', async (req, res) => {
   try {
-    const analytics = await getAnalytics();
+    const analytics = await getAnalytics(req.user.companyId);
     res.json(analytics);
   } catch (error) {
     console.error('Analytics error:', error);
@@ -194,7 +194,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/summary', async (req, res) => {
   try {
-    const analytics = await getAnalytics();
+    const analytics = await getAnalytics(req.user.companyId);
     const totalPlanned = analytics.reduce((s, e) => s + e.totalPlanned, 0);
     const totalCompleted = analytics.reduce((s, e) => s + e.totalCompleted, 0);
     const totalOnTime = analytics.reduce((s, e) => s + e.onTime, 0);
