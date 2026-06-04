@@ -15,7 +15,7 @@ echo "========================================="
 
 # 1. Установка Docker
 echo ""
-echo "[1/7] Проверка Docker..."
+echo "[1/8] Проверка Docker..."
 if ! command -v docker &> /dev/null; then
   echo "Установка Docker..."
   curl -fsSL https://get.docker.com | sh
@@ -26,7 +26,7 @@ echo "Docker $(docker -v | cut -d' ' -f3 | tr -d ',')"
 
 # 2. Установка Docker Compose
 echo ""
-echo "[2/7] Проверка Docker Compose..."
+echo "[2/8] Проверка Docker Compose..."
 if ! docker compose version &> /dev/null; then
   echo "Установка Docker Compose plugin..."
   sudo apt update -y
@@ -34,23 +34,53 @@ if ! docker compose version &> /dev/null; then
 fi
 echo "Docker Compose $(docker compose version --short)"
 
-# 3. Клонирование / обновление репозитория
+# 3. Получение кода
 echo ""
-echo "[3/7] Получение кода..."
+echo "[3/8] Получение кода..."
+
 if [ -d "$APP_DIR" ]; then
   echo "Обновление существующей директории..."
   cd "$APP_DIR"
-  git pull
-else
-  echo "Клонирование репозитория..."
-  sudo git clone "$REPO_URL" "$APP_DIR"
-  sudo chown -R $USER:$USER "$APP_DIR"
-  cd "$APP_DIR"
+  git pull || {
+    echo "git pull не удался. Попытка обновления через git archive..."
+    cd /
+    sudo rm -rf "$APP_DIR"
+  }
+fi
+
+if [ ! -d "$APP_DIR" ]; then
+  echo ""
+  echo "Репозиторий приватный. Выберите способ получения кода:"
+  echo "  1) Клонировать через HTTPS (потребуется логин/пароль GitHub)"
+  echo "  2) Загрузить через git archive (с локального компьютера)"
+  echo ""
+  read -p "  Ваш выбор (1/2): " CLONE_METHOD
+
+  if [ "$CLONE_METHOD" = "2" ]; then
+    echo ""
+    echo "  На локальном компьютере выполните:"
+    echo "    cd /path/to/inventorysmart"
+    echo "    git archive main | ssh root@$(hostname -I | awk '{print $1}') \"tar -x -C /opt\""
+    echo ""
+    echo "  Или загрузите архив через scp:"
+    echo "    git archive main -o inventorysmart.tar.gz"
+    echo "    scp inventorysmart.tar.gz root@$(hostname -I | awk '{print $1}'):/tmp/"
+    echo ""
+    read -p "  Нажмите Enter когда код будет загружен в $APP_DIR ..."
+    sudo mkdir -p "$APP_DIR"
+    sudo chown -R $USER:$USER "$APP_DIR"
+    cd "$APP_DIR"
+  else
+    echo "Клонирование репозитория..."
+    sudo git clone "$REPO_URL" "$APP_DIR"
+    sudo chown -R $USER:$USER "$APP_DIR"
+    cd "$APP_DIR"
+  fi
 fi
 
 # 4. Настройка переменных окружения
 echo ""
-echo "[4/7] Настройка переменных окружения..."
+echo "[4/8] Настройка переменных окружения..."
 
 # Загружаем .env если существует
 if [ -f .env ]; then
@@ -81,10 +111,11 @@ fi
 # Устанавливаем остальные переменные по умолчанию
 grep -q "^POSTGRES_DB=" .env 2>/dev/null || echo "POSTGRES_DB=inventorysmart" >> .env
 grep -q "^POSTGRES_USER=" .env 2>/dev/null || echo "POSTGRES_USER=inventorysmart" >> .env
+grep -q "^ADMIN_PORT=" .env 2>/dev/null || echo "ADMIN_PORT=8080" >> .env
 
 # 5. Запрос пароля суперадмина
 echo ""
-echo "[5/7] Настройка суперадмина..."
+echo "[5/8] Настройка суперадмина..."
 
 if [ -z "$SUPERADMIN_PASSWORD" ]; then
   echo ""
@@ -117,13 +148,13 @@ fi
 
 # 6. Сборка и запуск контейнеров
 echo ""
-echo "[6/7] Сборка и запуск контейнеров..."
+echo "[6/8] Сборка и запуск контейнеров..."
 docker compose down 2>/dev/null || true
 docker compose up -d --build
 
 # 7. Ожидание готовности
 echo ""
-echo "[7/7] Ожидание готовности сервера..."
+echo "[7/8] Ожидание готовности сервера..."
 sleep 3
 
 for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -134,16 +165,27 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
+# 8. Проверка результата
+echo ""
+echo "[8/8] Проверка..."
+
 IP=$(hostname -I | awk '{print $1}')
+
+if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+  STATUS="OK"
+else
+  STATUS="ОШИБКА — сервер не отвечает"
+fi
 
 echo ""
 echo "========================================="
 echo "  Деплой завершён!"
 echo "========================================="
 echo ""
+echo "  Статус:        $STATUS"
 echo "  Приложение:    http://$IP"
-echo "  Панель админа: http://$IP/admin/"
-echo "  API:           http://$IP/api/health"
+echo "  Панель админа: http://$IP:8080/"
+echo "  API:           http://$IP:3001/api/health"
 echo ""
 echo "  Суперадмин (панель /admin/):"
 echo "    Логин: superadmin"
