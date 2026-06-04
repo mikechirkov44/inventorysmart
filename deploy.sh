@@ -112,6 +112,7 @@ fi
 grep -q "^POSTGRES_DB=" .env 2>/dev/null || echo "POSTGRES_DB=inventorysmart" >> .env
 grep -q "^POSTGRES_USER=" .env 2>/dev/null || echo "POSTGRES_USER=inventorysmart" >> .env
 grep -q "^ADMIN_PORT=" .env 2>/dev/null || echo "ADMIN_PORT=8080" >> .env
+grep -q "^CORS_ORIGINS=" .env 2>/dev/null || echo "CORS_ORIGINS=" >> .env
 
 # 5. Запрос пароля суперадмина
 echo ""
@@ -122,11 +123,16 @@ if [ -z "$SUPERADMIN_PASSWORD" ]; then
   echo "  Создание учётной записи суперадминистратора."
   echo "  Логин: superadmin"
   echo ""
-  read -sp "  Пароль суперадмина (мин. 6 символов): " SA_PASSWORD_INPUT
+  read -sp "  Пароль суперадмина (мин. 8 символов, буквы+цифры): " SA_PASSWORD_INPUT
   echo ""
 
-  if [ ${#SA_PASSWORD_INPUT} -lt 6 ]; then
-    echo "  Ошибка: пароль должен быть не менее 6 символов."
+  if [ ${#SA_PASSWORD_INPUT} -lt 8 ]; then
+    echo "  Ошибка: пароль должен быть не менее 8 символов."
+    exit 1
+  fi
+
+  if ! echo "$SA_PASSWORD_INPUT" | grep -q '[a-zA-Zа-яА-Я]' || ! echo "$SA_PASSWORD_INPUT" | grep -q '[0-9]'; then
+    echo "  Ошибка: пароль должен содержать буквы и цифры."
     exit 1
   fi
 
