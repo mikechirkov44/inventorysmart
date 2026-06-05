@@ -643,16 +643,6 @@ function SettingsPage() {
               </div>
 
               <div className="settings-card settings-card-highlight">
-                {license && (
-                  <div className="license-status-badge">
-                    <span className={`license-badge ${license.status === 'demo' ? 'license-demo' : license.status === 'active' ? 'license-active' : 'license-blocked'}`}>
-                      {license.status === 'demo' && `DEMO — ${license.daysLeft} раб. дн.`}
-                      {license.status === 'active' && `Полная лицензия до ${new Date(license.expiresAt).toLocaleDateString('ru-RU')}`}
-                      {license.status === 'blocked' && 'Демо истёк'}
-                      {license.status === 'expired' && 'Лицензия истекла'}
-                    </span>
-                  </div>
-                )}
                 {license && license.plan && license.plan.toUpperCase() !== 'DEMO' && (
                   <div className="plan-info">
                     <span className="plan-badge">{license.plan}</span>
