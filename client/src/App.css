@@ -6005,6 +6005,8 @@ textarea:focus {
 .calendar-dropdown {
   min-width: 280px;
   padding: 12px;
+  max-height: none;
+  overflow-y: visible;
 }
 
 .calendar-header {
