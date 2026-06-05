@@ -8,12 +8,11 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2 } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
-import NotificationBell from './components/NotificationBell';
 import LoginPage from './pages/LoginPage';
 import EquipmentList from './pages/EquipmentList';
 import EquipmentTable from './pages/EquipmentTable';
@@ -33,6 +32,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SchedulePage from './pages/SchedulePage';
 import SettingsPage from './pages/SettingsPage';
 import SetupPage from './pages/SetupPage';
+import NotificationsPage from './pages/NotificationsPage';
 import './App.css';
 
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
@@ -148,12 +148,9 @@ function AppNav({ collapsed, onToggle }) {
         {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
         {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
+        <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}</NavLink></li>
       </ul>
       <div className="nav-footer">
-        <div className={`nav-notifications ${collapsed ? 'collapsed' : ''}`}>
-          <NotificationBell />
-          {!collapsed && <span className="nav-notif-label">Уведомления</span>}
-        </div>
         {!collapsed && (
           <div className="nav-user">
             <span className="nav-user-name">{user.fullName || user.username}</span>
@@ -238,6 +235,7 @@ function AppRoutes() {
       <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><PageWrapper><SparePartsReceipts /></PageWrapper></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute requiredPermission="import"><PageWrapper><ImportExcel /></PageWrapper></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><NotificationsPage /></PageWrapper></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

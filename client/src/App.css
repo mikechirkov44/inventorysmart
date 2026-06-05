@@ -3323,6 +3323,46 @@ input, textarea, select { font-family: inherit; }
   gap: 6px;
 }
 
+/* ===== NOTIFICATIONS PAGE ===== */
+.notifications-page { width: 100%; }
+
+.notifications-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.notif-type-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.notif-title-cell {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+
+.notif-message-cell {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.notif-date-cell {
+  font-size: 12px;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.row-highlight {
+  background: var(--primary-light);
+}
+
 .schedule-page .filter-row.compact {
   gap: 6px;
 }
