@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import CustomSelect from '../components/CustomSelect';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -455,10 +456,10 @@ function SchedulePage() {
                 <input type="text" placeholder="Поиск по оборудованию, работе, сотруднику..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <div className="filter-group">
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="От" />
+                <CustomDatePicker value={dateFrom} onChange={(v) => setDateFrom(v)} placeholder="От" />
               </div>
               <div className="filter-group">
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="До" />
+                <CustomDatePicker value={dateTo} onChange={(v) => setDateTo(v)} placeholder="До" />
               </div>
             </div>
 

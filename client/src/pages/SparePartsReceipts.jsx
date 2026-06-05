@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 /** Компонент управления приходными документами ЗИП */
 function SparePartsReceipts() {
@@ -202,7 +203,7 @@ function SparePartsReceipts() {
               </div>
               <div className="form-group">
                 <label>Дата</label>
-                <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+                <CustomDatePicker value={formData.date} onChange={(v) => setFormData({ ...formData, date: v })} />
               </div>
               <div className="form-group">
                 <label>Поставщик</label>
