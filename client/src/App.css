@@ -1784,10 +1784,18 @@ input, textarea, select { font-family: inherit; }
 .filter-row.compact {
   margin-top: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .filter-row.compact .filter-group {
   margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.filter-row.compact .filter-group.flex-1 {
+  flex: 1 1 200px;
+  min-width: 150px;
 }
 
 .filter-search {
@@ -3160,12 +3168,13 @@ input, textarea, select { font-family: inherit; }
 .filter-group.flex-1 { flex: 1; }
 
 .filter-group input[type="date"] {
-  padding: 8px 10px;
+  padding: 7px 8px;
   border: 1px solid var(--gray-300);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   background: white;
   font-family: inherit;
+  max-width: 160px;
 }
 
 .filter-group input[type="date"]:focus {
