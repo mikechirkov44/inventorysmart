@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -121,6 +122,17 @@ function DirDropdown({ collapsed }) {
 /** Боковая панель навигации приложения */
 function AppNav({ collapsed, onToggle }) {
   const { user, logout, canView } = useAuth();
+  const [companyName, setCompanyName] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      companyAPI.get().then(res => {
+        if (res.data && res.data.companyName) {
+          setCompanyName(res.data.companyName);
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -154,7 +166,7 @@ function AppNav({ collapsed, onToggle }) {
         {!collapsed && (
           <div className="nav-user">
             <span className="nav-user-name">{user.fullName || user.username}</span>
-            {user.companyName && <span className="nav-company-name">Компания: {user.companyName}</span>}
+            {companyName && <span className="nav-company-name">Компания: {companyName}</span>}
           </div>
         )}
         <button className="nav-logout" onClick={logout} title="Выйти">
