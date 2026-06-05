@@ -8,7 +8,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
@@ -36,7 +36,7 @@ import SetupPage from './pages/SetupPage';
 import './App.css';
 
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
-function DirDropdown() {
+function DirDropdown({ collapsed }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, isMobile: false });
@@ -99,8 +99,8 @@ function DirDropdown() {
     <li className={`nav-dropdown ${open ? 'open' : ''}`}>
       <button ref={triggerRef} className={`nav-dropdown-trigger ${isActive ? 'active' : ''}`} onClick={() => setOpen(!open)}>
         <FolderTree size={18} />
-        <span>Справочники</span>
-        <ChevronDown size={14} className={`dropdown-arrow ${open ? 'open' : ''}`} />
+        {!collapsed && <span>Справочники</span>}
+        {!collapsed && <ChevronDown size={14} className={`dropdown-arrow ${open ? 'open' : ''}`} />}
       </button>
       {open && createPortal(
         <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={menuStyle}>
@@ -119,48 +119,62 @@ function DirDropdown() {
 }
 
 /** Боковая панель навигации приложения */
-function AppNav() {
+function AppNav({ collapsed, onToggle }) {
   const { user, logout, canView } = useAuth();
 
   if (!user) return null;
 
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="nav-brand">
         <Link to="/">
           <img src="/logo.svg" alt="InventorySmart" className="nav-logo" />
-          InventorySmart
+          {!collapsed && <span>InventorySmart</span>}
         </Link>
       </div>
+      {user.companyName && (
+        <div className="nav-company">
+          <Building2 size={16} />
+          {!collapsed && <span>{user.companyName}</span>}
+        </div>
+      )}
       <ul className="nav-links">
-        <DirDropdown />
-        {canView('workOrders') && <li><NavLink to="/work-orders"><ClipboardList size={18} /><span>Журнал</span></NavLink></li>}
-        {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} /><span>Документы</span></NavLink></li>}
-        {canView('scanner') && <li><NavLink to="/scan"><ScanLine size={18} /><span>QR-сканер</span></NavLink></li>}
-        {canView('schedule') && <li><NavLink to="/schedule"><CalendarDays size={18} /><span>План-график</span></NavLink></li>}
-        {canView('incidents') && <li><NavLink to="/incidents"><AlertTriangle size={18} /><span>Инциденты</span></NavLink></li>}
-        {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} /><span>Аналитика</span></NavLink></li>}
-        {canView('import') && <li><NavLink to="/import"><Upload size={18} /><span>Импорт</span></NavLink></li>}
-        {canView('settings') && <li><NavLink to="/settings"><Settings size={18} /><span>Настройки</span></NavLink></li>}
+        <DirDropdown collapsed={collapsed} />
+        {canView('workOrders') && <li><NavLink to="/work-orders"><ClipboardList size={18} />{!collapsed && <span>Журнал</span>}</NavLink></li>}
+        {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} />{!collapsed && <span>Документы</span>}</NavLink></li>}
+        {canView('scanner') && <li><NavLink to="/scan"><ScanLine size={18} />{!collapsed && <span>QR-сканер</span>}</NavLink></li>}
+        {canView('schedule') && <li><NavLink to="/schedule"><CalendarDays size={18} />{!collapsed && <span>План-график</span>}</NavLink></li>}
+        {canView('incidents') && <li><NavLink to="/incidents"><AlertTriangle size={18} />{!collapsed && <span>Инциденты</span>}</NavLink></li>}
+        {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
+        {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
+        {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
       </ul>
+      <div className="nav-footer">
+        {!collapsed && (
+          <div className="nav-user">
+            <span className="nav-user-name">{user.fullName || user.username}</span>
+          </div>
+        )}
+        <button className="nav-logout" onClick={logout} title="Выйти">
+          <LogOut size={18} />
+          {!collapsed && <span>Выйти</span>}
+        </button>
+        <button className="nav-collapse-btn" onClick={onToggle} title={collapsed ? 'Развернуть' : 'Свернуть'}>
+          {collapsed ? <PanelRight size={18} /> : <PanelLeft size={18} />}
+          {!collapsed && <span>Свернуть</span>}
+        </button>
+      </div>
     </nav>
   );
 }
 
-/** Верхняя шапка с уведомлениями и информацией о пользователе */
+/** Верхняя шапка (минимальная) */
 function TopHeader() {
-  const { user, logout, license } = useAuth();
+  const { user } = useAuth();
   if (!user) return null;
-
   return (
     <header className="top-header">
-      {user.companyName && <span className="top-header-company">{user.companyName}</span>}
-      <div className="top-header-spacer" />
-      <div className="top-header-user">
-        <NotificationBell />
-        <span className="top-header-name">{user.fullName || user.username}</span>
-        <button onClick={logout} className="btn btn-small top-header-logout">Выйти</button>
-      </div>
+      <NotificationBell />
     </header>
   );
 }
@@ -239,13 +253,15 @@ function AppRoutes() {
 
 /** Корневой компонент приложения с провайдерами и маршрутизацией */
 function App() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return (
     <Router>
       <AuthProvider>
         <ToastProvider>
           <ConfirmProvider>
-            <div className="app">
-              <AppNav />
+            <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+              <AppNav collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
               <div className="main-area">
                 <TopHeader />
                 <main className="main-content">
