@@ -45,6 +45,7 @@ services:
     container_name: inventorysmart-client
     restart: unless-stopped
     volumes:
+      - ./client/dist:/usr/share/nginx/html:ro
       - ./server.crt:/etc/nginx/ssl/server.crt:ro
       - ./server.key:/etc/nginx/ssl/server.key:ro
     ports:

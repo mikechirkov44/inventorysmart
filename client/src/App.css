@@ -44,7 +44,11 @@
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  --white: #ffffff;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --gradient-primary-hover: linear-gradient(135deg, #4338ca, #6d28d9);
+  --gradient-danger: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 body {
@@ -110,7 +114,9 @@ input, textarea, select { font-family: inherit; }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: white;
   width: 240px;
   min-width: 240px;
@@ -120,7 +126,7 @@ input, textarea, select { font-family: inherit; }
   z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.15);
   overflow: visible;
   transition: width 0.3s ease, min-width 0.3s ease;
 }
@@ -196,9 +202,21 @@ input, textarea, select { font-family: inherit; }
 }
 
 .nav-links a.active {
-  background: var(--primary);
+  background: rgba(79, 70, 229, 0.15);
   color: white;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  position: relative;
+}
+
+.nav-links a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 0 4px 4px 0;
 }
 
 .nav-company {
@@ -737,34 +755,51 @@ input, textarea, select { font-family: inherit; }
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--gradient-primary);
   color: #ffffff !important;
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px var(--primary-glow);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 16px var(--primary-glow), 0 2px 8px var(--primary-glow);
+  background: var(--gradient-primary-hover);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  box-shadow: 0 1px 4px var(--primary-glow);
+  background: #3730a3;
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
 }
 
 .btn-danger {
-  background: white;
-  color: var(--danger);
-  border-color: rgba(220, 38, 38, 0.25);
+  background: var(--gradient-danger);
+  color: #ffffff !important;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 
 .btn-danger:hover {
-  background: var(--danger);
-  color: white !important;
-  border-color: var(--danger);
-  box-shadow: 0 4px 12px var(--danger-glow);
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
   transform: translateY(-1px);
+}
+
+.btn-danger:active {
+  background: #991b1b;
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
+}
+
+/* Remove overlay flicker on colored buttons */
+.btn-primary::after,
+.btn-danger::after {
+  display: none;
+}
+
+.btn-primary:active {
+  box-shadow: 0 1px 4px var(--primary-glow);
 }
 
 .btn-secondary {
@@ -848,7 +883,7 @@ input, textarea, select { font-family: inherit; }
 .form-group select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  box-shadow: 0 0 0 4px var(--primary-glow), 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .form-group input::placeholder,
@@ -978,22 +1013,15 @@ input, textarea, select { font-family: inherit; }
 
 .equipment-card {
   background: white;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--gray-100);
 }
 
 .equipment-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-  border-color: var(--gray-200);
-}
-
-.equipment-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
 }
 
 .card-photo {
@@ -1002,12 +1030,16 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 12px;
+  margin: 12px 12px 0;
+  overflow: hidden;
 }
 
 .card-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 12px;
 }
 
 .no-photo {
@@ -2026,6 +2058,7 @@ input, textarea, select { font-family: inherit; }
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table th {
@@ -5710,26 +5743,21 @@ input, textarea, select { font-family: inherit; }
 }
 
 .cs-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 100%;
-  width: max-content;
-  min-width: 200px;
   background: #ffffff !important;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
   box-shadow: 0 12px 36px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 9999;
-  max-height: none;
-  overflow-y: visible;
+  width: max-content;
+  min-width: 100%;
   padding: 4px;
   opacity: 1 !important;
+  animation: csSlideIn 0.15s ease-out;
+  box-sizing: border-box;
 }
 
 @keyframes csSlideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .cs-option {
