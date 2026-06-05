@@ -154,6 +154,7 @@ function AppNav({ collapsed, onToggle }) {
         {!collapsed && (
           <div className="nav-user">
             <span className="nav-user-name">{user.fullName || user.username}</span>
+            {user.companyName && <span className="nav-company-name">Компания: {user.companyName}</span>}
           </div>
         )}
         <button className="nav-logout" onClick={logout} title="Выйти">

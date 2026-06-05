@@ -266,6 +266,12 @@ input, textarea, select { font-family: inherit; }
   color: white;
 }
 
+.nav-company-name {
+  color: var(--gray-400);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
 .nav-logout,
 .nav-collapse-btn {
   background: none;
