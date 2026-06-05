@@ -38,6 +38,7 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef(null);
   const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const selectedDate = parseDateValue(value);
 
@@ -69,7 +70,14 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
 
   useEffect(() => {
     const handler = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
     };
     if (open) {
       document.addEventListener('mousedown', handler);
@@ -137,6 +145,7 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
       </button>
       {open && createPortal(
         <div
+          ref={dropdownRef}
           className="cs-dropdown calendar-dropdown"
           style={{
             position: 'fixed',

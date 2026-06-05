@@ -18,6 +18,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef(null);
   const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const updatePosition = () => {
     if (!triggerRef.current) return;
@@ -59,7 +60,12 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
 
   useEffect(() => {
     const handler = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
         setOpen(false);
       }
     };
@@ -99,6 +105,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
       </button>
       {open && createPortal(
         <div
+          ref={dropdownRef}
           className="cs-dropdown"
           style={{
             position: 'fixed',
