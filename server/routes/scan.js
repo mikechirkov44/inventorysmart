@@ -43,7 +43,7 @@ router.get('/:code', async (req, res) => {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
-    if (equipment.company_id !== req.user.companyId) {
+    if (equipment.companyId !== req.user.companyId) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
@@ -170,7 +170,7 @@ router.post('/complete', async (req, res) => {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 
-    if (equipment.company_id !== req.user.companyId) {
+    if (equipment.companyId !== req.user.companyId) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
 

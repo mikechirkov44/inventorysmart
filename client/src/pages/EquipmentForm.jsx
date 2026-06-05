@@ -9,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
+import { Upload } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -209,7 +210,11 @@ function EquipmentForm() {
           <div className="form-sidebar">
             <div className="form-group">
               <label>Фотография</label>
-              <input type="file" accept="image/*" onChange={handlePhotoChange} />
+              <label className="btn btn-secondary logo-upload-btn" style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                <Upload size={16} />
+                <span>Загрузить фото</span>
+                <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+              </label>
               {photoPreview && (
                 <img src={photoPreview} alt="Preview" className="photo-preview" />
               )}

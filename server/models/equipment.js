@@ -24,6 +24,7 @@ function mapRow(row) {
     roomId: row.room_id,
     category: row.category,
     status: row.status,
+    companyId: row.company_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
