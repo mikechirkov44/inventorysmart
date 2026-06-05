@@ -155,14 +155,6 @@ function TopHeader() {
   return (
     <header className="top-header">
       {user.companyName && <span className="top-header-company">{user.companyName}</span>}
-      {license && (
-        <span className={`license-badge ${license.status === 'demo' ? 'license-demo' : license.status === 'active' ? 'license-active' : 'license-blocked'}`}>
-          {license.status === 'demo' && `DEMO — ${license.daysLeft} раб. дн.`}
-          {license.status === 'active' && `Полная лицензия до ${new Date(license.expiresAt).toLocaleDateString('ru-RU')}`}
-          {license.status === 'blocked' && 'Демо истёк'}
-          {license.status === 'expired' && 'Лицензия истекла'}
-        </span>
-      )}
       <div className="top-header-spacer" />
       <div className="top-header-user">
         <NotificationBell />

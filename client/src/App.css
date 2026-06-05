@@ -345,6 +345,10 @@ input, textarea, select { font-family: inherit; }
   color: #991b1b;
 }
 
+.license-status-badge {
+  margin-bottom: 12px;
+}
+
 .top-header-logout {
   color: var(--gray-500) !important;
   border-color: var(--gray-300) !important;
