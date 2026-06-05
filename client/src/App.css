@@ -1986,9 +1986,8 @@ input, textarea, select { font-family: inherit; }
 }
 
 .filter-row.compact .filter-group.flex-1 {
-  flex: 0 1 300px;
-  min-width: 150px;
-  max-width: 400px;
+  flex: 1 1 300px;
+  min-width: 200px;
 }
 
 .filter-search {

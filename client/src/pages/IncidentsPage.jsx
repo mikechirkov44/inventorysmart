@@ -4,9 +4,9 @@
  * позволяет обновлять статус, добавлять заметки и удалять инциденты.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import api, { incidentsAPI, equipmentAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
@@ -26,6 +26,15 @@ function IncidentsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [allowInspectionWithoutQr, setAllowInspectionWithoutQr] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [allEquipment, setAllEquipment] = useState([]);
+  const [newEquipmentId, setNewEquipmentId] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newPhotos, setNewPhotos] = useState([]);
+  const [newPreviews, setNewPreviews] = useState([]);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -46,6 +55,24 @@ function IncidentsPage() {
   /** Перезагрузка инцидентов при изменении фильтра статуса */
   useEffect(() => { fetchIncidents(); }, [filterStatus]);
 
+  /** Загрузка настройки компании и справочника оборудования */
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await companyAPI.get();
+        setAllowInspectionWithoutQr(res.data.allowInspectionWithoutQr);
+      } catch {}
+    };
+    const fetchAllEquipment = async () => {
+      try {
+        const res = await equipmentAPI.getAll();
+        setAllEquipment(res.data);
+      } catch {}
+    };
+    fetchSettings();
+    fetchAllEquipment();
+  }, []);
+
   /** Обновление статуса и заметки инцидента */
   const updateStatus = async (id, status) => {
     try {
@@ -54,6 +81,58 @@ function IncidentsPage() {
       setAdminNotes('');
       fetchIncidents();
     } catch { toast.error('Ошибка', 'Не удалось обновить статус'); }
+  };
+
+  /** Обработка выбора фотографий для нового инцидента */
+  const handlePhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (newPhotos.length + files.length > 5) {
+      toast.error('Максимум 5 фотографий');
+      return;
+    }
+    setNewPhotos(prev => [...prev, ...files]);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => setNewPreviews(prev => [...prev, reader.result]);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /** Удаление фотографии по индексу */
+  const removePhoto = (index) => {
+    setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    setNewPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  /** Создание нового инцидента вручную */
+  const handleAddSubmit = async () => {
+    if (!newEquipmentId) {
+      toast.error('Ошибка', 'Выберите оборудование');
+      return;
+    }
+    if (!newDescription.trim()) {
+      toast.error('Ошибка', 'Опишите проблему');
+      return;
+    }
+    setAddSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('equipmentId', newEquipmentId);
+      formData.append('description', newDescription);
+      newPhotos.forEach(photo => formData.append('photos', photo));
+      await incidentsAPI.create(formData);
+      toast.success('Инцидент создан');
+      setShowAddModal(false);
+      setNewEquipmentId('');
+      setNewDescription('');
+      setNewPhotos([]);
+      setNewPreviews([]);
+      fetchIncidents();
+    } catch {
+      toast.error('Ошибка', 'Не удалось создать инцидент');
+    } finally {
+      setAddSubmitting(false);
+    }
   };
 
   /** Удаление инцидента с подтверждением */
@@ -69,6 +148,11 @@ function IncidentsPage() {
     <div className="directory-page">
       <div className="header">
         <h1>Инциденты (поломки)</h1>
+        {allowInspectionWithoutQr && (
+          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
+            + Добавить инцидент
+          </button>
+        )}
       </div>
 
       {/* Панель фильтрации по статусу */}
@@ -170,6 +254,69 @@ function IncidentsPage() {
                 )}
                 <button onClick={() => setSelectedIncident(null)} className="btn">Закрыть</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно создания инцидента вручную */}
+      {showAddModal && (
+        <div className="complete-task-modal" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Новый инцидент</h3>
+            <div className="form-group">
+              <label>Оборудование *</label>
+              <CustomSelect
+                value={newEquipmentId}
+                onChange={setNewEquipmentId}
+                placeholder="Выберите оборудование"
+                options={allEquipment.map(e => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Описание проблемы *</label>
+              <textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Опишите что произошло..."
+                rows="4"
+              />
+            </div>
+            <div className="form-group">
+              <label>Фотографии ({newPhotos.length}/5)</label>
+              <div className="photo-upload-area">
+                <div className="photo-previews">
+                  {newPreviews.map((src, idx) => (
+                    <div key={idx} className="photo-preview-item">
+                      <img src={src} alt="" />
+                      <button type="button" onClick={() => removePhoto(idx)} className="photo-remove">✕</button>
+                    </div>
+                  ))}
+                </div>
+                {newPhotos.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn btn-secondary photo-add-btn"
+                  >
+                    📷 Добавить фото
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoChange}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleAddSubmit} className="btn btn-primary" disabled={addSubmitting}>
+                {addSubmitting ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button onClick={() => setShowAddModal(false)} className="btn">Отмена</button>
             </div>
           </div>
         </div>

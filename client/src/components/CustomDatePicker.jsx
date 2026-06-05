@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 const MONTHS = [
@@ -34,17 +35,55 @@ function parseDateValue(value) {
 export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.ММ.ГГГГ', className = '' }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(parseDateValue(value) || new Date());
-  const ref = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const wrapperRef = useRef(null);
+  const triggerRef = useRef(null);
 
   const selectedDate = parseDateValue(value);
 
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const winH = window.innerHeight;
+    const dropdownHeight = 320;
+    let top = rect.bottom + 4;
+    if (top + dropdownHeight > winH - 8) {
+      top = Math.max(8, rect.top - dropdownHeight - 4);
+    }
+    setPos({ top, left: rect.left, width: rect.width });
+  };
+
+  useEffect(() => {
+    if (open) {
+      updatePosition();
+      const onScroll = () => setOpen(false);
+      const onResize = () => setOpen(false);
+      window.addEventListener('scroll', onScroll, true);
+      window.addEventListener('resize', onResize);
+      return () => {
+        window.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onResize);
+      };
+    }
+  }, [open]);
+
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    if (open) {
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    if (open) {
+      document.addEventListener('keydown', onKey);
+      return () => document.removeEventListener('keydown', onKey);
+    }
+  }, [open]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -84,15 +123,29 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
     : '';
 
   return (
-    <div ref={ref} className={`cs-wrapper ${className}`}>
-      <button type="button" className={`cs-trigger ${open ? 'cs-open' : ''}`} onClick={() => setOpen(!open)}>
+    <div ref={wrapperRef} className={`cs-wrapper ${className}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`cs-trigger ${open ? 'cs-open' : ''}`}
+        onClick={() => { if (!open) updatePosition(); setOpen(!open); }}
+      >
         <span className={!displayValue ? 'cs-placeholder' : ''}>
           {displayValue || placeholder}
         </span>
         <Calendar size={16} className="cs-chevron" />
       </button>
-      {open && (
-        <div className="cs-dropdown calendar-dropdown">
+      {open && createPortal(
+        <div
+          className="cs-dropdown calendar-dropdown"
+          style={{
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
+            width: pos.width,
+            zIndex: 99999,
+          }}
+        >
           <div className="calendar-header">
             <button type="button" className="calendar-nav" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
               <ChevronLeft size={16} />
@@ -132,7 +185,8 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
             <button type="button" className="calendar-action" onClick={handleClear}>Очистить</button>
             <button type="button" className="calendar-action" onClick={handleToday}>Сегодня</button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

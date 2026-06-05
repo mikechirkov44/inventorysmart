@@ -4,10 +4,12 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI } from '../services/api';
+import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
+import CustomSelect from '../components/CustomSelect';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 function WorkOrders() {
   /** Состояние журнала работ, оборудования, запчастей, фильтров */
@@ -20,6 +22,13 @@ function WorkOrders() {
   const [filter, setFilter] = useState('all');
   const [completingId, setCompletingId] = useState(null);
   const [sparePartsSelection, setSparePartsSelection] = useState([]);
+  const [allowInspectionWithoutQr, setAllowInspectionWithoutQr] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEquipmentId, setNewEquipmentId] = useState('');
+  const [newWorkId, setNewWorkId] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newStatus, setNewStatus] = useState('pending');
+  const [addSubmitting, setAddSubmitting] = useState(false);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -27,6 +36,17 @@ function WorkOrders() {
   /** Загрузка всех данных журнала работ */
   useEffect(() => {
     fetchData();
+  }, []);
+
+  /** Загрузка настройки компании */
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await companyAPI.get();
+        setAllowInspectionWithoutQr(res.data.allowInspectionWithoutQr);
+      } catch {}
+    };
+    fetchSettings();
   }, []);
 
   /** Параллельная загрузка нарядов, оборудования, запчастей и работ */
@@ -148,6 +168,43 @@ function WorkOrders() {
       fetchData();
     } catch (err) {
       toast.error('Ошибка', 'Не удалось удалить запись');
+    }
+  };
+
+  /** Создание новой записи журнала работ вручную */
+  const handleAddSubmit = async () => {
+    if (!newEquipmentId) {
+      toast.error('Ошибка', 'Выберите оборудование');
+      return;
+    }
+    if (!newWorkId) {
+      toast.error('Ошибка', 'Выберите работу');
+      return;
+    }
+    const work = allWorks.find(w => w.id === newWorkId);
+    setAddSubmitting(true);
+    try {
+      const payload = {
+        equipmentId: newEquipmentId,
+        taskId: newWorkId,
+        taskName: work ? work.name : '',
+        status: newStatus,
+      };
+      if (newDate && newStatus === 'completed') {
+        payload.completedAt = newDate;
+      }
+      await workOrderAPI.create(payload);
+      toast.success('Запись создана');
+      setShowAddModal(false);
+      setNewEquipmentId('');
+      setNewWorkId('');
+      setNewDate('');
+      setNewStatus('pending');
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка', 'Не удалось создать запись');
+    } finally {
+      setAddSubmitting(false);
     }
   };
 
