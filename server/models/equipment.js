@@ -150,7 +150,7 @@ module.exports = {
       }
     }
 
-    return await module.exports.findById(id);
+    return await module.exports.findById(id, companyId);
   },
 
   /**
