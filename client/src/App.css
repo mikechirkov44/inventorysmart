@@ -5716,16 +5716,15 @@ input, textarea, select { font-family: inherit; }
   min-width: 100%;
   width: max-content;
   min-width: 200px;
-  background: #ffffff;
+  background: #ffffff !important;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1);
   z-index: 9999;
-  max-height: 200px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
   padding: 4px;
-  animation: csSlideIn 0.15s ease;
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 @keyframes csSlideIn {
@@ -5743,7 +5742,7 @@ input, textarea, select { font-family: inherit; }
   transition: background var(--transition-fast);
   color: var(--gray-700);
   font-size: 13px;
-  background: #ffffff;
+  background: #ffffff !important;
   white-space: nowrap;
 }
 
