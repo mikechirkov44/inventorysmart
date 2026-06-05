@@ -2631,6 +2631,47 @@ input, textarea, select { font-family: inherit; }
     grid-template-columns: 1fr;
   }
 
+  /* --- Chart Controls --- */
+  .chart-controls .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart-controls .filter-group {
+    width: 100%;
+  }
+
+  .chart-controls .filter-group .cs-wrapper {
+    width: 100%;
+  }
+
+  .chart-controls .filter-group-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chart-controls .filter-row.compact {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart-controls .filter-row.compact .filter-group.flex-1 {
+    width: 100%;
+  }
+
+  .quick-periods {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .quick-periods .btn {
+    flex: 1 0 auto;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 11px;
+    height: 30px;
+  }
+
   /* --- Detail Page --- */
   .detail-header,
   .detail-content {
@@ -3184,17 +3225,18 @@ input, textarea, select { font-family: inherit; }
 
 .quick-periods {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   padding-bottom: 1px;
 }
 
 .quick-periods .btn {
-  height: 33px;
-  padding: 0 12px;
+  height: 32px;
+  padding: 0 10px;
   font-size: 12px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-group-actions {
