@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ScanLine } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 
 /** Компонент QR-сканера */
@@ -110,7 +111,7 @@ function QRScanner() {
 
   return (
     <div className="qr-scanner">
-      <h1>Сканирование QR-кода</h1>
+      <h1><ScanLine size={24} />Сканирование QR-кода</h1>
 
       {!scanning && (
         <div className="qr-animated-wrap">

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { FolderTree } from 'lucide-react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -122,7 +123,7 @@ function RoomsDirectory() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Справочник помещений</h1>
+        <h1><FolderTree size={24} />Справочник помещений</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить помещение'}
         </button>

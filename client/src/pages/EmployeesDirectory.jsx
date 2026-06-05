@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { FolderTree } from 'lucide-react';
 import { employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -111,7 +112,7 @@ function EmployeesDirectory() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Справочник сотрудников</h1>
+        <h1><FolderTree size={24} />Справочник сотрудников</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить сотрудника'}
         </button>

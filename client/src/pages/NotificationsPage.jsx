@@ -68,7 +68,7 @@ export default function NotificationsPage() {
   return (
     <div className="notifications-page">
       <div className="header">
-        <h1>Уведомления</h1>
+        <h1><Bell size={24} />Уведомления</h1>
         <button onClick={markAllRead} className="btn btn-small btn-secondary">
           Отметить все прочитанными
         </button>

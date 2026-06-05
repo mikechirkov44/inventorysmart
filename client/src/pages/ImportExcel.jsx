@@ -111,7 +111,7 @@ function ImportExcel() {
   return (
     <div className="import-excel">
       <div className="header">
-        <h1>Импорт из Excel</h1>
+        <h1><Upload size={24} />Импорт из Excel</h1>
         <Link to="/" className="btn">← Назад</Link>
       </div>
 

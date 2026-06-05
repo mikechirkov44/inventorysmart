@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { ClipboardList } from 'lucide-react';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -215,7 +216,7 @@ function WorkOrders() {
   return (
     <div className="work-orders">
       <div className="header">
-        <h1>Журнал работ</h1>
+        <h1><ClipboardList size={24} />Журнал работ</h1>
         <div className="header-actions">
           <div className="filter-buttons">
           <button

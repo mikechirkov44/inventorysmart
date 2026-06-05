@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { FolderTree } from 'lucide-react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -152,7 +153,7 @@ function SparePartsDirectory() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Справочник ЗИП</h1>
+        <h1><FolderTree size={24} />Справочник ЗИП</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить'}
         </button>

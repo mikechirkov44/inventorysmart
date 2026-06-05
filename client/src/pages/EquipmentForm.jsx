@@ -9,7 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
-import { Upload } from 'lucide-react';
+import { Upload, FolderTree } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -163,7 +163,7 @@ function EquipmentForm() {
         <Link to={isEditing ? `/equipment/${id}` : '/'} className="back-link">
           ← Назад
         </Link>
-        <h1>{isEditing ? 'Редактирование оборудования' : 'Добавление оборудования'}</h1>
+        <h1><FolderTree size={24} />{isEditing ? 'Редактирование оборудования' : 'Добавление оборудования'}</h1>
       </div>
 
       {error && <div className="error">{error}</div>}

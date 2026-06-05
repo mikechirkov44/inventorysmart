@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { FolderTree } from 'lucide-react';
 import { equipmentAPI, roomsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -92,7 +93,7 @@ function EquipmentList() {
   return (
     <div className="equipment-list">
       <div className="header">
-        <h1>Справочник оборудования</h1>
+        <h1><FolderTree size={24} />Справочник оборудования</h1>
         <div className="header-actions">
           <Link to="/equipment-table" className="btn">Таблица</Link>
           <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>

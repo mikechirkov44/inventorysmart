@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { FileText } from 'lucide-react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -183,7 +184,7 @@ function SparePartsReceipts() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Приходные документы ЗИП</h1>
+        <h1><FileText size={24} />Приходные документы ЗИП</h1>
         <button onClick={startCreate} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Новый документ'}
         </button>

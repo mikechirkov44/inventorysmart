@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 import api from '../services/api';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
@@ -385,7 +386,7 @@ function SchedulePage() {
   return (
     <div className="schedule-page">
       <div className="header">
-        <h1>План-график ремонтов</h1>
+        <h1><CalendarDays size={24} />План-график ремонтов</h1>
         <div className="tab-bar">
           <button className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`} onClick={() => setActiveTab('plan')}>План</button>
           <button className={`tab-btn ${activeTab === 'chart' ? 'active' : ''}`} onClick={() => setActiveTab('chart')}>График</button>

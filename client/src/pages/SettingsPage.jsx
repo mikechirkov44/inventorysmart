@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, Server, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { Upload, Server, CheckCircle, XCircle, Shield, Settings } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
@@ -584,6 +584,9 @@ function SettingsPage() {
 
   return (
     <div className="settings-page">
+      <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, fontSize: '1.6rem', fontWeight: 700, color: 'var(--gray-900)' }}>
+        <Settings size={24} style={{ color: 'var(--primary)' }} />Настройки
+      </h1>
       {/* Навигация по вкладкам */}
       <div className="settings-tabs">
         {TABS.map(tab => (

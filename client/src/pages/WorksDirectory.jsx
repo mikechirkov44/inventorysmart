@@ -3,6 +3,7 @@
  * @description Справочник работ: добавление, редактирование, удаление плановых работ.
  */
 import { useState, useEffect, useMemo } from 'react';
+import { FolderTree } from 'lucide-react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -125,7 +126,7 @@ function WorksDirectory() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Справочник работ</h1>
+        <h1><FolderTree size={24} />Справочник работ</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить работу'}
         </button>

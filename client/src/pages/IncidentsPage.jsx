@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 import api, { incidentsAPI, equipmentAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
@@ -148,7 +149,7 @@ function IncidentsPage() {
   return (
     <div className="directory-page">
       <div className="header">
-        <h1>Инциденты (поломки)</h1>
+        <h1><AlertTriangle size={24} />Инциденты (поломки)</h1>
         {allowInspectionWithoutQr && (
           <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
             + Добавить инцидент

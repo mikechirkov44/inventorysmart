@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { BarChart3 } from 'lucide-react';
 import api from '../services/api';
 import { sparePartsAPI } from '../services/api';
 import CustomSelect from '../components/CustomSelect';
@@ -223,7 +224,7 @@ function AnalyticsPage() {
   return (
     <div className="analytics-page">
       <div className="header">
-        <h1>Аналитика</h1>
+        <h1><BarChart3 size={24} />Аналитика</h1>
         <div className="header-actions">
           <button onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
           <button onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
