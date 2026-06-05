@@ -24,7 +24,7 @@ services:
     container_name: inventorysmart-server
     restart: unless-stopped
     volumes:
-      - server-uploads:/app/uploads
+      - server-uploads:/app/server/uploads
     expose:
       - "3001"
     environment:

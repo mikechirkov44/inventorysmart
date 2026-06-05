@@ -169,6 +169,7 @@ function ImportExcel() {
             onClick={handleImport}
             disabled={!file || loading}
             className="btn btn-primary"
+            style={{ marginTop: 16 }}
           >
             {loading ? 'Импорт...' : 'Импортировать'}
           </button>

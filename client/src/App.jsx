@@ -6,7 +6,8 @@
  */
 
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -37,19 +38,44 @@ import './App.css';
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
 function DirDropdown() {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const triggerRef = useRef(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const location = useLocation();
   const { canView } = useAuth();
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
+  const updatePos = useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.top, left: rect.right + 4 });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      updatePos();
+      window.addEventListener('scroll', updatePos, true);
+      window.addEventListener('resize', updatePos);
+    }
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [open, updatePos]);
+
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (triggerRef.current && !triggerRef.current.contains(e.target)) {
+        const menu = document.getElementById('nav-dropdown-portal');
+        if (menu && !menu.contains(e.target)) setOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    if (open) {
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [open]);
 
   const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts');
   if (!hasDirAccess) return null;
@@ -57,22 +83,23 @@ function DirDropdown() {
   const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts'].some(p => location.pathname === p);
 
   return (
-    <li className={`nav-dropdown ${open ? 'open' : ''}`} ref={ref}>
-      <button className={`nav-dropdown-trigger ${isActive ? 'active' : ''}`} onClick={() => setOpen(!open)}>
+    <li className={`nav-dropdown ${open ? 'open' : ''}`}>
+      <button ref={triggerRef} className={`nav-dropdown-trigger ${isActive ? 'active' : ''}`} onClick={() => setOpen(!open)}>
         <FolderTree size={18} />
         <span>Справочники</span>
         <ChevronDown size={14} className={`dropdown-arrow ${open ? 'open' : ''}`} />
       </button>
-      {open && (
-        <ul className="nav-dropdown-menu">
-          {canView('equipment') && <li><NavLink to="/" end>Оборудование (карточки)</NavLink></li>}
-          {canView('equipment') && <li><NavLink to="/equipment-table">Оборудование (таблица)</NavLink></li>}
+      {open && createPortal(
+        <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, margin: 0 }}>
+          {canView('equipment') && <li><NavLink to="/" end onClick={() => setOpen(false)}>Оборудование (карточки)</NavLink></li>}
+          {canView('equipment') && <li><NavLink to="/equipment-table" onClick={() => setOpen(false)}>Оборудование (таблица)</NavLink></li>}
           {(canView('employees') || canView('works') || canView('rooms') || canView('spareParts')) && <li className="nav-dropdown-divider" />}
-          {canView('employees') && <li><NavLink to="/employees">Сотрудники</NavLink></li>}
-          {canView('works') && <li><NavLink to="/works">Работы</NavLink></li>}
-          {canView('rooms') && <li><NavLink to="/rooms">Помещения</NavLink></li>}
-          {canView('spareParts') && <li><NavLink to="/spare-parts">ЗИП</NavLink></li>}
-        </ul>
+          {canView('employees') && <li><NavLink to="/employees" onClick={() => setOpen(false)}>Сотрудники</NavLink></li>}
+          {canView('works') && <li><NavLink to="/works" onClick={() => setOpen(false)}>Работы</NavLink></li>}
+          {canView('rooms') && <li><NavLink to="/rooms" onClick={() => setOpen(false)}>Помещения</NavLink></li>}
+          {canView('spareParts') && <li><NavLink to="/spare-parts" onClick={() => setOpen(false)}>ЗИП</NavLink></li>}
+        </ul>,
+        document.body
       )}
     </li>
   );

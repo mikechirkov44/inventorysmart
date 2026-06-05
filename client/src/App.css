@@ -243,9 +243,7 @@ input, textarea, select { font-family: inherit; }
 }
 
 .nav-dropdown-menu {
-  position: absolute;
-  top: 0;
-  left: 100%;
+  position: fixed;
   min-width: 220px;
   background-color: #ffffff;
   background: #ffffff;
@@ -254,12 +252,12 @@ input, textarea, select { font-family: inherit; }
   border: 1px solid var(--gray-200);
   list-style: none;
   padding: 6px;
-  z-index: 9999;
-  margin-left: 4px;
+  z-index: 99999;
   opacity: 1;
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  isolation: isolate;
 }
 
 .nav-dropdown-menu li a {
@@ -2904,7 +2902,7 @@ input, textarea, select { font-family: inherit; }
   border-radius: 6px;
   font-size: 13px;
   background: white;
-  min-width: 130px;
+  min-width: 150px;
   height: 33px;
   box-sizing: border-box;
 }
@@ -5170,7 +5168,7 @@ input, textarea, select { font-family: inherit; }
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  min-width: 100%;
   background: #ffffff;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
@@ -5236,13 +5234,13 @@ input, textarea, select { font-family: inherit; }
 
 .toggle-switch {
   position: relative;
-  width: 40px;
-  height: 22px;
+  width: 44px;
+  height: 24px;
   background: var(--gray-300);
   border: none;
-  border-radius: 11px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background 0.2s ease;
   padding: 0;
   flex-shrink: 0;
 }
@@ -5255,16 +5253,16 @@ input, textarea, select { font-family: inherit; }
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--white);
   border-radius: 50%;
-  transition: transform var(--transition-fast);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .toggle-switch.toggle-on .toggle-knob {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 /* --- Password Input --- */
