@@ -2271,6 +2271,7 @@ input, textarea, select { font-family: inherit; }
     flex-direction: column;
   }
 
+  /* --- Sidebar → Bottom Nav --- */
   .sidebar {
     width: 100%;
     min-width: 100%;
@@ -2283,30 +2284,79 @@ input, textarea, select { font-family: inherit; }
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
+    background: #0f172a;
+    padding: 0;
+    border-radius: 16px 16px 0 0;
   }
 
-  .nav-brand {
-    display: none;
-  }
+  .nav-brand { display: none; }
 
   .nav-links {
     flex-direction: row;
-    padding: 6px 8px;
-    gap: 2px;
+    padding: 6px 4px;
+    gap: 0;
     flex: 1;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    justify-content: space-around;
+  }
+
+  .nav-links li {
+    flex-shrink: 0;
   }
 
   .nav-links a {
-    padding: 8px 12px;
-    font-size: 11px;
+    padding: 8px 10px;
+    font-size: 0;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 48px;
+    text-align: center;
+    border-radius: 10px;
+  }
+
+  .nav-links a span {
+    display: none;
+  }
+
+  .nav-links a svg {
+    margin-right: 0;
+  }
+
+  .nav-links a.active {
+    background: rgba(255,255,255,0.12);
+    color: white;
+  }
+
+  .nav-dropdown-trigger {
+    padding: 8px 10px;
+    font-size: 0;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 48px;
+    text-align: center;
+  }
+
+  .nav-dropdown-trigger span {
+    display: none;
+  }
+
+  .nav-dropdown-trigger svg {
+    margin-right: 0;
+  }
+
+  .dropdown-arrow {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
   }
 
   .nav-dropdown-menu {
     position: fixed;
-    bottom: 60px;
+    bottom: 68px;
     left: 8px;
     right: 8px;
     top: auto;
@@ -2314,36 +2364,50 @@ input, textarea, select { font-family: inherit; }
     min-width: auto;
     max-height: 50vh;
     overflow-y: auto;
-    background-color: #ffffff !important;
-    background: #ffffff !important;
+    background-color: #ffffff;
+    background: #ffffff;
+    z-index: 99999;
   }
 
+  /* --- Header --- */
   .top-header {
     padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .top-header-name {
-    display: none;
-  }
+  .top-header-name { display: none; }
 
+  /* --- Main Content --- */
   .main-content {
-    padding: 16px;
+    padding: 12px;
     padding-bottom: 80px;
   }
 
+  .header {
+    padding: 0;
+    margin-bottom: 12px;
+  }
+
   .header h1 {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
+    line-height: 1.3;
   }
 
   .header-actions {
     width: 100%;
+    display: flex;
+    gap: 8px;
   }
 
   .header-actions .btn {
     flex: 1;
     min-width: 0;
+    font-size: 12px;
+    padding: 8px 12px;
   }
 
+  /* --- Cards / Grid --- */
   .equipment-grid {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2353,7 +2417,7 @@ input, textarea, select { font-family: inherit; }
 
   .equipment-info-card {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .equipment-photo {
@@ -2362,33 +2426,175 @@ input, textarea, select { font-family: inherit; }
     aspect-ratio: 16/9;
   }
 
-  .form-row {
-    flex-direction: column;
-    gap: 0;
+  /* --- Tables --- */
+  .table-container {
+    border-radius: 10px;
+    margin: 0 -12px;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 600px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .table-actions {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .table-actions .btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  /* --- Filters --- */
+  .filters-panel {
+    padding: 12px;
+    margin: 0 -12px 12px;
+    border-radius: 0;
   }
 
   .filter-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-row .cs-wrapper,
+  .filter-row select,
+  .filter-row input {
+    min-width: 0;
+    width: 100%;
   }
 
   .filter-search {
     min-width: 0;
   }
 
-  .filter-row select {
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group .cs-wrapper,
+  .filter-group select,
+  .filter-group input {
     min-width: 0;
     width: 100%;
   }
 
-  .wo-main {
+  .filter-summary {
+    font-size: 12px;
+  }
+
+  /* --- Forms --- */
+  .form-row {
     flex-direction: column;
+    gap: 0;
+  }
+
+  .form-content {
+    grid-template-columns: 1fr;
+  }
+
+  .form-sidebar {
+    margin-top: 16px;
+  }
+
+  .form-actions-inline {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-actions-inline .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .settings-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* --- Settings Page --- */
+  .settings-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding-bottom: 0;
+  }
+
+  .settings-tab {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .settings-content {
+    padding: 0;
+  }
+
+  .settings-card {
+    padding: 16px;
+  }
+
+  .settings-user-form {
+    padding: 12px;
+  }
+
+  .permissions-grid {
+    gap: 10px;
+  }
+
+  .permission-row {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
+  }
+
+  .permission-row .cs-wrapper {
+    width: 100%;
+  }
+
+  /* --- Stats / Summary --- */
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .summary-card {
+    padding: 14px 12px;
+  }
+
+  .summary-value {
+    font-size: 1.4rem;
+  }
+
+  /* --- Scan Result --- */
+  .scan-result {
+    max-width: 100%;
   }
 
   .today-task-card {
     padding: 12px;
-    gap: 10px;
+    gap: 8px;
   }
 
   .today-task-dates {
@@ -2406,67 +2612,83 @@ input, textarea, select { font-family: inherit; }
     font-size: 13px;
   }
 
-  .manual-input form {
+  /* --- Work Orders --- */
+  .wo-main {
     flex-direction: column;
+    gap: 6px;
   }
 
-  .scan-result { max-width: 100%; }
-
-  .table-container {
-    border-radius: 10px;
+  /* --- Import --- */
+  .import-content {
+    grid-template-columns: 1fr;
   }
 
-  .data-table th,
-  .data-table td {
-    padding: 10px 12px;
-    font-size: 13px;
+  /* --- Detail Page --- */
+  .detail-header,
+  .detail-content {
+    grid-template-columns: 1fr;
   }
 
-  .data-table th:first-child,
-  .data-table td:first-child {
-    padding-left: 14px;
+  .detail-info h1 {
+    font-size: 1.15rem;
   }
 
-  .data-table th:last-child,
-  .data-table td:last-child {
-    padding-right: 14px;
+  /* --- Modal --- */
+  .modal-content {
+    margin: 16px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
   }
 
-  .table-actions {
+  /* --- Equipment Detail --- */
+  .equipment-details h2 {
+    font-size: 1rem;
+  }
+
+  /* --- Breadcrumb --- */
+  .breadcrumb {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* --- Works/Rooms/Employees Directory --- */
+  .dir-header {
     flex-direction: column;
-    gap: 4px;
-  }
-
-  .table-actions .btn {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-
-  .td-muted {
-    max-width: 140px;
-  }
-
-  .td-tags {
-    max-width: 160px;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 
 @media (max-width: 480px) {
   .btn {
-    padding: 8px 14px;
-    font-size: 13px;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .btn-lg {
-    padding: 12px 24px;
-    font-size: 14px;
+    padding: 10px 18px;
+    font-size: 13px;
   }
 
-  .header h1 { font-size: 1.2rem; }
+  .header h1 { font-size: 1.15rem; }
 
-  .detail-info h1 { font-size: 1.2rem; }
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
 
-  .equipment-details h2 { font-size: 1.1rem; }
+  .summary-card {
+    padding: 12px 10px;
+  }
+
+  .summary-value {
+    font-size: 1.2rem;
+  }
+
+  .summary-label {
+    font-size: 11px;
+  }
 
   .info-row {
     flex-direction: column;
@@ -2476,6 +2698,10 @@ input, textarea, select { font-family: inherit; }
   .info-row .label {
     width: auto;
     font-size: 12px;
+  }
+
+  .settings-card {
+    padding: 12px;
   }
 }
 
