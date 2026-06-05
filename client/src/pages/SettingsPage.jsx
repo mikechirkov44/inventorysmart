@@ -418,7 +418,7 @@ function SettingsPage() {
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
       });
       if (res.data.logo) {
-        setLogoPreview(`/uploads/${res.data.logo}`);
+        setLogoPreview(`/uploads/${res.data.logo}?t=${Date.now()}`);
       }
       if (res.data.licenseKey) {
         try {

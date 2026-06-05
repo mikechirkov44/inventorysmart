@@ -52,7 +52,7 @@ router.get('/license-status', authenticate, async (req, res) => {
  */
 router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload.single('logo'), async (req, res) => {
   try {
-    const data = {};
+    const data = { companyId: req.user.companyId };
     if (req.body.companyName !== undefined) data.companyName = req.body.companyName;
     if (req.body.timezone !== undefined) data.timezone = req.body.timezone;
     if (req.body.allowInspectionWithoutQr !== undefined) {
