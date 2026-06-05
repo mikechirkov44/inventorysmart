@@ -150,6 +150,10 @@ function AppNav({ collapsed, onToggle }) {
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
       </ul>
       <div className="nav-footer">
+        <div className={`nav-notifications ${collapsed ? 'collapsed' : ''}`}>
+          <NotificationBell />
+          {!collapsed && <span className="nav-notif-label">Уведомления</span>}
+        </div>
         {!collapsed && (
           <div className="nav-user">
             <span className="nav-user-name">{user.fullName || user.username}</span>
@@ -165,17 +169,6 @@ function AppNav({ collapsed, onToggle }) {
         </button>
       </div>
     </nav>
-  );
-}
-
-/** Верхняя шапка (минимальная) */
-function TopHeader() {
-  const { user } = useAuth();
-  if (!user) return null;
-  return (
-    <header className="top-header">
-      <NotificationBell />
-    </header>
   );
 }
 
@@ -262,12 +255,9 @@ function App() {
           <ConfirmProvider>
             <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
               <AppNav collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
-              <div className="main-area">
-                <TopHeader />
-                <main className="main-content">
-                  <AppRoutes />
-                </main>
-              </div>
+              <main className="main-content">
+                <AppRoutes />
+              </main>
             </div>
           </ConfirmProvider>
         </ToastProvider>
