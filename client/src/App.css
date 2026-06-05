@@ -5236,11 +5236,10 @@ input, textarea, select { font-family: inherit; }
 .toggle-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   user-select: none;
   width: 100%;
-  justify-content: space-between;
 }
 
 .toggle-disabled {
@@ -5252,7 +5251,7 @@ input, textarea, select { font-family: inherit; }
   font-size: 13px;
   color: var(--gray-700);
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .toggle-switch {
@@ -5267,7 +5266,6 @@ input, textarea, select { font-family: inherit; }
   transition: background 0.2s ease;
   padding: 0;
   flex-shrink: 0;
-  align-self: center;
 }
 
 .toggle-switch.toggle-on {
