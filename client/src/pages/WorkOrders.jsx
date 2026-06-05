@@ -2,7 +2,7 @@
  * @module WorkOrders
  * @description Журнал выполненных и запланированных работ. Позволяет отмечать выполнение и списывать ЗИП.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
@@ -29,6 +29,7 @@ function WorkOrders() {
   const [newDate, setNewDate] = useState('');
   const [newStatus, setNewStatus] = useState('pending');
   const [addSubmitting, setAddSubmitting] = useState(false);
+  const addModalRef = useRef(null);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -331,8 +332,8 @@ function WorkOrders() {
 
       {/* Модальное окно создания записи журнала работ вручную */}
       {showAddModal && (
-        <div className="complete-task-modal" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div ref={addModalRef} className="complete-task-modal" onClick={(e) => { if (e.target === addModalRef.current) setShowAddModal(false); }}>
+          <div className="modal-content">
             <h3>Новая запись журнала</h3>
             <div className="form-group">
               <label>Оборудование *</label>

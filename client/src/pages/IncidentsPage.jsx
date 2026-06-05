@@ -35,6 +35,7 @@ function IncidentsPage() {
   const [newPreviews, setNewPreviews] = useState([]);
   const [addSubmitting, setAddSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  const addModalRef = useRef(null);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -261,8 +262,8 @@ function IncidentsPage() {
 
       {/* Модальное окно создания инцидента вручную */}
       {showAddModal && (
-        <div className="complete-task-modal" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div ref={addModalRef} className="complete-task-modal" onClick={(e) => { if (e.target === addModalRef.current) setShowAddModal(false); }}>
+          <div className="modal-content">
             <h3>Новый инцидент</h3>
             <div className="form-group">
               <label>Оборудование *</label>
