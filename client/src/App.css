@@ -44,6 +44,7 @@
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --white: #ffffff;
 }
 
 body {
@@ -104,6 +105,7 @@ input, textarea, select { font-family: inherit; }
   flex-direction: column;
   min-height: 100vh;
   overflow: visible;
+  min-width: 0;
 }
 
 /* ===== SIDEBAR ===== */
@@ -243,17 +245,17 @@ input, textarea, select { font-family: inherit; }
 }
 
 .nav-dropdown-menu {
-  position: fixed;
+  position: fixed !important;
   min-width: 220px;
-  background-color: #ffffff;
-  background: #ffffff;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   border-radius: var(--radius);
-  box-shadow: 0 12px 36px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1) !important;
   border: 1px solid var(--gray-200);
   list-style: none;
   padding: 6px;
-  z-index: 99999;
-  opacity: 1;
+  z-index: 99999 !important;
+  opacity: 1 !important;
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -1781,11 +1783,23 @@ input, textarea, select { font-family: inherit; }
   flex-wrap: wrap;
 }
 
+.filter-row > .cs-wrapper {
+  flex: 0 1 auto;
+  min-width: 140px;
+  max-width: 200px;
+}
+
 .filter-row.compact {
   margin-top: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .filter-row.compact {
+    flex-wrap: wrap;
+  }
 }
 
 .filter-row.compact .filter-group {
@@ -1794,8 +1808,9 @@ input, textarea, select { font-family: inherit; }
 }
 
 .filter-row.compact .filter-group.flex-1 {
-  flex: 1 1 200px;
+  flex: 0 1 300px;
   min-width: 150px;
+  max-width: 400px;
 }
 
 .filter-search {
@@ -2363,7 +2378,7 @@ input, textarea, select { font-family: inherit; }
   }
 
   .nav-dropdown-menu {
-    position: fixed;
+    position: fixed !important;
     bottom: 68px;
     left: 8px;
     right: 8px;
@@ -2372,9 +2387,9 @@ input, textarea, select { font-family: inherit; }
     min-width: auto;
     max-height: 50vh;
     overflow-y: auto;
-    background-color: #ffffff;
-    background: #ffffff;
-    z-index: 99999;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    z-index: 99999 !important;
   }
 
   /* --- Header --- */
@@ -2480,10 +2495,13 @@ input, textarea, select { font-family: inherit; }
   }
 
   .filter-row .cs-wrapper,
+  .filter-row > .cs-wrapper,
   .filter-row select,
   .filter-row input {
     min-width: 0;
     width: 100%;
+    max-width: none;
+    flex: none;
   }
 
   .filter-search {
@@ -2648,6 +2666,7 @@ input, textarea, select { font-family: inherit; }
   .chart-controls .filter-group-actions {
     flex-wrap: wrap;
     gap: 6px;
+    margin-left: 0;
   }
 
   .chart-controls .filter-row.compact {
@@ -2662,6 +2681,7 @@ input, textarea, select { font-family: inherit; }
   .quick-periods {
     width: 100%;
     gap: 4px;
+    margin-left: 0;
   }
 
   .quick-periods .btn {
@@ -3147,6 +3167,7 @@ input, textarea, select { font-family: inherit; }
 
 .schedule-page .filter-group {
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 .schedule-page .filter-group .cs-wrapper {
@@ -3163,6 +3184,11 @@ input, textarea, select { font-family: inherit; }
 
 .schedule-page .filter-row.compact {
   gap: 6px;
+}
+
+.schedule-page .filter-group-actions {
+  flex-wrap: wrap;
+  margin-left: 0;
 }
 
 .schedule-table-wrapper {
@@ -3211,7 +3237,9 @@ input, textarea, select { font-family: inherit; }
 }
 
 .filter-group .cs-wrapper {
-  min-width: 150px;
+  min-width: 140px;
+  max-width: 200px;
+  flex: 0 1 auto;
 }
 
 .filter-group .cs-trigger {
@@ -3249,6 +3277,7 @@ input, textarea, select { font-family: inherit; }
   flex-wrap: wrap;
   align-items: center;
   padding-bottom: 1px;
+  flex-shrink: 0;
 }
 
 .quick-periods .btn {
@@ -3264,6 +3293,8 @@ input, textarea, select { font-family: inherit; }
   gap: 4px;
   align-items: flex-end;
   padding-bottom: 1px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .filter-group-actions .btn {
@@ -3371,10 +3402,13 @@ input, textarea, select { font-family: inherit; }
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   border: 1px solid var(--gray-200);
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
 }
 
 .gantt-scroll {
-  overflow: auto;
+  overflow: visible;
   position: relative;
 }
 
@@ -3449,7 +3483,7 @@ input, textarea, select { font-family: inherit; }
 .gantt-label-cell {
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 3;
   background: white;
   border-right: 2px solid var(--gray-300) !important;
   padding: 6px 12px !important;
@@ -3585,6 +3619,9 @@ input, textarea, select { font-family: inherit; }
   padding: 12px 16px;
   border-top: 1px solid var(--gray-200);
   background: var(--gray-50);
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .legend-item {
