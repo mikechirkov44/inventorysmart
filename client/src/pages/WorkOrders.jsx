@@ -215,12 +215,8 @@ function WorkOrders() {
     <div className="work-orders">
       <div className="header">
         <h1>Журнал работ</h1>
-        {allowInspectionWithoutQr && (
-          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
-            + Добавить запись
-          </button>
-        )}
-        <div className="filter-buttons">
+        <div className="header-actions">
+          <div className="filter-buttons">
           <button
             className={`btn ${filter === 'all' ? 'btn-primary' : ''}`}
             onClick={() => setFilter('all')}
@@ -239,6 +235,12 @@ function WorkOrders() {
           >
             Выполнены ({workOrders.filter(wo => wo.status === 'completed').length})
           </button>
+          </div>
+          {allowInspectionWithoutQr && (
+            <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
+              + Добавить запись
+            </button>
+          )}
         </div>
       </div>
 
