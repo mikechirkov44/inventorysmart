@@ -257,9 +257,10 @@ input, textarea, select { font-family: inherit; }
   font-size: 12px;
   font-weight: 500;
   color: var(--gray-400);
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .nav-user-name {
