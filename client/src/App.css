@@ -248,7 +248,7 @@ input, textarea, select { font-family: inherit; }
   background-color: #ffffff;
   background: #ffffff;
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
   border: 1px solid var(--gray-200);
   list-style: none;
   padding: 6px;
@@ -3144,6 +3144,26 @@ input, textarea, select { font-family: inherit; }
 
 /* ===== SCHEDULE ===== */
 .schedule-page { width: 100%; }
+
+.schedule-page .filter-group {
+  min-width: 0;
+}
+
+.schedule-page .filter-group .cs-wrapper {
+  min-width: 130px;
+}
+
+.schedule-page .filter-group label {
+  font-size: 10px;
+}
+
+.schedule-page .filter-row {
+  gap: 6px;
+}
+
+.schedule-page .filter-row.compact {
+  gap: 6px;
+}
 
 .schedule-table-wrapper {
   position: sticky;
