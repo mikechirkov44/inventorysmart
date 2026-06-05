@@ -215,6 +215,11 @@ function WorkOrders() {
     <div className="work-orders">
       <div className="header">
         <h1>Журнал работ</h1>
+        {allowInspectionWithoutQr && (
+          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
+            + Добавить запись
+          </button>
+        )}
         <div className="filter-buttons">
           <button
             className={`btn ${filter === 'all' ? 'btn-primary' : ''}`}
@@ -321,6 +326,57 @@ function WorkOrders() {
           ))
         )}
       </div>
+
+      {/* Модальное окно создания записи журнала работ вручную */}
+      {showAddModal && (
+        <div className="complete-task-modal" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Новая запись журнала</h3>
+            <div className="form-group">
+              <label>Оборудование *</label>
+              <CustomSelect
+                value={newEquipmentId}
+                onChange={setNewEquipmentId}
+                placeholder="Выберите оборудование"
+                options={equipment.map(e => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Работа *</label>
+              <CustomSelect
+                value={newWorkId}
+                onChange={setNewWorkId}
+                placeholder="Выберите работу"
+                options={allWorks.map(w => ({ value: w.id, label: w.name }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Статус</label>
+              <CustomSelect
+                value={newStatus}
+                onChange={setNewStatus}
+                placeholder="Выберите статус"
+                options={[
+                  { value: 'pending', label: 'В ожидании' },
+                  { value: 'completed', label: 'Выполнена' },
+                ]}
+              />
+            </div>
+            {newStatus === 'completed' && (
+              <div className="form-group">
+                <label>Дата выполнения</label>
+                <CustomDatePicker value={newDate} onChange={setNewDate} placeholder="Выберите дату" />
+              </div>
+            )}
+            <div className="modal-actions">
+              <button onClick={handleAddSubmit} className="btn btn-primary" disabled={addSubmitting}>
+                {addSubmitting ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button onClick={() => setShowAddModal(false)} className="btn">Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
