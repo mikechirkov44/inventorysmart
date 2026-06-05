@@ -118,6 +118,16 @@ function checkLicense(company) {
 
 module.exports = {
   /**
+   * Получает все компании.
+   * @async
+   * @returns {Promise<Array<Object>>} Список компаний
+   */
+  findAll: async () => {
+    const { rows } = await query('SELECT * FROM company_settings ORDER BY created_at DESC');
+    return rows.map(mapRow);
+  },
+
+  /**
    * Получает настройки компании по company_id. Если записей нет — создаёт дефолтную.
    * @async
    * @param {string} [companyId] - Идентификатор компании

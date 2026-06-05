@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { migrate } = require('./db');
+const { generateWorkNotifications } = require('./services/notificationGenerator');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -156,6 +157,12 @@ async function start() {
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    
+    // Generate work notifications on startup
+    generateWorkNotifications();
+    
+    // Re-generate work notifications every hour
+    setInterval(generateWorkNotifications, 60 * 60 * 1000);
   });
 }
 
