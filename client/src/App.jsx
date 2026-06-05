@@ -39,7 +39,7 @@ import './App.css';
 function DirDropdown() {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, isMobile: false });
   const location = useLocation();
   const { canView } = useAuth();
 
@@ -48,7 +48,12 @@ function DirDropdown() {
   const updatePos = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.top, left: rect.right + 4 });
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setMenuPos({ top: rect.top - 260, left: 8, isMobile: true });
+      } else {
+        setMenuPos({ top: rect.top, left: rect.right + 4, isMobile: false });
+      }
     }
   }, []);
 
@@ -73,7 +78,11 @@ function DirDropdown() {
     };
     if (open) {
       document.addEventListener('mousedown', handler);
-      return () => document.removeEventListener('mousedown', handler);
+      document.addEventListener('touchstart', handler);
+      return () => {
+        document.removeEventListener('mousedown', handler);
+        document.removeEventListener('touchstart', handler);
+      };
     }
   }, [open]);
 
@@ -81,6 +90,10 @@ function DirDropdown() {
   if (!hasDirAccess) return null;
 
   const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts'].some(p => location.pathname === p);
+
+  const menuStyle = menuPos.isMobile
+    ? { position: 'fixed', bottom: 68, left: 8, right: 8, top: 'auto', margin: 0 }
+    : { position: 'fixed', top: menuPos.top, left: menuPos.left, margin: 0 };
 
   return (
     <li className={`nav-dropdown ${open ? 'open' : ''}`}>
@@ -90,7 +103,7 @@ function DirDropdown() {
         <ChevronDown size={14} className={`dropdown-arrow ${open ? 'open' : ''}`} />
       </button>
       {open && createPortal(
-        <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, margin: 0 }}>
+        <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={menuStyle}>
           {canView('equipment') && <li><NavLink to="/" end onClick={() => setOpen(false)}>Оборудование (карточки)</NavLink></li>}
           {canView('equipment') && <li><NavLink to="/equipment-table" onClick={() => setOpen(false)}>Оборудование (таблица)</NavLink></li>}
           {(canView('employees') || canView('works') || canView('rooms') || canView('spareParts')) && <li className="nav-dropdown-divider" />}
