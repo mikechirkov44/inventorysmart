@@ -1,6 +1,6 @@
 /**
  * @fileoverview Страница настроек системы.
- * Включает вкладки: профиль компании, пользователи, должности,
+ * Включает вкладки: профиль компании, пользователи, роли,
  * интеграции и оформление. Управление лицензией и правами доступа.
  */
 
@@ -57,7 +57,7 @@ const PERM_VALUES = {
 const TABS = [
   { id: 'company', label: 'Компания' },
   { id: 'users', label: 'Пользователи' },
-  { id: 'positions', label: 'Должности' },
+  { id: 'positions', label: 'Роли' },
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
@@ -175,7 +175,7 @@ function IntegrationsTab() {
   );
 }
 
-/** Вкладка управления должностями и правами доступа */
+/** Вкладка управления ролями и правами доступа */
 function PositionsTab() {
   const { canEdit } = useAuth();
   const toast = useToast();
@@ -187,36 +187,36 @@ function PositionsTab() {
   const [formData, setFormData] = useState({ name: '', permissions: {} });
   const canEditSettings = canEdit('settings');
 
-  /** Загрузка должностей при монтировании */
+  /** Загрузка ролей при монтировании */
   useEffect(() => { fetchPositions(); }, []);
 
-  /** Загрузка списка должностей с сервера */
+  /** Загрузка списка ролей с сервера */
   const fetchPositions = async () => {
     try {
       const res = await positionsAPI.getAll();
       setPositions(res.data);
       setLoading(false);
     } catch {
-      toast.error('Ошибка загрузки должностей');
+      toast.error('Ошибка загрузки ролей');
       setLoading(false);
     }
   };
 
-  /** Сброс формы должности */
+  /** Сброс формы роли */
   const resetForm = () => {
     setFormData({ name: '', permissions: {} });
     setEditId(null);
     setShowForm(false);
   };
 
-  /** Открытие формы редактирования должности */
+  /** Открытие формы редактирования роли */
   const handleEdit = (pos) => {
     setFormData({ name: pos.name, permissions: { ...pos.permissions } });
     setEditId(pos.id);
     setShowForm(true);
   };
 
-  /** Обновление права доступа для должности */
+  /** Обновление права доступа для роли */
   const handlePermChange = (key, value) => {
     setFormData(prev => ({
       ...prev,
@@ -226,14 +226,14 @@ function PositionsTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) { toast.error('Введите название должности'); return; }
+    if (!formData.name.trim()) { toast.error('Введите название роли'); return; }
     try {
       if (editId) {
         await positionsAPI.update(editId, formData);
-        toast.success('Должность обновлена');
+        toast.success('Роль обновлена');
       } else {
         await positionsAPI.create(formData);
-        toast.success('Должность создана');
+        toast.success('Роль создана');
       }
       resetForm();
       fetchPositions();
@@ -242,9 +242,9 @@ function PositionsTab() {
     }
   };
 
-  /** Удаление должности с предупреждением о последствиях */
+  /** Удаление роли с предупреждением о последствиях */
   const handleDelete = async (id) => {
-    if (await confirm('Удалить должность? Пользователи с этой должностью потеряют доступ.')) {
+    if (await confirm('Удалить роль? Пользователи с этой ролью потеряют доступ.')) {
       try {
         await positionsAPI.delete(id);
         fetchPositions();
@@ -258,13 +258,13 @@ function PositionsTab() {
 
   return (
     <div className="settings-section">
-      <h2 className="settings-section-title">Должности</h2>
-      <p className="settings-section-desc">Управление должностями и правами доступа пользователей к ресурсам системы.</p>
+      <h2 className="settings-section-title">Роли</h2>
+      <p className="settings-section-desc">Управление ролями и правами доступа пользователей к ресурсам системы.</p>
 
       <div className="settings-card">
         <div className="settings-card-header">
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Shield size={18} /> Список должностей
+            <Shield size={18} /> Список ролей
           </h3>
           {canEditSettings && (
             <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary btn-small">
@@ -275,7 +275,7 @@ function PositionsTab() {
 
         {showForm && (
           <div className="settings-user-form">
-            <h4>{editId ? 'Редактирование должности' : 'Новая должность'}</h4>
+            <h4>{editId ? 'Редактирование роли' : 'Новая роль'}</h4>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Название *</label>
@@ -490,7 +490,7 @@ function SettingsPage() {
     }
   };
 
-  /** Загрузка списка должностей */
+  /** Загрузка списка ролей */
   const fetchPositions = async () => {
     try {
       const res = await positionsAPI.getAll();
@@ -748,7 +748,7 @@ function SettingsPage() {
                         <input type="text" value={userFormData.fullName} onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })} />
                       </div>
                       <div className="form-group">
-                        <label>Должность</label>
+                        <label>Роль</label>
                         <CustomSelect
                           value={userFormData.positionId}
                           onChange={(v) => setUserFormData({ ...userFormData, positionId: v })}
@@ -787,7 +787,7 @@ function SettingsPage() {
                         <tr>
                           <th>Логин</th>
                           <th>ФИО</th>
-                          <th>Должность</th>
+                          <th>Роль</th>
                           <th>Сотрудник</th>
                           <th>Создан</th>
                           <th>Действия</th>
@@ -822,7 +822,7 @@ function SettingsPage() {
           </div>
         )}
 
-        {/* Вкладка «Должности» */}
+        {/* Вкладка «Роли» */}
         {activeTab === 'positions' && (
           <PositionsTab />
         )}

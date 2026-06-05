@@ -210,6 +210,7 @@ async function migrate() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id UUID REFERENCES employees(id) ON DELETE SET NULL;
 
       ALTER TABLE employees ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
+      ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_title VARCHAR(255) DEFAULT '';
 
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS license_key TEXT DEFAULT '';
 

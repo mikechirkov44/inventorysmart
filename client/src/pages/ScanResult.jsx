@@ -198,7 +198,7 @@ function ScanResult() {
             <label>Работы выполнил: </label>
             <CustomSelect value={executorId} onChange={setExecutorId} placeholder="— Выберите сотрудника —" options={[
               { value: '', label: '— Выберите сотрудника —' },
-              ...employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName || ''}${emp.position ? ` (${emp.position})` : ''}` }))
+              ...employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName || ''}${emp.jobTitle ? ` (${emp.jobTitle})` : ''}` }))
             ]} />
           </div>
 

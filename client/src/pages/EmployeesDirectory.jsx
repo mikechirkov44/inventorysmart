@@ -5,35 +5,32 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { employeesAPI, positionsAPI } from '../services/api';
+import { employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
-import CustomSelect from '../components/CustomSelect';
 
 /** Компонент справочника сотрудников */
 function EmployeesDirectory() {
   const [employees, setEmployees] = useState([]);
-  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [filterPosition, setFilterPosition] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     middleName: '',
-    positionId: '',
+    jobTitle: '',
     phone: '',
     email: ''
   });
   const toast = useToast();
   const confirm = useConfirm();
 
-  /** Загрузка сотрудников и должностей при монтировании */
+  /** Загрузка списка сотрудников при монтировании */
   useEffect(() => {
-    Promise.all([fetchEmployees(), fetchPositions()]);
+    fetchEmployees();
   }, []);
 
   /** Загрузка списка сотрудников с сервера */
@@ -45,22 +42,7 @@ function EmployeesDirectory() {
     } catch { toast.error('Ошибка загрузки'); setLoading(false); }
   };
 
-  /** Загрузка списка должностей */
-  const fetchPositions = async () => {
-    try {
-      const res = await positionsAPI.getAll();
-      setPositions(res.data);
-    } catch {}
-  };
-
-  /** Словарь должностей для отображения по ID */
-  const positionMap = useMemo(() => {
-    const m = {};
-    positions.forEach(p => { m[p.id] = p.name; });
-    return m;
-  }, [positions]);
-
-  /** Фильтрация сотрудников по поиску и должности */
+  /** Фильтрация сотрудников по поиску */
   const filtered = useMemo(() => {
     let result = [...employees];
     if (search) {
@@ -68,17 +50,15 @@ function EmployeesDirectory() {
       result = result.filter(e =>
         e.lastName.toLowerCase().includes(s) ||
         e.firstName.toLowerCase().includes(s) ||
-        (e.position && e.position.toLowerCase().includes(s)) ||
-        (e.positionId && positionMap[e.positionId]?.toLowerCase().includes(s))
+        (e.jobTitle && e.jobTitle.toLowerCase().includes(s))
       );
     }
-    if (filterPosition) result = result.filter(e => e.positionId === filterPosition);
     return result;
-  }, [employees, search, filterPosition, positionMap]);
+  }, [employees, search]);
 
   /** Сброс формы сотрудника */
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', middleName: '', positionId: '', phone: '', email: '' });
+    setFormData({ firstName: '', lastName: '', middleName: '', jobTitle: '', phone: '', email: '' });
     setEditId(null);
     setShowForm(false);
   };
@@ -89,7 +69,7 @@ function EmployeesDirectory() {
       firstName: emp.firstName || '',
       lastName: emp.lastName || '',
       middleName: emp.middleName || '',
-      positionId: emp.positionId || '',
+      jobTitle: emp.jobTitle || '',
       phone: emp.phone || '',
       email: emp.email || ''
     });
@@ -106,7 +86,6 @@ function EmployeesDirectory() {
     }
     try {
       const data = { ...formData };
-      if (!data.positionId) delete data.positionId;
       if (editId) {
         await employeesAPI.update(editId, data);
         toast.success('Сотрудник обновлён');
@@ -161,12 +140,7 @@ function EmployeesDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Должность</label>
-                <CustomSelect
-                  value={formData.positionId}
-                  onChange={(v) => setFormData({ ...formData, positionId: v })}
-                  placeholder="Не назначена"
-                  options={positions.map(p => ({ value: p.id, label: p.name }))}
-                />
+                <input type="text" value={formData.jobTitle} onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })} placeholder="Например, инженер" />
               </div>
               <div className="form-group">
                 <label>Телефон</label>
@@ -189,12 +163,6 @@ function EmployeesDirectory() {
       <div className="filters-panel">
         <div className="filter-row">
           <input type="text" placeholder="Поиск по ФИО, должности..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <CustomSelect
-            value={filterPosition}
-            onChange={setFilterPosition}
-            placeholder="Все должности"
-            options={positions.map(p => ({ value: p.id, label: p.name }))}
-          />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {employees.length}</div>
       </div>
@@ -219,7 +187,7 @@ function EmployeesDirectory() {
                 filtered.map(emp => (
                   <tr key={emp.id}>
                     <td className="td-bold">{emp.lastName} {emp.firstName} {emp.middleName}</td>
-                    <td>{emp.positionId ? positionMap[emp.positionId] || '—' : '—'}</td>
+                    <td>{emp.jobTitle || '—'}</td>
                     <td>{emp.phone || '—'}</td>
                     <td>{emp.email || '—'}</td>
                     <td>

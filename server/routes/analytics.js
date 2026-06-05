@@ -11,7 +11,6 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
-const Position = require('../models/position');
 
 /**
  * Рассчитывает аналитические данные по сотрудникам и оборудованию.
@@ -25,7 +24,6 @@ async function getAnalytics(companyId) {
   const allWorkOrders = await WorkOrder.findAll(companyId);
   const allRooms = await Room.findAll(companyId);
   const allEmployees = await Employee.findAll(companyId);
-  const allPositions = await Position.findAll();
 
   const workMap = {};
   allWorks.forEach(w => { workMap[w.id] = w; });
@@ -36,9 +34,6 @@ async function getAnalytics(companyId) {
   const empMap = {};
   allEmployees.forEach(e => { empMap[e.id] = e; });
 
-  const positionMap = {};
-  allPositions.forEach(p => { positionMap[p.id] = p.name; });
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -48,7 +43,7 @@ async function getAnalytics(companyId) {
     employeeStats[emp.id] = {
       employeeId: emp.id,
       employeeName: `${emp.lastName} ${emp.firstName}`,
-      position: positionMap[emp.positionId] || '',
+      position: emp.jobTitle || '',
       totalPlanned: 0,
       totalCompleted: 0,
       onTime: 0,

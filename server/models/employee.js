@@ -19,6 +19,7 @@ function mapRow(row) {
     lastName: row.last_name,
     middleName: row.middle_name,
     positionId: row.position_id,
+    jobTitle: row.job_title || '',
     phone: row.phone,
     email: row.email,
     createdAt: row.created_at,
@@ -62,8 +63,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO employees (first_name, last_name, middle_name, position_id, phone, email, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.phone || '', data.email || '', companyId]
+      'INSERT INTO employees (first_name, last_name, middle_name, position_id, job_title, phone, email, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.jobTitle || '', data.phone || '', data.email || '', companyId]
     );
     return mapRow(rows[0]);
   },
@@ -76,7 +77,7 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённый сотрудник или null
    */
   update: async (id, data, companyId) => {
-    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id' };
+    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id', jobTitle: 'job_title' };
     const fields = [];
     const values = [];
     let i = 1;

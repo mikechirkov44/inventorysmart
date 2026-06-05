@@ -47,7 +47,7 @@ function PerformanceChart({ data }) {
             <div key={emp.employeeId} className="perf-row">
               <div className="perf-label" title={emp.employeeName}>
                 <span className="perf-name">{emp.employeeName}</span>
-                <span className="perf-position">{emp.position || ''}</span>
+                <span className="perf-position">{emp.jobTitle || ''}</span>
               </div>
               <div className="perf-bar-track">
                 <div
@@ -288,7 +288,7 @@ function AnalyticsPage() {
                     analytics.map(emp => (
                       <tr key={emp.employeeId}>
                         <td className="td-bold">{emp.employeeName}</td>
-                        <td>{emp.position || '—'}</td>
+                        <td>{emp.jobTitle || '—'}</td>
                         <td>{emp.totalPlanned}</td>
                         <td>{emp.totalCompleted}</td>
                         <td>
