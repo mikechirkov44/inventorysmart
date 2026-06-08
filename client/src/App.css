@@ -4312,7 +4312,8 @@ input, textarea, select { font-family: inherit; }
 
 /* ===== QR SCANNER ANIMATED ===== */
 .qr-scanner { max-width: 600px; margin: 0 auto; padding: 24px 20px; }
-.qr-scanner h1 { font-size: 1.5rem; margin-bottom: 20px; }
+.qr-scanner h1 { font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.qr-scanner h1 svg { color: var(--primary); flex-shrink: 0; }
 
 .scanner-container { text-align: center; margin-bottom: 24px; }
 
