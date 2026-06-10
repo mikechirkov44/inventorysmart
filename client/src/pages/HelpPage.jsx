@@ -61,6 +61,7 @@ function HelpPage() {
           <Step number={1} icon={Search} title="Просмотр оборудования">
             Перейдите в раздел <strong>«Справочники → Оборудование»</strong>. Доступны два режима: <strong>карточки</strong> (визуальный) и <strong>таблица</strong> (с фильтрами и сортировкой).
             <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Используйте поиск по наименованию или инвентарному номеру.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> На карточке оборудования статус и меню действий (⋮) расположены на одной строке.
           </Step>
 
           <Step number={2} icon={Plus} title="Добавление оборудования">
@@ -83,6 +84,16 @@ function HelpPage() {
             <strong>Помещения</strong> — создавайте производственные зоны и цеха.<br/>
             <strong>ЗИП</strong> — учитывайте запасные части с указанием остатков, единиц измерения и привязки к работам.
           </Step>
+
+          <Step number={5} icon={FileText} title="Типовые неисправности">
+            В разделе <strong>«Справочники → Типовые неисправности»</strong> создавайте шаблоны поломок для каждого оборудования. 
+            При создании инцидента через QR-сканер или вручную можно выбрать типовую неисправность — описание заполнится автоматически.
+          </Step>
+
+          <Step number={6} icon={FileText} title="Действия со справочниками">
+            Во всех справочниках действия (<strong>Дублировать</strong>, <strong>Изменить</strong>, <strong>Удалить</strong>) доступны через выпадающее меню (⋮) в каждой строке таблицы.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> <strong>Дублировать</strong> — создает копию записи с префиксом «(копия)», удобно для быстрого добавления похожих элементов.
+          </Step>
         </div>
 
         {/* Section 3: Work Journal */}
@@ -95,7 +106,7 @@ function HelpPage() {
           </p>
 
           <Step number={1} icon={CheckCircle} title="Отметка выполнения работы">
-            Найдите работу в статусе <strong>«В ожидании»</strong> и нажмите кнопку <strong>«Выполнено»</strong>. 
+            Найдите работу в статусе <strong>«В ожидании»</strong> в таблице и нажмите кнопку <strong>«Выполнено»</strong> в меню действий (⋮). 
             Система предложит списать использованные ЗИП (если они привязаны к работе).
           </Step>
 
@@ -104,9 +115,10 @@ function HelpPage() {
             появится кнопка <strong>«+ Добавить запись»</strong>. Выберите оборудование, работу, статус и дату.
           </Step>
 
-          <Step number={3} icon={FileText} title="Фильтрация записей">
-            Используйте кнопки фильтров вверху: <strong>Все</strong>, <strong>В ожидании</strong>, <strong>Выполнены</strong>.
-            Также можно удалить запись через кнопку <strong>«Удалить»</strong>.
+          <Step number={3} icon={FileText} title="Фильтрация и управление">
+            Журнал работ отображается в виде таблицы: <strong>Оборудование</strong>, <strong>Работа</strong>, <strong>Статус</strong>, <strong>Дата</strong>, <strong>Мастер</strong>, <strong>ЗИП</strong>.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Используйте кнопки фильтров вверху: <strong>Все</strong>, <strong>В ожидании</strong>, <strong>Выполнены</strong>.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Действия доступны через выпадающее меню (⋮) в каждой строке.
           </Step>
         </div>
 
@@ -172,7 +184,8 @@ function HelpPage() {
 
           <Step number={2} icon={Plus} title="Ручное создание">
             В разделе <strong>«Инциденты»</strong> нажмите <strong>«+ Добавить инцидент»</strong> (при включенной настройке «Разрешить осмотры без QR-кода»).
-            Выберите оборудование из списка, опишите проблему и загрузите фото.
+            Выберите оборудование из списка, затем выберите <strong>типовую неисправность</strong> из выпадающего списка (описание заполнится автоматически) или введите описание вручную.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Загрузите фото для наглядности.
           </Step>
 
           <Step number={3} icon={CheckCircle} title="Обработка инцидента">
@@ -219,12 +232,18 @@ function HelpPage() {
           </p>
 
           <Step number={1} icon={Users} title="Эффективность сотрудников">
-            В разделе <strong>«Аналитика»</strong> отображается количество выполненных работ по каждому сотруднику за выбранный период.
+            В разделе <strong>«Аналитика → Сотрудники»</strong> отображается количество выполненных работ по каждому сотруднику за выбранный период.
             <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Используйте фильтр по периоду: неделя, месяц, квартал, год.
           </Step>
 
           <Step number={2} icon={FileText} title="Остатки ЗИП">
-            Таблица остатков запасных частей с цветовой индикацией: <span style={{ color: 'var(--warning)' }}>желтые</span> — ниже нормы, <span style={{ color: 'var(--danger)' }}>красные</span> — критический уровень.
+            Вкладка <strong>«Аналитика → ЗИП»</strong> показывает таблицу остатков с цветовой индикацией: <span style={{ color: 'var(--warning)' }}>желтые</span> — ниже нормы, <span style={{ color: 'var(--danger)' }}>красные</span> — критический уровень.
+          </Step>
+
+          <Step number={3} icon={BarChart3} title="Отчет по оборудованию">
+            Вкладка <strong>«Аналитика → Оборудование»</strong> содержит отчет по всему оборудованию с количеством инцидентов на каждую единицу.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Фильтры: категория, статус, помещение, поиск по наименованию и инв. номеру.
+            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Цветовая индикация инцидентов: <span style={{ color: 'var(--warning)' }}>1–2</span> — внимание, <span style={{ color: 'var(--danger)' }}>3+</span> — критично.
           </Step>
         </div>
 
@@ -304,6 +323,13 @@ function HelpPage() {
             </Step>
             <Step number={6} icon={Calendar} title="Планируйте заранее">
               Создавайте работы в справочнике с периодичностью — система автоматически будет генерировать уведомления.
+            </Step>
+            <Step number={7} icon={FileText} title="Меню действий (⋮)">
+              Во всех таблицах и карточках действия скрыты за кнопкой с тремя точками (⋮). Нажмите её, чтобы открыть выпадающее меню с доступными операциями: дублировать, изменить, удалить.
+            </Step>
+            <Step number={8} icon={Plus} title="Дублирование записей">
+              В справочниках (Работы, Помещения, Сотрудники, ЗИП, Типовые неисправности, Пользователи, Должности) доступна функция <strong>«Дублировать»</strong>. 
+              Она создает копию записи с суффиксом «(копия)» — удобно для быстрого создания похожих элементов.
             </Step>
           </div>
         </div>
