@@ -4312,7 +4312,7 @@ input, textarea, select { font-family: inherit; }
 
 /* ===== QR SCANNER ANIMATED ===== */
 .qr-scanner { max-width: 600px; margin: 0 auto; padding: 24px 20px; }
-.qr-scanner h1 { font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.qr-scanner h1 { font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .qr-scanner h1 svg { color: var(--primary); flex-shrink: 0; }
 
 .scanner-container { text-align: center; margin-bottom: 24px; }
@@ -4328,58 +4328,137 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .qr-animated {
   position: relative;
   width: 200px;
   height: 200px;
+  animation: qrFloat 3s ease-in-out infinite;
+  background: #f8f9fc;
+  border-radius: 16px;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .qr-animated svg {
-  width: 200px;
-  height: 200px;
+  width: 184px;
+  height: 184px;
+  animation: qrPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(79, 70, 229, 0.3));
 }
 
-.qr-scan-line {
+@keyframes qrPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.97); }
+}
+
+@keyframes qrFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* Holographic glow around QR code */
+.qr-animated::before {
+  content: '';
   position: absolute;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  border-radius: 2px;
-  animation: qrScan 2s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(79, 70, 229, 0.4);
-}
-
-@keyframes qrScan {
-  0%, 100% { top: 10px; }
-  50% { top: calc(100% - 10px); }
-}
-
-.qr-corners {
-  position: absolute;
-  inset: 0;
+  inset: -4px;
+  border-radius: 20px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.12) 0%, transparent 70%);
+  animation: qrGlow 2.5s ease-in-out infinite;
   pointer-events: none;
 }
 
-.qr-corners span {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-color: var(--primary);
-  border-style: solid;
-  border-width: 0;
+@keyframes qrGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 
-.qr-corners span:nth-child(1) { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 4px; }
-.qr-corners span:nth-child(2) { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 4px; }
-.qr-corners span:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 4px; }
-.qr-corners span:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 4px; }
+/* Scan line with trail effect */
+.qr-scan-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent 0%, var(--primary) 30%, #818cf8 50%, var(--primary) 70%, transparent 100%);
+  border-radius: 4px;
+  animation: qrScan 2s ease-in-out infinite;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.2);
+  z-index: 2;
+}
 
+/* Scan trail behind the line */
+.qr-scan-line::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.15) 40%, rgba(99, 102, 241, 0.25) 50%, rgba(99, 102, 241, 0.15) 60%, transparent 100%);
+  animation: qrTrail 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes qrScan {
+  0%, 100% { top: 8px; }
+  50% { top: calc(100% - 12px); }
+}
+
+@keyframes qrTrail {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Animated corners */
+/* Floating particles */
+.qr-animated::after {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(79, 70, 229, 0.4) 1px, transparent 1px),
+    radial-gradient(circle, rgba(99, 102, 241, 0.3) 1px, transparent 1px),
+    radial-gradient(circle, rgba(129, 140, 248, 0.2) 1px, transparent 1px);
+  background-size: 200px 200px;
+  background-position: 0 0, 60px 100px, 120px 40px;
+  animation: qrParticles 6s linear infinite;
+}
+
+@keyframes qrParticles {
+  0% { transform: rotate(0deg); opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { transform: rotate(360deg); opacity: 0.6; }
+}
+
+/* Faster scanning state */
 .qr-animated.scanning .qr-scan-line {
   animation-duration: 1s;
-  box-shadow: 0 0 14px rgba(79, 70, 229, 0.7);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.8), 0 0 60px rgba(99, 102, 241, 0.3);
+}
+
+.qr-animated.scanning .qr-scan-line::after {
+  animation-duration: 1s;
+}
+
+.qr-animated.scanning svg {
+  animation: qrScanningPulse 0.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(79, 70, 229, 0.5));
+}
+
+@keyframes qrScanningPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(0.98); }
+}
+
+.qr-animated.scanning::before {
+  animation: qrGlow 0.8s ease-in-out infinite;
+}
+
+.qr-animated.scanning::after {
+  animation-duration: 3s;
 }
 
 .manual-input { margin-top: 24px; }

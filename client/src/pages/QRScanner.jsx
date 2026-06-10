@@ -115,7 +115,7 @@ function QRScanner() {
 
       {!scanning && (
         <div className="qr-animated-wrap">
-          <div className="qr-animated">
+          <div className={`qr-animated ${scanning ? 'scanning' : ''}`}>
             <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="10" y="10" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
               <rect x="20" y="20" width="30" height="30" rx="1" fill="var(--gray-800)"/>
@@ -168,9 +168,6 @@ function QRScanner() {
               <rect x="180" y="180" width="10" height="10" fill="var(--gray-800)"/>
             </svg>
             <div className="qr-scan-line"></div>
-            <div className="qr-corners">
-              <span></span><span></span><span></span><span></span>
-            </div>
           </div>
         </div>
       )}
