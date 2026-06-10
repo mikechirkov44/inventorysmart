@@ -23,7 +23,7 @@ async function generateWorkNotifications() {
     const companies = await Company.findAll();
     
     for (const company of companies) {
-      await generateForCompany(company.id);
+      await generateForCompany(company.companyId);
     }
   } catch (error) {
     console.error('Error generating work notifications:', error);
@@ -42,6 +42,8 @@ async function generateForCompany(companyId) {
   const allRooms = await Room.findAll(companyId);
   const allEmployees = await Employee.findAll(companyId);
   const allUsers = await User.findAllByCompany(companyId);
+  // Log counts for debugging
+  // console.log(`[NotificationGenerator] Company ${companyId}: equipment=${allEquipment.length}, works=${allWorks.length}, orders=${allWorkOrders.length}, rooms=${allRooms.length}, employees=${allEmployees.length}, users=${allUsers.length}`);
 
   const workMap = {};
   allWorks.forEach(w => { workMap[w.id] = w; });

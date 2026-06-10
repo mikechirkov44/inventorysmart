@@ -19,6 +19,7 @@ function mapRow(row) {
   if (!row) return null;
   return {
     id: row.id,
+    companyId: row.company_id,
     companyName: row.company_name,
     logo: row.logo,
     timezone: row.timezone,
