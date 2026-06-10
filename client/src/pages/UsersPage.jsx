@@ -5,10 +5,12 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { usersAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент управления пользователями */
 function UsersPage() {
@@ -53,6 +55,13 @@ function UsersPage() {
   const handleEdit = (user) => {
     setFormData({ username: user.username, password: '', fullName: user.fullName || '', role: user.role });
     setEditId(user.id);
+    setShowForm(true);
+  };
+
+  /** Дублирование пользователя */
+  const handleDuplicate = (user) => {
+    setFormData({ username: user.username + '_copy', password: '', fullName: user.fullName || '', role: user.role });
+    setEditId(null);
     setShowForm(true);
   };
 
@@ -166,10 +175,11 @@ function UsersPage() {
                   </td>
                   <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
                   <td>
-                    <div className="table-actions">
-                      <button onClick={() => handleEdit(u)} className="btn btn-small btn-secondary">Ред.</button>
-                      <button onClick={() => handleDelete(u.id)} className="btn btn-small btn-danger">Удал.</button>
-                    </div>
+                    <ActionsMenu items={[
+                      { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(u) },
+                      { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(u) },
+                      { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(u.id), danger: true },
+                    ]} />
                   </td>
                 </tr>
               ))}

@@ -3,13 +3,14 @@
  * @description Табличное представление списка оборудования с фильтрами, сортировкой и удалением.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { FolderTree } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FolderTree, Pencil, Trash2 } from 'lucide-react';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -34,6 +35,7 @@ function EquipmentTable() {
 
   const toast = useToast();
   const confirm = useConfirm();
+  const navigate = useNavigate();
 
   /** Загрузка оборудования, помещений и работ */
   useEffect(() => {
@@ -190,11 +192,10 @@ function EquipmentTable() {
                       {item.photo ? <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" /> : <span className="no-photo-small">—</span>}
                     </td>
                     <td>
-                      <div className="table-actions">
-                        <Link to={`/equipment/${item.id}`} className="btn btn-small">Открыть</Link>
-                        <Link to={`/equipment/${item.id}/edit`} className="btn btn-small btn-secondary">Ред.</Link>
-                        <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 );

@@ -5,9 +5,9 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Wrench } from 'lucide-react';
 import api from '../services/api';
-import { sparePartsAPI } from '../services/api';
+import { sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI } from '../services/api';
 import CustomSelect from '../components/CustomSelect';
 
 /** Компонент горизонтальной диаграммы эффективности сотрудников */
@@ -205,6 +205,179 @@ function StockReport() {
   );
 }
 
+/** Компонент отчёта по оборудованию и инцидентам */
+function EquipmentReport() {
+  const [equipment, setEquipment] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterRoom, setFilterRoom] = useState('');
+
+  /** Загрузка оборудования, инцидентов и помещений */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [eqRes, incRes, roomRes] = await Promise.all([
+          equipmentAPI.getAll(),
+          incidentsAPI.getAll(),
+          roomsAPI.getAll()
+        ]);
+        setEquipment(eqRes.data);
+        setIncidents(incRes.data);
+        setRooms(roomRes.data);
+        setLoading(false);
+      } catch {
+        setError('Ошибка загрузки данных');
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  /** Словарь помещений */
+  const roomMap = useMemo(() => {
+    const m = {};
+    rooms.forEach(r => { m[r.id] = r.name; });
+    return m;
+  }, [rooms]);
+
+  /** Подсчёт инцидентов по оборудованию */
+  const incidentCountByEquipment = useMemo(() => {
+    const counts = {};
+    incidents.forEach(inc => {
+      if (inc.equipmentId) {
+        counts[inc.equipmentId] = (counts[inc.equipmentId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [incidents]);
+
+  /** Уникальные категории */
+  const categories = useMemo(() => {
+    return [...new Set(equipment.map(e => e.category).filter(Boolean))].sort();
+  }, [equipment]);
+
+  /** Фильтрация оборудования */
+  const filtered = useMemo(() => {
+    let result = [...equipment];
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(e =>
+        e.name.toLowerCase().includes(s) ||
+        (e.inventoryNumber && e.inventoryNumber.toLowerCase().includes(s))
+      );
+    }
+    if (filterCategory) result = result.filter(e => e.category === filterCategory);
+    if (filterStatus) result = result.filter(e => e.status === filterStatus);
+    if (filterRoom) result = result.filter(e => e.roomId === filterRoom);
+    return result;
+  }, [equipment, search, filterCategory, filterStatus, filterRoom]);
+
+  /** Статистика */
+  const stats = useMemo(() => {
+    const total = equipment.length;
+    const withIncidents = equipment.filter(e => (incidentCountByEquipment[e.id] || 0) > 0).length;
+    const totalIncidents = incidents.length;
+    const avgIncidents = total > 0 ? (totalIncidents / total).toFixed(1) : 0;
+    return { total, withIncidents, totalIncidents, avgIncidents };
+  }, [equipment, incidents, incidentCountByEquipment]);
+
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+
+  return (
+    <>
+      {error && <div className="error">{error}</div>}
+
+      <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 16 }}>
+        <div className="summary-card primary">
+          <div className="summary-value">{stats.total}</div>
+          <div className="summary-label">Всего единиц</div>
+        </div>
+        <div className="summary-card danger">
+          <div className="summary-value">{stats.withIncidents}</div>
+          <div className="summary-label">С инцидентами</div>
+        </div>
+        <div className="summary-card warning">
+          <div className="summary-value">{stats.totalIncidents}</div>
+          <div className="summary-label">Всего инцидентов</div>
+        </div>
+        <div className="summary-card muted">
+          <div className="summary-value">{stats.avgIncidents}</div>
+          <div className="summary-label">Среднее на единицу</div>
+        </div>
+      </div>
+
+      <div className="filters-panel">
+        <div className="filter-row">
+          <input type="text" placeholder="Поиск по наименованию, инв. номеру..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
+          <CustomSelect value={filterCategory} onChange={setFilterCategory} placeholder="Все категории" options={categories.map(c => ({ value: c, label: c }))} />
+          <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
+            { value: 'working', label: 'Работает' },
+            { value: 'under_repair', label: 'В ремонте' },
+            { value: 'needs_repair', label: 'Требует ремонта' }
+          ]} />
+          <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все помещения" options={rooms.map(r => ({ value: r.id, label: r.name }))} />
+        </div>
+        <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {equipment.length}</div>
+      </div>
+
+      <div className="table-container">
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Инв. номер</th>
+                <th>Категория</th>
+                <th>Помещение</th>
+                <th>Статус</th>
+                <th>Инциденты</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan="6" className="no-results-cell">Оборудование не найдено</td></tr>
+              ) : (
+                filtered.map(item => {
+                  const incCount = incidentCountByEquipment[item.id] || 0;
+                  const statusMap = {
+                    working: { label: 'Работает', className: 'status-working' },
+                    under_repair: { label: 'В ремонте', className: 'status-under-repair' },
+                    needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' }
+                  };
+                  const st = statusMap[item.status] || statusMap.working;
+                  return (
+                    <tr key={item.id}>
+                      <td className="td-bold">{item.name}</td>
+                      <td>{item.inventoryNumber || '—'}</td>
+                      <td>{item.category || '—'}</td>
+                      <td>{roomMap[item.roomId] || '—'}</td>
+                      <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                      <td>
+                        {incCount > 0 ? (
+                          <span className={`overdue-badge ${incCount >= 3 ? 'overdue' : incCount >= 1 ? 'new' : 'ok'}`}>
+                            {incCount}
+                          </span>
+                        ) : (
+                          <span className="td-muted">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /** Основной компонент страницы аналитики */
 function AnalyticsPage() {
   const [analytics, setAnalytics] = useState([]);
@@ -227,13 +400,16 @@ function AnalyticsPage() {
         <h1><BarChart3 size={24} />Аналитика</h1>
         <div className="header-actions">
           <button onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
+          <button onClick={() => setView('equipment')} className={`btn ${view === 'equipment' ? 'btn-primary' : ''}`}>Оборудование</button>
           <button onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
         </div>
       </div>
 
-      {/* Переключение между видом сотрудников и ЗИП */}
+      {/* Переключение между видами аналитики */}
       {view === 'stock' ? (
         <StockReport />
+      ) : view === 'equipment' ? (
+        <EquipmentReport />
       ) : (
         <>
           {summary && (

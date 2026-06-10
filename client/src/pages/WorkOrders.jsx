@@ -4,13 +4,14 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, CheckCircle, Trash2 } from 'lucide-react';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
+import ActionsMenu from '../components/ActionsMenu';
 
 function WorkOrders() {
   /** Состояние журнала работ, оборудования, запчастей, фильтров */
@@ -246,89 +247,58 @@ function WorkOrders() {
         </div>
       </div>
 
-      <div className="work-orders-list">
-        {filteredWorkOrders.length === 0 ? (
-          <div className="no-results">Записей не найдено</div>
-        ) : (
-          filteredWorkOrders.map(wo => (
-            <div key={wo.id} className={`work-order-card ${wo.status}`}>
-              <div className="wo-main">
-                <div className="wo-equipment">
-                  <Link to={`/equipment/${wo.equipmentId}`}>
-                    {getEquipmentName(wo.equipmentId)}
-                  </Link>
-                </div>
-                <div className="wo-task">{wo.taskName}</div>
-                <div className="wo-master">{wo.masterName}</div>
-                <div className="wo-date">
-                  {new Date(wo.createdAt).toLocaleDateString('ru-RU')}
-                </div>
-              </div>
-              <div className="wo-notes">{wo.notes}</div>
-
-              {wo.sparePartsUsed && wo.sparePartsUsed.length > 0 && (
-                <div className="wo-spare-parts-used">
-                  <span className="wo-sp-label">Использовано ЗИП:</span>
-                  {wo.sparePartsUsed.map((sp, i) => {
-                    const spData = allSpareParts.find(s => s.id === sp.sparePartId);
-                    return (
-                      <span key={i} className="wo-sp-item">
-                        {spData ? spData.name : '—'} × {sp.quantity} {spData ? (spData.unit || 'шт') : ''}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
-              {completingId === wo.id ? (
-                <div className="wo-complete-form">
-                  <div className="wo-complete-title">Списание ЗИП:</div>
-                  {sparePartsSelection.length > 0 ? (
-                    <div className="wo-sp-select-list">
-                      {sparePartsSelection.map(sp => (
-                        <div key={sp.sparePartId} className="wo-sp-select-item">
-                          <span className="wo-sp-select-name">{sp.name} ({sp.unit})</span>
-                          <span className="wo-sp-select-stock">на складе: {sp.maxQty}</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max={sp.maxQty}
-                            value={sp.quantity}
-                            onChange={(e) => updateSparePartQty(sp.sparePartId, e.target.value)}
-                            className="wo-sp-input"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="wo-no-sp">Нет привязанных запчастей для этой работы</p>
-                  )}
-                  <div className="wo-complete-actions">
-                    <button onClick={confirmComplete} className="btn btn-small btn-primary">Подтвердить</button>
-                    <button onClick={cancelComplete} className="btn btn-small">Отмена</button>
-                  </div>
-                </div>
+      <div className="table-container">
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Оборудование</th>
+                <th>Работа</th>
+                <th>Статус</th>
+                <th>Дата</th>
+                <th>Мастер</th>
+                <th>ЗИП</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredWorkOrders.length === 0 ? (
+                <tr><td colSpan="7" className="no-results-cell">Записей не найдено</td></tr>
               ) : (
-                <div className="wo-actions">
-                  {wo.status === 'pending' && (
-                    <button
-                      onClick={() => handleStatusChange(wo.id, 'completed')}
-                      className="btn btn-small btn-primary"
-                    >
-                      Выполнено
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(wo.id)}
-                    className="btn btn-small btn-danger"
-                  >
-                    Удалить
-                  </button>
-                </div>
+                filteredWorkOrders.map(wo => (
+                  <tr key={wo.id} className={`wo-row-${wo.status}`}>
+                    <td>
+                      <Link to={`/equipment/${wo.equipmentId}`} className="table-link">
+                        {getEquipmentName(wo.equipmentId)}
+                      </Link>
+                    </td>
+                    <td>{wo.taskName}</td>
+                    <td>
+                      <span className={`status-badge ${wo.status === 'completed' ? 'status-working' : 'status-needs-repair'}`}>
+                        {wo.status === 'completed' ? 'Выполнена' : 'В ожидании'}
+                      </span>
+                    </td>
+                    <td>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td>{wo.masterName || '—'}</td>
+                    <td>
+                      {wo.sparePartsUsed && wo.sparePartsUsed.length > 0 ? (
+                        <span className="td-muted">{wo.sparePartsUsed.length} поз.</span>
+                      ) : (
+                        <span className="td-muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <ActionsMenu items={[
+                        ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
+                      ]} />
+                    </td>
+                  </tr>
+                ))
               )}
-            </div>
-          ))
-        )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Модальное окно создания записи журнала работ вручную */}
@@ -377,6 +347,39 @@ function WorkOrders() {
                 {addSubmitting ? 'Сохранение...' : 'Сохранить'}
               </button>
               <button onClick={() => setShowAddModal(false)} className="btn">Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка списания ЗИП при выполнении работы */}
+      {completingId && (
+        <div className="complete-task-modal" onClick={() => cancelComplete()}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Списание ЗИП</h3>
+            {sparePartsSelection.length > 0 ? (
+              <div className="wo-sp-select-list">
+                {sparePartsSelection.map(sp => (
+                  <div key={sp.sparePartId} className="wo-sp-select-item">
+                    <span className="wo-sp-select-name">{sp.name} ({sp.unit})</span>
+                    <span className="wo-sp-select-stock">на складе: {sp.maxQty}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={sp.maxQty}
+                      value={sp.quantity}
+                      onChange={(e) => updateSparePartQty(sp.sparePartId, e.target.value)}
+                      className="wo-sp-input"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="wo-no-sp">Нет привязанных запчастей для этой работы</p>
+            )}
+            <div className="modal-actions">
+              <button onClick={confirmComplete} className="btn btn-primary">Подтвердить выполнение</button>
+              <button onClick={cancelComplete} className="btn">Отмена</button>
             </div>
           </div>
         </div>

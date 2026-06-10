@@ -13,3 +13,4 @@ server/data/rooms.json
 server/data/employees.json
 server/uploads/*
 !server/uploads/.gitkeep
+dist.tar.gz

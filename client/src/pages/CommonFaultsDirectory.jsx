@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Wrench } from 'lucide-react';
+import { Wrench, Copy, Pencil, Trash2 } from 'lucide-react';
 import { commonFaultsAPI, equipmentAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 function CommonFaultsDirectory() {
   const [items, setItems] = useState([]);
@@ -78,6 +79,12 @@ function CommonFaultsDirectory() {
     setShowForm(true);
   };
 
+  const handleDuplicate = (item) => {
+    setEditing(null);
+    setForm({ equipmentId: item.equipment_id, name: item.name + ' (копия)' });
+    setShowForm(true);
+  };
+
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удалить?', message: 'Типовая неисправность будет удалена.', type: 'danger' });
     if (!confirmed) return;
@@ -127,10 +134,11 @@ function CommonFaultsDirectory() {
                     </td>
                     <td>{item.name}</td>
                     <td>
-                      <div className="table-actions">
-                        <button onClick={() => handleEdit(item)} className="btn btn-small btn-secondary">Ред.</button>
-                        <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 ))

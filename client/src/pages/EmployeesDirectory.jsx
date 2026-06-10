@@ -5,10 +5,11 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree } from 'lucide-react';
+import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
 import { employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент справочника сотрудников */
 function EmployeesDirectory() {
@@ -75,6 +76,20 @@ function EmployeesDirectory() {
       email: emp.email || ''
     });
     setEditId(emp.id);
+    setShowForm(true);
+  };
+
+  /** Дублирование сотрудника */
+  const handleDuplicate = (emp) => {
+    setFormData({
+      firstName: emp.firstName || '',
+      lastName: emp.lastName + ' (копия)',
+      middleName: emp.middleName || '',
+      jobTitle: emp.jobTitle || '',
+      phone: emp.phone || '',
+      email: emp.email || ''
+    });
+    setEditId(null);
     setShowForm(true);
   };
 
@@ -192,10 +207,11 @@ function EmployeesDirectory() {
                     <td>{emp.phone || '—'}</td>
                     <td>{emp.email || '—'}</td>
                     <td>
-                      <div className="table-actions">
-                        <button onClick={() => handleEdit(emp)} className="btn btn-small btn-secondary">Ред.</button>
-                        <button onClick={() => handleDelete(emp.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(emp) },
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(emp) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(emp.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 ))

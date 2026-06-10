@@ -3,11 +3,12 @@
  * @description Справочник работ: добавление, редактирование, удаление плановых работ.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree } from 'lucide-react';
+import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Варианты периодичности работ */
 const FREQUENCY_OPTIONS = [
@@ -90,6 +91,18 @@ function WorksDirectory() {
       category: work.category || ''
     });
     setEditId(work.id);
+    setShowForm(true);
+  };
+
+  /** Дублирование работы */
+  const handleDuplicate = (work) => {
+    setFormData({
+      name: work.name + ' (копия)',
+      description: work.description || '',
+      frequencyDays: work.frequencyDays || 30,
+      category: work.category || ''
+    });
+    setEditId(null);
     setShowForm(true);
   };
 
@@ -207,10 +220,11 @@ function WorksDirectory() {
                     <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
                     <td className="td-muted">{work.description || '—'}</td>
                     <td>
-                      <div className="table-actions">
-                        <button onClick={() => handleEdit(work)} className="btn btn-small btn-secondary">Ред.</button>
-                        <button onClick={() => handleDelete(work.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(work) },
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(work) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(work.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 ))

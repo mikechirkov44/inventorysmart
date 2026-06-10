@@ -5,11 +5,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree } from 'lucide-react';
+import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент справочника запасных частей */
 function SparePartsDirectory() {
@@ -95,6 +96,22 @@ function SparePartsDirectory() {
       workLinks: item.workLinks || []
     });
     setEditId(item.id);
+    setShowForm(true);
+  };
+
+  /** Дублирование позиции ЗИП */
+  const handleDuplicate = (item) => {
+    setFormData({
+      name: item.name + ' (копия)',
+      article: item.article || '',
+      manufacturer: item.manufacturer || '',
+      unit: item.unit || 'шт',
+      minStock: item.minStock || 0,
+      quantity: 0,
+      equipmentIds: item.equipmentIds || [],
+      workLinks: item.workLinks || []
+    });
+    setEditId(null);
     setShowForm(true);
   };
 
@@ -330,10 +347,11 @@ function SparePartsDirectory() {
                       </div>
                     </td>
                     <td>
-                      <div className="table-actions">
-                        <button onClick={() => handleEdit(item)} className="btn btn-small btn-secondary">Ред.</button>
-                        <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 ))

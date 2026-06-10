@@ -7,10 +7,11 @@
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, Server, CheckCircle, XCircle, Shield, Settings } from 'lucide-react';
+import { Upload, Server, CheckCircle, XCircle, Shield, Settings, Copy, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
 
@@ -216,6 +217,13 @@ function PositionsTab() {
     setShowForm(true);
   };
 
+  /** Дублирование роли */
+  const handleDuplicate = (pos) => {
+    setFormData({ name: pos.name + ' (копия)', permissions: { ...pos.permissions } });
+    setEditId(null);
+    setShowForm(true);
+  };
+
   /** Обновление права доступа для роли */
   const handlePermChange = (key, value) => {
     setFormData(prev => ({
@@ -344,10 +352,13 @@ function PositionsTab() {
                       </div>
                     </td>
                     <td>
-                      <div className="table-actions">
-                        {canEditSettings && <button onClick={() => handleEdit(pos)} className="btn btn-small btn-secondary">Ред.</button>}
-                        {canEditSettings && <button onClick={() => handleDelete(pos.id)} className="btn btn-small btn-danger">Удал.</button>}
-                      </div>
+                      {canEditSettings && (
+                        <ActionsMenu items={[
+                          { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(pos) },
+                          { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(pos) },
+                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(pos.id), danger: true },
+                        ]} />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -799,10 +810,10 @@ function SettingsPage() {
                             <td>{u.employeeName || '—'}</td>
                             <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
                             <td>
-                              <div className="table-actions">
-                                <button onClick={() => handleEditUser(u)} className="btn btn-small btn-secondary">Ред.</button>
-                                <button onClick={() => handleDeleteUser(u.id)} className="btn btn-small btn-danger">Удал.</button>
-                              </div>
+                              <ActionsMenu items={[
+                                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEditUser(u) },
+                                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDeleteUser(u.id), danger: true },
+                              ]} />
                             </td>
                           </tr>
                         ))}

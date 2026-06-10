@@ -6,12 +6,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2, FileText } from 'lucide-react';
 import api, { incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Маппинг статусов инцидентов на метки и CSS-классы */
 const STATUS_MAP = {
@@ -226,10 +227,10 @@ function IncidentsPage() {
                       <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
                       <td>{inc.photos?.length || 0} шт.</td>
                       <td>
-                        <div className="table-actions">
-                          <button onClick={() => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); }} className="btn btn-small btn-secondary">Подробнее</button>
-                          <button onClick={() => handleDelete(inc.id)} className="btn btn-small btn-danger">Удал.</button>
-                        </div>
+                        <ActionsMenu items={[
+                          { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
+                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
+                        ]} />
                       </td>
                     </tr>
                   );

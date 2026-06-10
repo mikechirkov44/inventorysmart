@@ -5,11 +5,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree } from 'lucide-react';
+import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент справочника помещений */
 function RoomsDirectory() {
@@ -96,6 +97,19 @@ function RoomsDirectory() {
       responsibleEmployeeId: room.responsibleEmployeeId || ''
     });
     setEditId(room.id);
+    setShowForm(true);
+  };
+
+  /** Дублирование помещения */
+  const handleDuplicate = (room) => {
+    setFormData({
+      name: room.name + ' (копия)',
+      description: room.description || '',
+      building: room.building || '',
+      floor: room.floor || '',
+      responsibleEmployeeId: room.responsibleEmployeeId || ''
+    });
+    setEditId(null);
     setShowForm(true);
   };
 
@@ -213,10 +227,11 @@ function RoomsDirectory() {
                     <td><span className="equipment-count-badge">{equipmentCountByRoomId[room.id] || 0} ед.</span></td>
                     <td className="td-muted">{room.description || '—'}</td>
                     <td>
-                      <div className="table-actions">
-                        <button onClick={() => handleEdit(room)} className="btn btn-small btn-secondary">Ред.</button>
-                        <button onClick={() => handleDelete(room.id)} className="btn btn-small btn-danger">Удал.</button>
-                      </div>
+                      <ActionsMenu items={[
+                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(room) },
+                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(room) },
+                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(room.id), danger: true },
+                      ]} />
                     </td>
                   </tr>
                 ))

@@ -5,11 +5,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Eye, Trash2 } from 'lucide-react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomDatePicker from '../components/CustomDatePicker';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент управления приходными документами ЗИП */
 function SparePartsReceipts() {
@@ -323,9 +324,10 @@ function SparePartsReceipts() {
                       <td>{(r.items || []).length} ({totalQty} шт.)</td>
                       <td>{totalSum > 0 ? formatPrice(totalSum) : '—'}</td>
                       <td>
-                        <div className="table-actions">
-                          <button onClick={() => handleDelete(r.id)} className="btn btn-small btn-danger">Удал.</button>
-                        </div>
+                        <ActionsMenu items={[
+                          { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => setExpandedId(expandedId === r.id ? null : r.id) },
+                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(r.id), danger: true },
+                        ]} />
                       </td>
                     </tr>
                   );
