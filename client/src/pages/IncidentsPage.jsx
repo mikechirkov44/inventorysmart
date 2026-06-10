@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
-import api, { incidentsAPI, equipmentAPI, companyAPI } from '../services/api';
+import api, { incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
@@ -34,6 +34,8 @@ function IncidentsPage() {
   const [newDescription, setNewDescription] = useState('');
   const [newPhotos, setNewPhotos] = useState([]);
   const [newPreviews, setNewPreviews] = useState([]);
+  const [commonFaults, setCommonFaults] = useState([]);
+  const [newCommonFaultId, setNewCommonFaultId] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const fileInputRef = useRef(null);
   const addModalRef = useRef(null);
@@ -74,6 +76,23 @@ function IncidentsPage() {
     fetchSettings();
     fetchAllEquipment();
   }, []);
+
+  /** Загрузка типовых неисправностей при выборе оборудования */
+  useEffect(() => {
+    const fetchFaults = async () => {
+      if (!newEquipmentId) {
+        setCommonFaults([]);
+        setNewCommonFaultId('');
+        return;
+      }
+      try {
+        const res = await commonFaultsAPI.getByEquipment(newEquipmentId);
+        setCommonFaults(res.data);
+        setNewCommonFaultId('');
+      } catch {}
+    };
+    fetchFaults();
+  }, [newEquipmentId]);
 
   /** Обновление статуса и заметки инцидента */
   const updateStatus = async (id, status) => {
@@ -120,6 +139,7 @@ function IncidentsPage() {
     try {
       const formData = new FormData();
       formData.append('equipmentId', newEquipmentId);
+      if (newCommonFaultId) formData.append('commonFaultId', newCommonFaultId);
       formData.append('description', newDescription);
       newPhotos.forEach(photo => formData.append('photos', photo));
       await incidentsAPI.create(formData);
@@ -129,6 +149,8 @@ function IncidentsPage() {
       setNewDescription('');
       setNewPhotos([]);
       setNewPreviews([]);
+      setNewCommonFaultId('');
+      setCommonFaults([]);
       fetchIncidents();
     } catch {
       toast.error('Ошибка', 'Не удалось создать инцидент');
@@ -275,6 +297,21 @@ function IncidentsPage() {
                 options={allEquipment.map(e => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
               />
             </div>
+            {commonFaults.length > 0 && (
+              <div className="form-group">
+                <label>Типовая неисправность</label>
+                <CustomSelect
+                  value={newCommonFaultId}
+                  onChange={(v) => {
+                    setNewCommonFaultId(v);
+                    const fault = commonFaults.find(f => f.id === v);
+                    if (fault) setNewDescription(fault.name);
+                  }}
+                  placeholder="Выберите из справочника (необязательно)"
+                  options={commonFaults.map(f => ({ value: f.id, label: f.name }))}
+                />
+              </div>
+            )}
             <div className="form-group">
               <label>Описание проблемы *</label>
               <textarea

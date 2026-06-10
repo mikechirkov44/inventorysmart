@@ -24,7 +24,7 @@ const { incidentUpload } = require('../utils/upload');
  */
 router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
   try {
-    const { equipmentId, description, employeeName } = req.body;
+    const { equipmentId, description, employeeName, commonFaultId } = req.body;
     const photos = req.files ? req.files.map(f => f.filename) : [];
 
     const incident = await Incident.create({
@@ -32,7 +32,8 @@ router.post('/', incidentUpload.array('photos', 5), async (req, res) => {
       employeeId: req.user.id,
       employeeName,
       description,
-      photos
+      photos,
+      commonFaultId: commonFaultId || null
     }, req.user.companyId);
 
     const equipment = await Equipment.findById(equipmentId, req.user.companyId);

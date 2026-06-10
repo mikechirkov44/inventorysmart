@@ -18,7 +18,7 @@ function mapRow(row) {
   if (!row) return null;
   let photos = row.photos;
   if (typeof photos === 'string') { try { photos = JSON.parse(photos); } catch (_) { photos = []; } }
-  return {
+    return {
     id: row.id,
     equipmentId: row.equipment_id,
     employeeId: row.employee_id,
@@ -27,6 +27,7 @@ function mapRow(row) {
     photos,
     status: row.status,
     adminNotes: row.admin_notes,
+    commonFaultId: row.common_fault_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -78,8 +79,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '', companyId]
+      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes, common_fault_id, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '', data.commonFaultId || null, companyId]
     );
     return mapRow(rows[0]);
   },

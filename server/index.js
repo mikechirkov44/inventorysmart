@@ -130,8 +130,10 @@ async function start() {
   const scheduleRoutes = require('./routes/schedule');
   const companyRoutes = require('./routes/company');
   const positionsRoutes = require('./routes/positions');
+  const commonFaultsRoutes = require('./routes/commonFaults');
 
   app.use('/api/equipment', equipmentRoutes);
+  app.use('/api/common-faults', commonFaultsRoutes);
   app.use('/api/work-orders', workOrderRoutes);
   app.use('/api/scan', scanRoutes);
   app.use('/api/import', importRoutes);

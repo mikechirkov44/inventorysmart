@@ -185,6 +185,15 @@ async function migrate() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS common_faults (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID,
+        equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS company_settings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         company_name VARCHAR(255) DEFAULT '',
@@ -217,12 +226,14 @@ async function migrate() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id UUID;
 
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_id UUID;
+
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS common_fault_id UUID REFERENCES common_faults(id) ON DELETE SET NULL;
     `);
 
     // Multi-tenant: add company_id to all data tables and backfill
     const tables = [
       'equipment', 'employees', 'works', 'rooms', 'spare_parts',
-      'spare_part_receipts', 'work_orders', 'incidents'
+      'spare_part_receipts', 'work_orders', 'incidents', 'common_faults'
     ];
     for (const table of tables) {
       await client.query(`

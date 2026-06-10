@@ -155,6 +155,15 @@ export const scheduleAPI = {
   getSchedule: (params) => api.get('/schedule', { params }),
 };
 
+/** API для типовых неисправностей */
+export const commonFaultsAPI = {
+  getAll: () => api.get('/common-faults'),
+  getByEquipment: (equipmentId) => api.get(`/common-faults/equipment/${equipmentId}`),
+  create: (data) => api.post('/common-faults', data),
+  update: (id, data) => api.put(`/common-faults/${id}`, data),
+  delete: (id) => api.delete(`/common-faults/${id}`),
+};
+
 /** API для импорта данных из Excel */
 export const importAPI = {
   importExcel: (formData) => api.post('/import/excel', formData, {

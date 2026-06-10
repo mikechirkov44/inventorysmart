@@ -29,6 +29,7 @@ import ImportExcel from './pages/ImportExcel';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
 import SparePartsReceipts from './pages/SparePartsReceipts';
+import CommonFaultsDirectory from './pages/CommonFaultsDirectory';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SchedulePage from './pages/SchedulePage';
 import SettingsPage from './pages/SettingsPage';
@@ -91,7 +92,7 @@ function DirDropdown({ collapsed }) {
   const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts');
   if (!hasDirAccess) return null;
 
-  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts'].some(p => location.pathname === p);
+  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts', '/common-faults'].some(p => location.pathname === p);
 
   const menuStyle = menuPos.isMobile
     ? { position: 'fixed', bottom: 68, left: 8, right: 8, top: 'auto', margin: 0 }
@@ -113,6 +114,7 @@ function DirDropdown({ collapsed }) {
           {canView('works') && <li><NavLink to="/works" onClick={() => setOpen(false)}>Работы</NavLink></li>}
           {canView('rooms') && <li><NavLink to="/rooms" onClick={() => setOpen(false)}>Помещения</NavLink></li>}
           {canView('spareParts') && <li><NavLink to="/spare-parts" onClick={() => setOpen(false)}>ЗИП</NavLink></li>}
+          {canView('spareParts') && <li><NavLink to="/common-faults" onClick={() => setOpen(false)}>Типовые неисправности</NavLink></li>}
         </ul>,
         document.body
       )}
@@ -248,6 +250,7 @@ function AppRoutes() {
       <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><PageWrapper><EmployeesDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><SparePartsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><PageWrapper><SparePartsReceipts /></PageWrapper></ProtectedRoute>} />
+      <Route path="/common-faults" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><CommonFaultsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute requiredPermission="import"><PageWrapper><ImportExcel /></PageWrapper></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><NotificationsPage /></PageWrapper></ProtectedRoute>} />
