@@ -8,7 +8,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
@@ -34,6 +34,7 @@ import SchedulePage from './pages/SchedulePage';
 import SettingsPage from './pages/SettingsPage';
 import SetupPage from './pages/SetupPage';
 import NotificationsPage from './pages/NotificationsPage';
+import HelpPage from './pages/HelpPage';
 import './App.css';
 
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
@@ -161,6 +162,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
         <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}</NavLink></li>
+        <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
       </ul>
       <div className="nav-footer">
         {!collapsed && (
@@ -249,6 +251,7 @@ function AppRoutes() {
       <Route path="/import" element={<ProtectedRoute requiredPermission="import"><PageWrapper><ImportExcel /></PageWrapper></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><NotificationsPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/help" element={<ProtectedRoute><PageWrapper><HelpPage /></PageWrapper></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
