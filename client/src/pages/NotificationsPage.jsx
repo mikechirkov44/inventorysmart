@@ -5,8 +5,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
+import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import ActionsMenu from '../components/ActionsMenu';
 
 const TYPE_LABELS = {
   incident: 'Инцидент',
@@ -58,9 +59,23 @@ export default function NotificationsPage() {
     } catch {}
   };
 
+  const markUnread = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/unread`);
+      fetchNotifications();
+    } catch {}
+  };
+
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
+      fetchNotifications();
+    } catch {}
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      await api.delete(`/notifications/${id}`);
       fetchNotifications();
     } catch {}
   };
@@ -97,8 +112,6 @@ export default function NotificationsPage() {
                     <tr
                       key={n.id}
                       className={n.read ? '' : 'row-highlight'}
-                      onClick={() => markRead(n.id)}
-                      style={{ cursor: 'pointer' }}
                     >
                       <td>
                         <span className="notif-type-cell" style={{ color: TYPE_COLORS[n.type] || 'var(--gray-600)' }}>
@@ -114,11 +127,12 @@ export default function NotificationsPage() {
                         {new Date(n.createdAt).toLocaleString('ru-RU')}
                       </td>
                       <td>
-                        {n.read ? (
-                          <span className="status-badge status-working">Прочитано</span>
-                        ) : (
-                          <span className="status-badge status-needs-repair">Новое</span>
-                        )}
+                        <ActionsMenu items={[
+                          n.read
+                            ? { icon: <EyeOff size={14} />, label: 'Отменить прочтение', onClick: () => markUnread(n.id) }
+                            : { icon: <Eye size={14} />, label: 'Прочитать', onClick: () => markRead(n.id) },
+                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => deleteNotification(n.id), danger: true }
+                        ]} />
                       </td>
                     </tr>
                   );

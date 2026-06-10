@@ -116,6 +116,24 @@ router.put('/:id/read', async (req, res) => {
 });
 
 /**
+ * @route PUT /notifications/:id/unread
+ * @description Отмена прочтения уведомления (пометка как непрочитанного)
+ * @param {string} req.params.id - Идентификатор уведомления
+ * @returns {Object} Обновлённое уведомление
+ * @returns {404} Если уведомление не найдено
+ */
+router.put('/:id/unread', async (req, res) => {
+  try {
+    const notif = await Notification.markUnread(req.params.id);
+    if (!notif) return res.status(404).json({ error: 'Not found' });
+    res.json(notif);
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * @route PUT /notifications/read-all
  * @description Пометка всех уведомлений пользователя как прочитанных
  * @returns {Object} Результат операции

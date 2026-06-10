@@ -92,6 +92,7 @@ async function generateForCompany(companyId) {
         overdueTasks.push({
           equipmentId: equip.id,
           equipmentName: equip.name,
+          inventoryNumber: equip.inventoryNumber || '—',
           workId: work.id,
           workName: work.name,
           employeeId: employee ? employee.id : null,
@@ -104,6 +105,7 @@ async function generateForCompany(companyId) {
           upcomingTasks.push({
             equipmentId: equip.id,
             equipmentName: equip.name,
+            inventoryNumber: equip.inventoryNumber || '—',
             workId: work.id,
             workName: work.name,
             employeeId: employee ? employee.id : null,
@@ -127,7 +129,8 @@ async function generateForCompany(companyId) {
         userId: user.id,
         type: 'overdue_work',
         title: `Просрочена работа: ${task.workName}`,
-        message: `${task.equipmentName} — просрочено на ${task.daysOverdue} дн.`,
+        message: `${task.equipmentName} (${task.inventoryNumber}) — просрочено на ${task.daysOverdue} дн.`,
+
         equipmentId: task.equipmentId,
         workId: task.workId
       });
@@ -146,7 +149,8 @@ async function generateForCompany(companyId) {
         userId: user.id,
         type: 'upcoming_work',
         title: `Предстоящая работа: ${task.workName}`,
-        message: `${task.equipmentName} — через ${task.daysUntil} дн.`,
+        message: `${task.equipmentName} (${task.inventoryNumber}) — через ${task.daysUntil} дн.`,
+
         equipmentId: task.equipmentId,
         workId: task.workId
       });

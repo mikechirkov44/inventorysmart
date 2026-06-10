@@ -116,6 +116,17 @@ module.exports = {
    * @async
    * @param {number} userId - ID пользователя
    */
+  /**
+   * Отменяет прочтение уведомления (помечает как непрочитанное).
+   * @async
+   * @param {number} id - Идентификатор уведомления
+   * @returns {Promise<Object|null>} Обновлённое уведомление или null
+   */
+  markUnread: async (id) => {
+    const { rows } = await query('UPDATE notifications SET read = false, read_at = null WHERE id = $1 RETURNING *', [id]);
+    return mapRow(rows[0]);
+  },
+
   markAllRead: async (userId) => {
     await query('UPDATE notifications SET read = true, read_at = NOW() WHERE user_id = $1 AND read = false', [userId]);
   },
