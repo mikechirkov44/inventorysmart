@@ -4496,27 +4496,6 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* Animated corners */
-/* Floating particles */
-.qr-animated::after {
-  content: '';
-  position: absolute;
-  inset: -40px;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle, rgba(79, 70, 229, 0.4) 1px, transparent 1px),
-    radial-gradient(circle, rgba(99, 102, 241, 0.3) 1px, transparent 1px),
-    radial-gradient(circle, rgba(129, 140, 248, 0.2) 1px, transparent 1px);
-  background-size: 200px 200px;
-  background-position: 0 0, 60px 100px, 120px 40px;
-  animation: qrParticles 6s linear infinite;
-}
-
-@keyframes qrParticles {
-  0% { transform: rotate(0deg); opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { transform: rotate(360deg); opacity: 0.6; }
-}
-
 /* Faster scanning state */
 .qr-animated.scanning .qr-scan-line {
   animation-duration: 1s;
@@ -4539,10 +4518,6 @@ input, textarea, select { font-family: inherit; }
 
 .qr-animated.scanning::before {
   animation: qrGlow 0.8s ease-in-out infinite;
-}
-
-.qr-animated.scanning::after {
-  animation-duration: 3s;
 }
 
 .manual-input { margin-top: 24px; }
