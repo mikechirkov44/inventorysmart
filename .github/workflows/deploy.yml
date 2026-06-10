@@ -54,21 +54,37 @@ jobs:
 
             # Проверяем наличие .env
             echo ""
-            echo "[2/4] Checking environment..."
+            echo "[2/5] Checking environment..."
             if [ ! -f .env ]; then
               echo "ERROR: .env file not found. Run deploy.sh first."
               exit 1
             fi
 
+            # Собираем фронтенд (dist в .gitignore, монтируется через volume)
+            echo ""
+            echo "[3/5] Building frontend..."
+            if [ ! -d "client/dist" ] || [ ! -d "client-admin/dist" ]; then
+              echo "  client/dist or client-admin/dist not found. Building..."
+              if ! command -v node &> /dev/null; then
+                echo "  Installing Node.js..."
+                curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                apt-get install -y nodejs
+              fi
+              cd client && npm install && npm run build && cd ..
+              cd client-admin && npm install && npm run build && cd ..
+            else
+              echo "  client/dist and client-admin/dist exist, skipping build."
+            fi
+
             # Перезапускаем контейнеры
             echo ""
-            echo "[3/4] Building and starting containers..."
+            echo "[4/5] Building and starting containers..."
             docker compose down
             docker compose up -d --build
 
             # Ждём готовности сервера
             echo ""
-            echo "[4/4] Waiting for server health check..."
+            echo "[5/5] Waiting for server health check..."
             sleep 10
 
             HEALTH_OK=false

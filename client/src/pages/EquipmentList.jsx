@@ -4,11 +4,12 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderTree } from 'lucide-react';
+import { FolderTree, Eye, Pencil, Trash2 } from 'lucide-react';
 import { equipmentAPI, roomsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonCardGrid } from '../components/Skeleton';
+import ActionsMenu from '../components/ActionsMenu';
 
 /** Маппинг статусов оборудования на метки и CSS-классы */
 const STATUS_MAP = {
@@ -143,11 +144,13 @@ function EquipmentList() {
                           <div className="card-info">
                             <h3>{item.name}</h3>
                             <p className="inventory-number">{item.inventoryNumber}</p>
-                            <p className="card-status"><span className={`status-badge ${st.className}`}>{st.label}</span></p>
-                            <div className="card-actions">
-                              <Link to={`/equipment/${item.id}`} className="btn btn-small">Подробнее</Link>
-                              <Link to={`/equipment/${item.id}/edit`} className="btn btn-small btn-secondary">Ред.</Link>
-                              <button onClick={() => handleDelete(item.id)} className="btn btn-small btn-danger">Удал.</button>
+                            <div className="card-status-row">
+                              <span className={`status-badge ${st.className}`}>{st.label}</span>
+                              <ActionsMenu items={[
+                                { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => window.location.href = `/equipment/${item.id}` },
+                                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => window.location.href = `/equipment/${item.id}/edit` },
+                                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                              ]} />
                             </div>
                           </div>
                         </div>

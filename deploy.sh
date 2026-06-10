@@ -15,7 +15,7 @@ echo "========================================="
 
 # 1. Установка Docker
 echo ""
-echo "[1/9] Проверка Docker..."
+echo "[1/10] Проверка Docker..."
 if ! command -v docker &> /dev/null; then
   echo "Установка Docker..."
   curl -fsSL https://get.docker.com | sh
@@ -26,7 +26,7 @@ echo "Docker $(docker -v | cut -d' ' -f3 | tr -d ',')"
 
 # 2. Установка Docker Compose
 echo ""
-echo "[2/9] Проверка Docker Compose..."
+echo "[2/10] Проверка Docker Compose..."
 if ! docker compose version &> /dev/null; then
   echo "Установка Docker Compose plugin..."
   sudo apt update -y
@@ -36,7 +36,7 @@ echo "Docker Compose $(docker compose version --short)"
 
 # 3. Получение кода
 echo ""
-echo "[3/9] Получение кода..."
+echo "[3/10] Получение кода..."
 
 if [ -d "$APP_DIR" ]; then
   echo "Обновление существующей директории..."
@@ -80,7 +80,7 @@ fi
 
 # 4. Настройка переменных окружения
 echo ""
-echo "[4/9] Настройка переменных окружения..."
+echo "[4/10] Настройка переменных окружения..."
 
 # Загружаем .env если существует
 if [ -f .env ]; then
@@ -116,7 +116,7 @@ grep -q "^CORS_ORIGINS=" .env 2>/dev/null || echo "CORS_ORIGINS=" >> .env
 
 # 5. Запрос пароля суперадмина
 echo ""
-echo "[5/9] Настройка суперадмина..."
+echo "[5/10] Настройка суперадмина..."
 
 if [ -z "$SUPERADMIN_PASSWORD" ]; then
   echo ""
@@ -154,7 +154,7 @@ fi
 
 # 6. Генерация SSL-сертификата (для доступа к камере)
 echo ""
-echo "[6/9] Проверка SSL-сертификата..."
+echo "[6/10] Проверка SSL-сертификата..."
 
 if [ ! -f server.crt ] || [ ! -f server.key ]; then
   echo "Генерация самоподписанного SSL-сертификата (10 лет)..."
@@ -166,16 +166,46 @@ else
   echo "  SSL-сертификат уже существует."
 fi
 
-# 7. Сборка и запуск контейнеров
+# 7. Проверка наличия собранных фронтендов
 echo ""
-echo "[7/9] Сборка и запуск контейнеров..."
-docker compose down 2>/dev/null || true
-docker compose build --no-cache client
-docker compose up -d
+echo "[7/10] Проверка сборки фронтенда..."
 
-# 8. Ожидание готовности
+if [ ! -d "client/dist" ] || [ ! -d "client-admin/dist" ]; then
+  echo "  client/dist или client-admin/dist не найдены."
+  echo "  Сборка фронтенда на хосте..."
+
+  if ! command -v node &> /dev/null; then
+    echo "  Установка Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+  fi
+
+  echo "  [client] npm install..."
+  cd client
+  npm install
+  echo "  [client] npm run build..."
+  npm run build
+  cd ..
+
+  echo "  [client-admin] npm install..."
+  cd client-admin
+  npm install
+  echo "  [client-admin] npm run build..."
+  npm run build
+  cd ..
+else
+  echo "  client/dist и client-admin/dist найдены."
+fi
+
+# 8. Сборка и запуск контейнеров
 echo ""
-echo "[8/9] Ожидание готовности сервера..."
+echo "[8/10] Сборка и запуск контейнеров..."
+docker compose down 2>/dev/null || true
+docker compose up -d --build
+
+# 9. Ожидание готовности
+echo ""
+echo "[9/10] Ожидание готовности сервера..."
 sleep 3
 
 for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -186,9 +216,9 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
-# 9. Проверка результата
+# 10. Проверка результата
 echo ""
-echo "[9/9] Проверка..."
+echo "[10/10] Проверка..."
 
 IP=$(hostname -I | awk '{print $1}')
 

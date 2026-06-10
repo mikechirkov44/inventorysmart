@@ -1077,6 +1077,14 @@ input, textarea, select { font-family: inherit; }
   margin-bottom: 8px;
 }
 
+.card-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  min-height: 28px;
+}
+
 .location {
   color: var(--gray-500);
   font-size: 13px;
