@@ -1,10 +1,7 @@
 import axios from 'axios';
 
 function getBaseUrl() {
-  const stored = localStorage.getItem('inventorysmart_api_url');
-  if (stored && stored.trim()) {
-    return `${stored.replace(/\/+$/, '')}/api`;
-  }
+  // SuperAdmin panel always uses same-origin /api
   return '/api';
 }
 
