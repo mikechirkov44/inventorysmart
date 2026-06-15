@@ -140,7 +140,14 @@ router.put('/:id/unread', async (req, res) => {
  */
 router.put('/read-all', async (req, res) => {
   try {
-    await Notification.markAllRead(req.user.id);
+    const userPermissions = req.user.permissions || {};
+    const isAdmin = userPermissions.settings === 'full';
+    if (isAdmin) {
+      const { query } = require('../db');
+      await query('UPDATE notifications SET read = true, read_at = NOW() WHERE read = false');
+    } else {
+      await Notification.markAllRead(req.user.id);
+    }
     res.json({ ok: true });
   } catch (error) {
     console.error('Route error:', error);
