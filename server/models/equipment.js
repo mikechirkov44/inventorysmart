@@ -105,6 +105,10 @@ module.exports = {
     let workIds = data.workIds || [];
     if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
 
+    // Convert yearOfManufacture: empty string -> null, string -> number or null
+    const yearVal = data.yearOfManufacture;
+    const yearOfManufacture = yearVal && String(yearVal).trim() !== '' ? parseInt(yearVal, 10) : null;
+
     const { rows } = await query(
       'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status, manufacturer, serial_number, year_of_manufacture, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
       [
@@ -117,7 +121,7 @@ module.exports = {
         data.status || 'working',
         data.manufacturer || '',
         data.serialNumber || '',
-        data.yearOfManufacture || null,
+        yearOfManufacture,
         companyId
       ]
     );
@@ -149,7 +153,12 @@ module.exports = {
     for (const [key, val] of Object.entries(data)) {
       if (key === 'id' || key === 'qrCode' || key === 'createdAt' || key === 'updatedAt' || key === 'workIds') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      mapped[col] = val;
+      // Convert yearOfManufacture: empty string -> null, otherwise -> integer
+      if (key === 'yearOfManufacture') {
+        mapped[col] = val && String(val).trim() !== '' ? parseInt(val, 10) : null;
+      } else {
+        mapped[col] = val;
+      }
     }
     mapped.updated_at = new Date();
 
