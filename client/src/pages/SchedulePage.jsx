@@ -257,8 +257,16 @@ function SchedulePage() {
       if (plannedMs && plannedMs < todayMs && frequencyDays > 0) {
         const diffDays = Math.floor((todayMs - plannedMs) / 86400000);
         const periodsBack = Math.floor(diffDays / frequencyDays);
+        // Проецируем вперёд от plannedDate до сегодня и далее
         for (let i = 0; i <= periodsBack + 1; i++) {
           const projDate = addDays(new Date(row.plannedDate), i * frequencyDays);
+          if (projDate >= startDate && projDate < endDate) {
+            plannedDays.add(formatDateShort(projDate.toISOString()));
+          }
+        }
+        // Проецируем назад от plannedDate, чтобы заполнить предыдущие периоды
+        for (let i = 1; i * frequencyDays <= totalDays; i++) {
+          const projDate = addDays(new Date(row.plannedDate), -i * frequencyDays);
           if (projDate >= startDate && projDate < endDate) {
             plannedDays.add(formatDateShort(projDate.toISOString()));
           }
