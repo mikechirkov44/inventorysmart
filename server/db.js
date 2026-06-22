@@ -79,6 +79,9 @@ async function migrate() {
         room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
         category VARCHAR(255) DEFAULT '',
         status VARCHAR(50) DEFAULT 'working',
+        manufacturer VARCHAR(255) DEFAULT '',
+        serial_number VARCHAR(100) DEFAULT '',
+        year_of_manufacture INTEGER,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -336,6 +339,15 @@ async function migrate() {
       SET permissions = jsonb_set(permissions, '{schedule}', 'true')
       WHERE name = 'Механик' AND permissions->>'schedule' = 'false'
     `);
+
+    // Migrate: add equipment columns if not exists
+    try {
+      await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS manufacturer VARCHAR(255) DEFAULT ''`);
+      await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100) DEFAULT ''`);
+      await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS year_of_manufacture INTEGER`);
+    } catch (e) {
+      console.log('Equipment columns migration note:', e.message);
+    }
 
     await client.query('COMMIT');
     console.log('Database migration completed successfully');

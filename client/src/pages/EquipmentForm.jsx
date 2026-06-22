@@ -47,6 +47,9 @@ function EquipmentForm() {
     roomId: '',
     category: '',
     status: 'working',
+    manufacturer: '',
+    serialNumber: '',
+    yearOfManufacture: '',
     workIds: []
   });
   const [photo, setPhoto] = useState(null);
@@ -78,6 +81,9 @@ function EquipmentForm() {
         roomId: response.data.roomId || '',
         category: response.data.category || '',
         status: response.data.status || 'working',
+        manufacturer: response.data.manufacturer || '',
+        serialNumber: response.data.serialNumber || '',
+        yearOfManufacture: response.data.yearOfManufacture || '',
         workIds: Array.isArray(response.data.workIds) ? response.data.workIds : []
       });
       if (response.data.photo) {
@@ -176,9 +182,26 @@ function EquipmentForm() {
               <input type="text" name="name" value={formData.name} onChange={handleChange} required />
             </div>
 
-            <div className="form-group">
-              <label>Инвентарный номер</label>
-              <input type="text" name="inventoryNumber" value={formData.inventoryNumber} onChange={handleChange} />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Инвентарный номер</label>
+                <input type="text" name="inventoryNumber" value={formData.inventoryNumber} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Серийный номер (S/N)</label>
+                <input type="text" name="serialNumber" value={formData.serialNumber} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Производитель</label>
+                <input type="text" name="manufacturer" value={formData.manufacturer} onChange={handleChange} placeholder="Например: Siemens, ABB, Bosch" />
+              </div>
+              <div className="form-group">
+                <label>Год выпуска</label>
+                <input type="number" name="yearOfManufacture" value={formData.yearOfManufacture} onChange={handleChange} placeholder="2020" min="1900" max="2100" />
+              </div>
             </div>
 
             <div className="form-row">

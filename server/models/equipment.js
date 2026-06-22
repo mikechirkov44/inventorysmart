@@ -24,6 +24,9 @@ function mapRow(row) {
     roomId: row.room_id,
     category: row.category,
     status: row.status,
+    manufacturer: row.manufacturer,
+    serialNumber: row.serial_number,
+    yearOfManufacture: row.year_of_manufacture,
     companyId: row.company_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -103,8 +106,20 @@ module.exports = {
     if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
 
     const { rows } = await query(
-      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [data.name, data.inventoryNumber || '', data.description || '', data.photo || null, data.roomId || null, data.category || '', data.status || 'working', companyId]
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status, manufacturer, serial_number, year_of_manufacture, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      [
+        data.name,
+        data.inventoryNumber || '',
+        data.description || '',
+        data.photo || null,
+        data.roomId || null,
+        data.category || '',
+        data.status || 'working',
+        data.manufacturer || '',
+        data.serialNumber || '',
+        data.yearOfManufacture || null,
+        companyId
+      ]
     );
     const eq = rows[0];
 
@@ -124,7 +139,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённое оборудование или null
    */
   update: async (id, data, companyId) => {
-    const fieldMap = { inventoryNumber: 'inventory_number', roomId: 'room_id' };
+    const fieldMap = { 
+      inventoryNumber: 'inventory_number', 
+      roomId: 'room_id',
+      serialNumber: 'serial_number',
+      yearOfManufacture: 'year_of_manufacture'
+    };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {
       if (key === 'id' || key === 'qrCode' || key === 'createdAt' || key === 'updatedAt' || key === 'workIds') continue;
