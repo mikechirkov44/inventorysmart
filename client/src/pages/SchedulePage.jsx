@@ -266,8 +266,16 @@ function SchedulePage() {
       }
 
       if (plannedMs && plannedMs >= todayMs && frequencyDays > 0) {
+        // Проецируем вперёд от plannedDate
         for (let i = 0; i < totalDays + frequencyDays; i++) {
           const projDate = addDays(new Date(row.plannedDate), i * frequencyDays);
+          if (projDate >= startDate && projDate < endDate) {
+            plannedDays.add(formatDateShort(projDate.toISOString()));
+          }
+        }
+        // Проецируем назад от plannedDate, чтобы заполнить предыдущие периоды в диапазоне графика
+        for (let i = 1; i * frequencyDays <= totalDays; i++) {
+          const projDate = addDays(new Date(row.plannedDate), -i * frequencyDays);
           if (projDate >= startDate && projDate < endDate) {
             plannedDays.add(formatDateShort(projDate.toISOString()));
           }
