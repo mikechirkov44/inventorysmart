@@ -144,6 +144,13 @@ function EquipmentList() {
                           <div className="card-info">
                             <h3>{item.name}</h3>
                             <p className="inventory-number">{item.inventoryNumber}</p>
+                            {(item.manufacturer || item.serialNumber || item.yearOfManufacture) && (
+                              <div className="card-specs">
+                                {item.manufacturer && <span className="spec-tag">{item.manufacturer}</span>}
+                                {item.serialNumber && <span className="spec-tag">S/N: {item.serialNumber}</span>}
+                                {item.yearOfManufacture && <span className="spec-tag">{item.yearOfManufacture}</span>}
+                              </div>
+                            )}
                             <div className="card-status-row">
                               <span className={`status-badge ${st.className}`}>{st.label}</span>
                               <ActionsMenu items={[

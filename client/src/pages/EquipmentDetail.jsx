@@ -182,24 +182,18 @@ function EquipmentDetail() {
                 <span className="label">Инвентарный номер:</span>
                 <span className="value">{equipment.inventoryNumber || '—'}</span>
               </div>
-              {equipment.serialNumber && (
-                <div className="info-row">
-                  <span className="label">Серийный номер (S/N):</span>
-                  <span className="value">{equipment.serialNumber}</span>
-                </div>
-              )}
-              {equipment.manufacturer && (
-                <div className="info-row">
-                  <span className="label">Производитель:</span>
-                  <span className="value">{equipment.manufacturer}</span>
-                </div>
-              )}
-              {equipment.yearOfManufacture && (
-                <div className="info-row">
-                  <span className="label">Год выпуска:</span>
-                  <span className="value">{equipment.yearOfManufacture}</span>
-                </div>
-              )}
+              <div className="info-row">
+                <span className="label">Серийный номер (S/N):</span>
+                <span className="value">{equipment.serialNumber || '—'}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Производитель:</span>
+                <span className="value">{equipment.manufacturer || '—'}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Год выпуска:</span>
+                <span className="value">{equipment.yearOfManufacture || '—'}</span>
+              </div>
               <div className="info-row">
                 <span className="label">Помещение:</span>
                 <span className="value">{room ? room.name : '—'}{room && room.building ? ` (${room.building})` : ''}</span>
