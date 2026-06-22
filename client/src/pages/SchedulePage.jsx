@@ -245,57 +245,43 @@ function SchedulePage() {
       }
 
       const plannedDays = new Set();
-      if (row.plannedDate) {
-        const pd = new Date(row.plannedDate);
-        plannedDays.add(formatDateShort(pd.toISOString()));
-      }
-
       const frequencyDays = row.frequencyDays || 30;
-      const todayMs = today.getTime();
-      const plannedMs = row.plannedDate ? new Date(row.plannedDate).getTime() : null;
-
-      if (plannedMs && plannedMs < todayMs && frequencyDays > 0) {
-        const diffDays = Math.floor((todayMs - plannedMs) / 86400000);
-        const periodsBack = Math.floor(diffDays / frequencyDays);
-        // Проецируем вперёд от plannedDate до сегодня и далее
-        for (let i = 0; i <= periodsBack + 1; i++) {
-          const projDate = addDays(new Date(row.plannedDate), i * frequencyDays);
-          if (projDate >= startDate && projDate < endDate) {
-            plannedDays.add(formatDateShort(projDate.toISOString()));
-          }
+      
+      // Базовая дата для генерации - plannedDate или сегодня
+      const baseDate = row.plannedDate ? new Date(row.plannedDate) : new Date(today);
+      
+      if (frequencyDays > 0) {
+        // Находим первое вхождение >= startDate
+        // Сначала смотрим сколько периодов нужно от baseDate до startDate
+        const baseMs = baseDate.getTime();
+        const startMs = startDate.getTime();
+        const msPerDay = 86400000;
+        
+        // Разница в днях от baseDate до startDate
+        const daysDiff = Math.floor((startMs - baseMs) / msPerDay);
+        
+        // Сколько периодов назад/вперед от baseDate до startDate
+        const periodsOffset = Math.floor(daysDiff / frequencyDays);
+        
+        // Первая дата >= startDate
+        let currentDate = addDays(baseDate, periodsOffset * frequencyDays);
+        
+        // Если currentDate < startDate, сдвигаем на один период вперед
+        if (currentDate < startDate) {
+          currentDate = addDays(currentDate, frequencyDays);
         }
-        // Проецируем назад от plannedDate, чтобы заполнить предыдущие периоды
-        for (let i = 1; i * frequencyDays <= totalDays; i++) {
-          const projDate = addDays(new Date(row.plannedDate), -i * frequencyDays);
-          if (projDate >= startDate && projDate < endDate) {
-            plannedDays.add(formatDateShort(projDate.toISOString()));
-          }
+        
+        // Генерируем все даты от currentDate до endDate
+        while (currentDate < endDate) {
+          plannedDays.add(formatDateShort(currentDate.toISOString()));
+          currentDate = addDays(currentDate, frequencyDays);
         }
-      }
-
-      if (plannedMs && plannedMs >= todayMs && frequencyDays > 0) {
-        // Проецируем вперёд от plannedDate
-        for (let i = 0; i < totalDays + frequencyDays; i++) {
-          const projDate = addDays(new Date(row.plannedDate), i * frequencyDays);
-          if (projDate >= startDate && projDate < endDate) {
-            plannedDays.add(formatDateShort(projDate.toISOString()));
-          }
-        }
-        // Проецируем назад от plannedDate, чтобы заполнить предыдущие периоды в диапазоне графика
-        for (let i = 1; i * frequencyDays <= totalDays; i++) {
-          const projDate = addDays(new Date(row.plannedDate), -i * frequencyDays);
-          if (projDate >= startDate && projDate < endDate) {
-            plannedDays.add(formatDateShort(projDate.toISOString()));
-          }
-        }
-      }
-
-      if (!plannedMs && frequencyDays > 0) {
-        for (let i = 0; i < totalDays + frequencyDays; i++) {
-          const projDate = addDays(today, i * frequencyDays);
-          if (projDate >= startDate && projDate < endDate) {
-            plannedDays.add(formatDateShort(projDate.toISOString()));
-          }
+        
+        // Генерируем назад от первой даты до startDate
+        let backDate = addDays(baseDate, periodsOffset * frequencyDays);
+        while (backDate >= startDate) {
+          plannedDays.add(formatDateShort(backDate.toISOString()));
+          backDate = addDays(backDate, -frequencyDays);
         }
       }
 
