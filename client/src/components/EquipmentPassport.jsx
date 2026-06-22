@@ -196,6 +196,9 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
               <tbody>
                 <tr><td>Наименование</td><td><strong>{equipment.name}</strong></td></tr>
                 <tr><td>Инвентарный номер</td><td>{equipment.inventoryNumber || '—'}</td></tr>
+                <tr><td>Серийный номер (S/N)</td><td>{equipment.serialNumber || '—'}</td></tr>
+                <tr><td>Производитель</td><td>{equipment.manufacturer || '—'}</td></tr>
+                <tr><td>Год выпуска</td><td>{equipment.yearOfManufacture || '—'}</td></tr>
                 <tr><td>Состояние</td><td>{STATUS_MAP[equipment.status] || equipment.status}</td></tr>
                 <tr><td>Категория</td><td>{equipment.category || '—'}</td></tr>
                 <tr>
