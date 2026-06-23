@@ -141,8 +141,10 @@ async function start() {
   const companyRoutes = require('./routes/company');
   const positionsRoutes = require('./routes/positions');
   const commonFaultsRoutes = require('./routes/commonFaults');
+  const equipmentCategoryRoutes = require('./routes/equipmentCategories');
 
   app.use('/api/equipment', equipmentRoutes);
+  app.use('/api/equipment-categories', equipmentCategoryRoutes);
   app.use('/api/common-faults', commonFaultsRoutes);
   app.use('/api/work-orders', workOrderRoutes);
   app.use('/api/scan', scanRoutes);

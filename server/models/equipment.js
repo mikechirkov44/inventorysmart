@@ -22,7 +22,8 @@ function mapRow(row) {
     description: row.description,
     photo: row.photo,
     roomId: row.room_id,
-    category: row.category,
+    categoryId: row.category_id,
+    categoryName: row.category_name,
     status: row.status,
     manufacturer: row.manufacturer,
     serialNumber: row.serial_number,
@@ -35,12 +36,18 @@ function mapRow(row) {
 
 module.exports = {
   /**
-   * Получает всё оборудование с привязанными ID работ.
+   * Получает всё оборудование с привязанными ID работ и категориями.
    * @async
    * @returns {Promise<Array<Object>>} Список оборудования с полем workIds
    */
   findAll: async (companyId) => {
-    const { rows: equipment } = await query('SELECT * FROM equipment WHERE company_id = $1 ORDER BY name', [companyId]);
+    const { rows: equipment } = await query(`
+      SELECT e.*, ec.name as category_name 
+      FROM equipment e 
+      LEFT JOIN equipment_categories ec ON e.category_id = ec.id 
+      WHERE e.company_id = $1 
+      ORDER BY e.name
+    `, [companyId]);
     const { rows: eqWorks } = await query('SELECT * FROM equipment_works');
     return equipment.map(eq => ({
       ...mapRow(eq),
@@ -55,7 +62,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Оборудование с workIds или null
    */
   findById: async (id, companyId) => {
-    const { rows } = await query('SELECT * FROM equipment WHERE id = $1 AND company_id = $2', [id, companyId]);
+    const { rows } = await query(`
+      SELECT e.*, ec.name as category_name 
+      FROM equipment e 
+      LEFT JOIN equipment_categories ec ON e.category_id = ec.id 
+      WHERE e.id = $1 AND e.company_id = $2
+    `, [id, companyId]);
     if (!rows[0]) return null;
     const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [id]);
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
@@ -68,7 +80,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Оборудование с workIds или null
    */
   findByQrCode: async (qrCode) => {
-    const { rows } = await query('SELECT * FROM equipment WHERE qr_code = $1', [qrCode]);
+    const { rows } = await query(`
+      SELECT e.*, ec.name as category_name 
+      FROM equipment e 
+      LEFT JOIN equipment_categories ec ON e.category_id = ec.id 
+      WHERE e.qr_code = $1
+    `, [qrCode]);
     if (!rows[0]) return null;
     const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
@@ -81,7 +98,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Оборудование с workIds или null
    */
   findByInventoryNumber: async (inventoryNumber) => {
-    const { rows } = await query('SELECT * FROM equipment WHERE inventory_number = $1', [inventoryNumber]);
+    const { rows } = await query(`
+      SELECT e.*, ec.name as category_name 
+      FROM equipment e 
+      LEFT JOIN equipment_categories ec ON e.category_id = ec.id 
+      WHERE e.inventory_number = $1
+    `, [inventoryNumber]);
     if (!rows[0]) return null;
     const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
     return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
@@ -96,7 +118,7 @@ module.exports = {
    * @param {string} [data.description] - Описание
    * @param {string} [data.photo] - Фото (URL)
    * @param {number} [data.roomId] - ID помещения
-   * @param {string} [data.category] - Категория
+   * @param {string} [data.categoryId] - ID категории
    * @param {string} [data.status] - Статус (working/broken/etc)
    * @param {Array<number>} [data.workIds] - Массив ID связанных работ
    * @returns {Promise<Object>} Созданное оборудование с workIds
@@ -110,14 +132,14 @@ module.exports = {
     const yearOfManufacture = yearVal && String(yearVal).trim() !== '' ? parseInt(yearVal, 10) : null;
 
     const { rows } = await query(
-      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category, status, manufacturer, serial_number, year_of_manufacture, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category_id, status, manufacturer, serial_number, year_of_manufacture, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
       [
         data.name,
         data.inventoryNumber || '',
         data.description || '',
         data.photo || null,
         data.roomId || null,
-        data.category || '',
+        data.categoryId || null,
         data.status || 'working',
         data.manufacturer || '',
         data.serialNumber || '',
@@ -146,6 +168,7 @@ module.exports = {
     const fieldMap = { 
       inventoryNumber: 'inventory_number', 
       roomId: 'room_id',
+      categoryId: 'category_id',
       serialNumber: 'serial_number',
       yearOfManufacture: 'year_of_manufacture'
     };

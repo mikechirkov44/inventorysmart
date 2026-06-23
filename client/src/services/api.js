@@ -50,6 +50,15 @@ export const equipmentAPI = {
   getQR: (id) => api.get(`/equipment/${id}/qr`),
 };
 
+/** API для работы с категориями оборудования */
+export const equipmentCategoriesAPI = {
+  getAll: () => api.get('/equipment-categories'),
+  getById: (id) => api.get(`/equipment-categories/${id}`),
+  create: (data) => api.post('/equipment-categories', data),
+  update: (id, data) => api.put(`/equipment-categories/${id}`, data),
+  delete: (id) => api.delete(`/equipment-categories/${id}`),
+};
+
 /** API для работы с наряд-заказами (журнал работ) */
 export const workOrderAPI = {
   getAll: () => api.get('/work-orders'),

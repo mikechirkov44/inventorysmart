@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
+import { equipmentAPI, roomsAPI, worksAPI, equipmentCategoriesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
@@ -45,7 +45,7 @@ function EquipmentForm() {
     inventoryNumber: '',
     description: '',
     roomId: '',
-    category: '',
+    categoryId: '',
     status: 'working',
     manufacturer: '',
     serialNumber: '',
@@ -59,14 +59,15 @@ function EquipmentForm() {
 
   const [rooms, setRooms] = useState([]);
   const [works, setWorks] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const toast = useToast();
   const confirm = useConfirm();
 
-  /** Загрузка помещений и работ; при редактировании — данных оборудования */
+  /** Загрузка помещений, работ и категорий; при редактировании — данных оборудования */
   useEffect(() => {
-    Promise.all([roomsAPI.getAll(), worksAPI.getAll()])
-      .then(([r, w]) => { setRooms(r.data); setWorks(w.data); });
+    Promise.all([roomsAPI.getAll(), worksAPI.getAll(), equipmentCategoriesAPI.getAll()])
+      .then(([r, w, c]) => { setRooms(r.data); setWorks(w.data); setCategories(c.data); });
     if (isEditing) fetchEquipment();
   }, [id]);
 
@@ -79,7 +80,7 @@ function EquipmentForm() {
         inventoryNumber: response.data.inventoryNumber || '',
         description: response.data.description || '',
         roomId: response.data.roomId || '',
-        category: response.data.category || '',
+        categoryId: response.data.categoryId || '',
         status: response.data.status || 'working',
         manufacturer: response.data.manufacturer || '',
         serialNumber: response.data.serialNumber || '',
@@ -215,7 +216,15 @@ function EquipmentForm() {
 
               <div className="form-group">
                 <label>Категория</label>
-                <input type="text" name="category" value={formData.category} onChange={handleChange} />
+                <CustomSelect
+                  value={formData.categoryId}
+                  onChange={(val) => setFormData(prev => ({ ...prev, categoryId: val }))}
+                  placeholder="— Выберите категорию —"
+                  options={[
+                    { value: '', label: '— Выберите категорию —' },
+                    ...categories.map(c => ({ value: c.id, label: c.name }))
+                  ]}
+                />
               </div>
             </div>
 

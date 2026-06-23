@@ -69,6 +69,16 @@ async function migrate() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS equipment_categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT DEFAULT '',
+        company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(name, company_id)
+      );
+
       CREATE TABLE IF NOT EXISTS equipment (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         qr_code UUID UNIQUE DEFAULT gen_random_uuid(),
@@ -77,7 +87,7 @@ async function migrate() {
         description TEXT DEFAULT '',
         photo VARCHAR(255),
         room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
-        category VARCHAR(255) DEFAULT '',
+        category_id UUID REFERENCES equipment_categories(id) ON DELETE SET NULL,
         status VARCHAR(50) DEFAULT 'working',
         manufacturer VARCHAR(255) DEFAULT '',
         serial_number VARCHAR(100) DEFAULT '',
@@ -347,6 +357,26 @@ async function migrate() {
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS year_of_manufacture INTEGER`);
     } catch (e) {
       console.log('Equipment columns migration note:', e.message);
+    }
+
+    // Migrate: create equipment_categories table and add category_id
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS equipment_categories (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name VARCHAR(255) NOT NULL,
+          description TEXT DEFAULT '',
+          company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(name, company_id)
+        )
+      `);
+      await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES equipment_categories(id) ON DELETE SET NULL`);
+      // Remove old category column if exists
+      await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS category`);
+    } catch (e) {
+      console.log('Equipment categories migration note:', e.message);
     }
 
     await client.query('COMMIT');

@@ -38,6 +38,7 @@ import WorkOrders from './pages/WorkOrders';
 import WorksDirectory from './pages/WorksDirectory';
 import RoomsDirectory from './pages/RoomsDirectory';
 import EmployeesDirectory from './pages/EmployeesDirectory';
+import EquipmentCategoriesDirectory from './pages/EquipmentCategoriesDirectory';
 import ImportExcel from './pages/ImportExcel';
 import IncidentsPage from './pages/IncidentsPage';
 import SparePartsDirectory from './pages/SparePartsDirectory';
@@ -126,6 +127,7 @@ function DirDropdown({ collapsed }) {
           {canView('employees') && <li><NavLink to="/employees" onClick={() => setOpen(false)}>Сотрудники</NavLink></li>}
           {canView('works') && <li><NavLink to="/works" onClick={() => setOpen(false)}>Работы</NavLink></li>}
           {canView('rooms') && <li><NavLink to="/rooms" onClick={() => setOpen(false)}>Помещения</NavLink></li>}
+          {canView('equipment') && <li><NavLink to="/equipment-categories" onClick={() => setOpen(false)}>Категории оборудования</NavLink></li>}
           {canView('spareParts') && <li><NavLink to="/spare-parts" onClick={() => setOpen(false)}>ЗИП</NavLink></li>}
           {canView('spareParts') && <li><NavLink to="/common-faults" onClick={() => setOpen(false)}>Типовые неисправности</NavLink></li>}
         </ul>,
@@ -262,6 +264,7 @@ function AppRoutes() {
       <Route path="/works" element={<ProtectedRoute requiredPermission="works"><PageWrapper><WorksDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/rooms" element={<ProtectedRoute requiredPermission="rooms"><PageWrapper><RoomsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><PageWrapper><EmployeesDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment-categories" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentCategoriesDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><SparePartsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><PageWrapper><SparePartsReceipts /></PageWrapper></ProtectedRoute>} />
       <Route path="/common-faults" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><CommonFaultsDirectory /></PageWrapper></ProtectedRoute>} />

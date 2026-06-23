@@ -200,7 +200,7 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
                 <tr><td>Производитель</td><td>{equipment.manufacturer || '—'}</td></tr>
                 <tr><td>Год выпуска</td><td>{equipment.yearOfManufacture || '—'}</td></tr>
                 <tr><td>Состояние</td><td>{STATUS_MAP[equipment.status] || equipment.status}</td></tr>
-                <tr><td>Категория</td><td>{equipment.category || '—'}</td></tr>
+                <tr><td>Категория</td><td>{equipment.categoryName || '—'}</td></tr>
                 <tr>
                   <td>Помещение</td>
                   <td>{room ? `${room.name}${room.building ? ` (${room.building})` : ''}` : '—'}</td>

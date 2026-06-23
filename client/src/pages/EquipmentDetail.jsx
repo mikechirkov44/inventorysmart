@@ -200,7 +200,7 @@ function EquipmentDetail() {
               </div>
               <div className="info-row">
                 <span className="label">Категория:</span>
-                <span className="value">{equipment.category}</span>
+                <span className="value">{equipment.categoryName || '—'}</span>
               </div>
               <div className="info-row">
                 <span className="label">Описание:</span>
