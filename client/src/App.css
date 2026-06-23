@@ -6330,26 +6330,29 @@ textarea:focus {
 
 .table-settings-corner-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-sm);
-  color: var(--gray-500);
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--gray-400);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease;
   z-index: 10;
+  padding: 0;
 }
 
 .table-settings-corner-btn:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
   color: var(--primary);
+}
+
+/* Add padding to last header column to accommodate settings button */
+.data-table th:last-child {
+  padding-right: 40px;
 }
 
 .table-container {
