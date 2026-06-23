@@ -251,37 +251,29 @@ function SchedulePage() {
       const baseDate = row.plannedDate ? new Date(row.plannedDate) : new Date(today);
       
       if (frequencyDays > 0) {
-        // Находим первое вхождение >= startDate
-        // Сначала смотрим сколько периодов нужно от baseDate до startDate
         const baseMs = baseDate.getTime();
         const startMs = startDate.getTime();
+        const todayMs = today.getTime();
         const msPerDay = 86400000;
-        
-        // Разница в днях от baseDate до startDate
-        const daysDiff = Math.floor((startMs - baseMs) / msPerDay);
-        
-        // Сколько периодов назад/вперед от baseDate до startDate
-        const periodsOffset = Math.floor(daysDiff / frequencyDays);
-        
-        // Первая дата >= startDate
-        let currentDate = addDays(baseDate, periodsOffset * frequencyDays);
-        
-        // Если currentDate < startDate, сдвигаем на один период вперед
-        if (currentDate < startDate) {
-          currentDate = addDays(currentDate, frequencyDays);
+
+        // Находим дату ближайшего выполнения >= startDate
+        const daysDiffFromStart = Math.floor((startMs - baseMs) / msPerDay);
+        const periodsFromStart = Math.ceil(daysDiffFromStart / frequencyDays);
+        let firstAfterStart = addDays(baseDate, periodsFromStart * frequencyDays);
+        if (firstAfterStart < startDate) firstAfterStart = addDays(firstAfterStart, frequencyDays);
+
+        // Генерируем вперёд от firstAfterStart до endDate
+        let cur = new Date(firstAfterStart);
+        while (cur < endDate) {
+          plannedDays.add(formatDateShort(cur.toISOString()));
+          cur = addDays(cur, frequencyDays);
         }
-        
-        // Генерируем все даты от currentDate до endDate
-        while (currentDate < endDate) {
-          plannedDays.add(formatDateShort(currentDate.toISOString()));
-          currentDate = addDays(currentDate, frequencyDays);
-        }
-        
-        // Генерируем назад от первой даты до startDate
-        let backDate = addDays(baseDate, periodsOffset * frequencyDays);
-        while (backDate >= startDate) {
-          plannedDays.add(formatDateShort(backDate.toISOString()));
-          backDate = addDays(backDate, -frequencyDays);
+
+        // Генерируем назад от firstAfterStart до startDate (прошедшие даты включая сегодня)
+        let back = addDays(firstAfterStart, -frequencyDays);
+        while (back >= startDate) {
+          plannedDays.add(formatDateShort(back.toISOString()));
+          back = addDays(back, -frequencyDays);
         }
       }
 

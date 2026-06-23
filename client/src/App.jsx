@@ -8,7 +8,20 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Smartphone } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download } from 'lucide-react';
+
+function AndroidIcon({ size = 18, ...props }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M5 16V9a7 7 0 0 1 14 0v7" />
+      <path d="M3 16h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2z" />
+      <circle cx="8.5" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="12" r="1" fill="currentColor" stroke="none" />
+      <path d="M7 8.5a.5.5 0 0 1 .5-.5" />
+      <path d="M17 8.5a.5.5 0 0 0 .5-.5" />
+    </svg>
+  );
+}
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
@@ -165,7 +178,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
         <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}</NavLink></li>
         <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
-        <li><a href="/downloads/InventorySmart.apk" download><Smartphone size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
+        <li><a href="/downloads/InventorySmart.apk" download><AndroidIcon size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
       </ul>
       <div className="nav-footer">
         {!collapsed && (
