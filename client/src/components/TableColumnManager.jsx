@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { Settings, GripVertical, Eye, EyeOff, X, RotateCcw } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -17,30 +17,44 @@ function TableColumnManager({ columns, onToggle, onMove, onReset, isOpen, onClos
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
-  const handleDragStart = (index) => {
+  const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-  };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+    // Для Firefox необходимо установить данные
+    e.dataTransfer.setData('draggedIndex', String(index));
+  }, []);
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = useCallback((e, index) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     if (draggedIndex !== null && draggedIndex !== index) {
       setDragOverIndex(index);
     }
-  };
+  }, [draggedIndex]);
 
-  const handleDrop = (e, dropIndex) => {
+  const handleDrop = useCallback((e, dropIndex) => {
     e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== dropIndex) {
-      onMove(draggedIndex, dropIndex);
+    e.stopPropagation();
+    const draggedIndexData = e.dataTransfer.getData('draggedIndex');
+    const textPlainData = e.dataTransfer.getData('text/plain');
+    const sourceIndex = parseInt(draggedIndexData || textPlainData, 10);
+    
+    if (!isNaN(sourceIndex) && sourceIndex !== dropIndex) {
+      onMove(sourceIndex, dropIndex);
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
-  };
+  }, [onMove]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
     setDragOverIndex(null);
-  };
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverIndex(null);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -62,17 +76,21 @@ function TableColumnManager({ columns, onToggle, onMove, onReset, isOpen, onClos
               <div
                 key={col.key}
                 className={`table-column-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''} ${col.visible === false ? 'hidden' : ''}`}
-                draggable
-                onDragStart={() => handleDragStart(index)}
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
+                onDragLeave={handleDragLeave}
               >
                 <GripVertical size={16} className="drag-handle" />
                 <span className="column-label">{col.label}</span>
                 <button
                   className={`btn-icon btn-visibility ${col.visible === false ? 'hidden' : ''}`}
-                  onClick={() => onToggle(col.key)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggle(col.key);
+                  }}
                   title={col.visible === false ? 'Показать' : 'Скрыть'}
                 >
                   {col.visible === false ? <EyeOff size={16} /> : <Eye size={16} />}

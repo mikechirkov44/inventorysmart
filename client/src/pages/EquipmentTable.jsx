@@ -138,12 +138,6 @@ function EquipmentTable() {
 
   const clearFilters = () => { setSearch(''); setFilterCategory(''); setFilterRoom(''); setFilterStatus(''); };
 
-  /** Проверка видимости колонки */
-  const isColumnVisible = (key) => {
-    const col = columns.find(c => c.key === key);
-    return col ? col.visible !== false : true;
-  };
-
   if (loading) return <SkeletonTable rows={10} cols={visibleColumns.length} />;
 
   return (
@@ -205,24 +199,27 @@ function EquipmentTable() {
           <table className="data-table">
             <thead>
               <tr>
-                {isColumnVisible('name') && (
-                  <th onClick={() => handleSort('name')} className={sortClass('name')}>Наименование</th>
-                )}
-                {isColumnVisible('inventoryNumber') && (
-                  <th onClick={() => handleSort('inventoryNumber')} className={sortClass('inventoryNumber')}>Инв. номер</th>
-                )}
-                {isColumnVisible('status') && (
-                  <th onClick={() => handleSort('status')} className={sortClass('status')}>Состояние</th>
-                )}
-                {isColumnVisible('category') && (
-                  <th onClick={() => handleSort('categoryName')} className={sortClass('categoryName')}>Категория</th>
-                )}
-                {isColumnVisible('room') && (
-                  <th onClick={() => handleSort('roomName')} className={sortClass('roomName')}>Помещение</th>
-                )}
-                {isColumnVisible('works') && <th>Работы</th>}
-                {isColumnVisible('photo') && <th>Фото</th>}
-                {isColumnVisible('actions') && <th>Действия</th>}
+                {visibleColumns.map(col => {
+                  const sortFieldMap = {
+                    name: 'name',
+                    inventoryNumber: 'inventoryNumber',
+                    status: 'status',
+                    category: 'categoryName',
+                    room: 'roomName',
+                    works: null,
+                    photo: null,
+                    actions: null,
+                  };
+                  const sortableField = sortFieldMap[col.key];
+                  if (sortableField) {
+                    return (
+                      <th key={col.key} onClick={() => handleSort(sortableField)} className={sortClass(sortableField)}>
+                        {col.label}
+                      </th>
+                    );
+                  }
+                  return <th key={col.key}>{col.label}</th>;
+                })}
               </tr>
             </thead>
             <tbody>
@@ -237,37 +234,58 @@ function EquipmentTable() {
                   const st = STATUS_MAP[item.status] || STATUS_MAP.working;
                   return (
                     <tr key={item.id}>
-                      {isColumnVisible('name') && (
-                        <td><Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link></td>
-                      )}
-                      {isColumnVisible('inventoryNumber') && (
-                        <td>{item.inventoryNumber}</td>
-                      )}
-                      {isColumnVisible('status') && (
-                        <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                      )}
-                      {isColumnVisible('category') && (
-                        <td>{item.categoryName || '—'}</td>
-                      )}
-                      {isColumnVisible('room') && (
-                        <td>{roomMap[item.roomId] || '—'}</td>
-                      )}
-                      {isColumnVisible('works') && (
-                        <td>{(Array.isArray(item.workIds) ? item.workIds : []).map(wid => workMap[wid]).filter(Boolean).join(', ') || '—'}</td>
-                      )}
-                      {isColumnVisible('photo') && (
-                        <td>
-                          {item.photo ? <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" /> : <span className="no-photo-small">—</span>}
-                        </td>
-                      )}
-                      {isColumnVisible('actions') && (
-                        <td>
-                          <ActionsMenu items={[
-                            { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
-                            { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
-                          ]} />
-                        </td>
-                      )}
+                      {visibleColumns.map(col => {
+                        switch (col.key) {
+                          case 'name':
+                            return (
+                              <td key={col.key}>
+                                <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
+                              </td>
+                            );
+                          case 'inventoryNumber':
+                            return <td key={col.key}>{item.inventoryNumber}</td>;
+                          case 'status':
+                            return (
+                              <td key={col.key}>
+                                <span className={`status-badge ${st.className}`}>{st.label}</span>
+                              </td>
+                            );
+                          case 'category':
+                            return <td key={col.key}>{item.categoryName || '—'}</td>;
+                          case 'room':
+                            return <td key={col.key}>{roomMap[item.roomId] || '—'}</td>;
+                          case 'works':
+                            return (
+                              <td key={col.key}>
+                                {(Array.isArray(item.workIds) ? item.workIds : [])
+                                  .map(wid => workMap[wid])
+                                  .filter(Boolean)
+                                  .join(', ') || '—'}
+                              </td>
+                            );
+                          case 'photo':
+                            return (
+                              <td key={col.key}>
+                                {item.photo ? (
+                                  <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" />
+                                ) : (
+                                  <span className="no-photo-small">—</span>
+                                )}
+                              </td>
+                            );
+                          case 'actions':
+                            return (
+                              <td key={col.key}>
+                                <ActionsMenu items={[
+                                  { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
+                                  { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                                ]} />
+                              </td>
+                            );
+                          default:
+                            return <td key={col.key}>—</td>;
+                        }
+                      })}
                     </tr>
                   );
                 })

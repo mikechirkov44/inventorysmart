@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 /**
  * @module useTableSettings
@@ -17,12 +17,15 @@ export function useTableSettings(tableId, defaultColumns) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Merge with default columns to handle new columns
-        const merged = defaultColumns.map(defCol => {
-          const savedCol = parsed.find(c => c.key === defCol.key);
-          return savedCol ? { ...defCol, ...savedCol } : defCol;
-        });
-        return merged;
+        // Restore order from saved columns, but merge with defaults for new columns
+        const merged = parsed.map(savedCol => {
+          const defCol = defaultColumns.find(c => c.key === savedCol.key);
+          return defCol ? { ...defCol, ...savedCol } : savedCol;
+        }).filter(col => defaultColumns.some(def => def.key === col.key)); // Remove deleted columns
+        
+        // Add new columns that weren't in saved data
+        const newColumns = defaultColumns.filter(def => !parsed.some(saved => saved.key === def.key));
+        return [...merged, ...newColumns];
       } catch {
         return defaultColumns;
       }
@@ -33,41 +36,40 @@ export function useTableSettings(tableId, defaultColumns) {
   const [isManaging, setIsManaging] = useState(false);
 
   // Save to localStorage when columns change
-  useEffect(() => {
+  const saveToStorage = useCallback((newColumns) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(storageKey, JSON.stringify(columns));
+      localStorage.setItem(storageKey, JSON.stringify(newColumns));
     }
-  }, [columns, storageKey]);
+  }, [storageKey]);
 
   const toggleColumn = useCallback((key) => {
-    setColumns(prev => prev.map(col => 
-      col.key === key ? { ...col, visible: !col.visible } : col
-    ));
-  }, []);
-
-  const reorderColumns = useCallback((newOrder) => {
     setColumns(prev => {
-      const newColumns = [...prev];
-      const [moved] = newColumns.splice(newOrder.sourceIndex, 1);
-      newColumns.splice(newOrder.destinationIndex, 0, moved);
-      return newColumns.map((col, index) => ({ ...col, order: index }));
+      const newColumns = prev.map(col => 
+        col.key === key ? { ...col, visible: !col.visible } : col
+      );
+      saveToStorage(newColumns);
+      return newColumns;
     });
-  }, []);
+  }, [saveToStorage]);
 
   const moveColumn = useCallback((dragIndex, hoverIndex) => {
     setColumns(prev => {
       const newColumns = [...prev];
       const [moved] = newColumns.splice(dragIndex, 1);
       newColumns.splice(hoverIndex, 0, moved);
+      saveToStorage(newColumns);
       return newColumns;
     });
-  }, []);
+  }, [saveToStorage]);
 
   const resetToDefault = useCallback(() => {
     setColumns(defaultColumns);
-  }, [defaultColumns]);
+    saveToStorage(defaultColumns);
+  }, [defaultColumns, saveToStorage]);
 
-  const visibleColumns = columns.filter(col => col.visible !== false);
+  const visibleColumns = useMemo(() => {
+    return columns.filter(col => col.visible !== false);
+  }, [columns]);
 
   return {
     columns,
@@ -75,7 +77,6 @@ export function useTableSettings(tableId, defaultColumns) {
     isManaging,
     setIsManaging,
     toggleColumn,
-    reorderColumns,
     moveColumn,
     resetToDefault
   };
