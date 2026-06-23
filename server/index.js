@@ -75,10 +75,10 @@ async function start() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // APK download
+  // APK download (public)
   const fs = require('fs');
   const apkPath = path.join(__dirname, 'uploads', 'InventorySmart.apk');
-  app.get('/api/mobile/apk', (req, res) => {
+  app.get('/downloads/InventorySmart.apk', (req, res) => {
     if (!fs.existsSync(apkPath)) {
       return res.status(404).json({ error: 'APK не найден' });
     }

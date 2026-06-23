@@ -165,7 +165,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
         <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}</NavLink></li>
         <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
-        <li><a href="/api/mobile/apk" download><Smartphone size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
+        <li><a href="/downloads/InventorySmart.apk" download><Smartphone size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
       </ul>
       <div className="nav-footer">
         {!collapsed && (
