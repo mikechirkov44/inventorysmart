@@ -1,6 +1,7 @@
 /**
  * @module EquipmentTable
- * @description Табличное представление списка оборудования с фильтрами, сортировкой и удалением.
+ * @description Табличное представление списка оборудования с фильтрами, сортировкой,
+ * удалением и настройкой колонок (перетаскивание, видимость).
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,6 +12,8 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
+import { useTableSettings } from '../hooks/useTableSettings';
+import TableColumnManager, { TableSettingsButton } from '../components/TableColumnManager';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -18,6 +21,18 @@ const STATUS_MAP = {
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
   needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
 };
+
+/** Дефолтные колонки таблицы */
+const DEFAULT_COLUMNS = [
+  { key: 'name', label: 'Наименование', visible: true },
+  { key: 'inventoryNumber', label: 'Инв. номер', visible: true },
+  { key: 'status', label: 'Состояние', visible: true },
+  { key: 'category', label: 'Категория', visible: true },
+  { key: 'room', label: 'Помещение', visible: true },
+  { key: 'works', label: 'Работы', visible: true },
+  { key: 'photo', label: 'Фото', visible: true },
+  { key: 'actions', label: 'Действия', visible: true },
+];
 
 function EquipmentTable() {
   /** Состояние данных, фильтров, сортировки */
@@ -32,6 +47,17 @@ function EquipmentTable() {
   const [filterStatus, setFilterStatus] = useState('');
   const [sortField, setSortField] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+
+  /** Настройки колонок */
+  const {
+    columns,
+    visibleColumns,
+    isManaging,
+    setIsManaging,
+    toggleColumn,
+    moveColumn,
+    resetToDefault
+  } = useTableSettings('equipment-table', DEFAULT_COLUMNS);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -58,7 +84,7 @@ function EquipmentTable() {
   }, [works]);
 
   const categories = useMemo(() => {
-    return [...new Set(equipment.map(e => e.category).filter(Boolean))].sort();
+    return [...new Set(equipment.map(e => e.categoryName).filter(Boolean))].sort();
   }, [equipment]);
 
   /** Фильтрация и сортировка оборудования */
@@ -73,7 +99,7 @@ function EquipmentTable() {
         (e.description && e.description.toLowerCase().includes(s))
       );
     }
-    if (filterCategory) result = result.filter(e => e.category === filterCategory);
+    if (filterCategory) result = result.filter(e => e.categoryName === filterCategory);
     if (filterRoom) result = result.filter(e => e.roomId === filterRoom);
     if (filterStatus) result = result.filter(e => e.status === filterStatus);
 
@@ -97,11 +123,6 @@ function EquipmentTable() {
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const sortIcon = (field) => {
-    if (sortField !== field) return '';
-    return '';
-  };
-
   const sortClass = (field) => {
     if (sortField !== field) return 'sortable';
     return `sortable sorted-${sortDir}`;
@@ -117,19 +138,39 @@ function EquipmentTable() {
 
   const clearFilters = () => { setSearch(''); setFilterCategory(''); setFilterRoom(''); setFilterStatus(''); };
 
-  if (loading) return <SkeletonTable rows={10} cols={6} />;
+  /** Проверка видимости колонки */
+  const isColumnVisible = (key) => {
+    const col = columns.find(c => c.key === key);
+    return col ? col.visible !== false : true;
+  };
+
+  if (loading) return <SkeletonTable rows={10} cols={visibleColumns.length} />;
 
   return (
     <div className="equipment-table-page">
       <div className="header">
         <h1><FolderTree size={24} />Оборудование (таблица)</h1>
         <div className="header-actions">
+          <TableSettingsButton 
+            onClick={() => setIsManaging(true)} 
+            visibleColumns={visibleColumns.length} 
+            totalColumns={columns.length} 
+          />
           <Link to="/" className="btn">Карточки</Link>
           <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
         </div>
       </div>
 
       {error && <div className="error">{error}</div>}
+
+      <TableColumnManager
+        columns={columns}
+        onToggle={toggleColumn}
+        onMove={moveColumn}
+        onReset={resetToDefault}
+        isOpen={isManaging}
+        onClose={() => setIsManaging(false)}
+      />
 
       <div className="filters-panel">
         <div className="filter-row">
@@ -164,44 +205,74 @@ function EquipmentTable() {
           <table className="data-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('name')} className={sortClass('name')}>Наименование</th>
-                <th onClick={() => handleSort('inventoryNumber')} className={sortClass('inventoryNumber')}>Инв. номер</th>
-                <th onClick={() => handleSort('status')} className={sortClass('status')}>Состояние</th>
-                <th onClick={() => handleSort('category')} className={sortClass('category')}>Категория</th>
-                <th onClick={() => handleSort('roomName')} className={sortClass('roomName')}>Помещение</th>
-                <th>Работы</th>
-                <th>Фото</th>
-                <th>Действия</th>
+                {isColumnVisible('name') && (
+                  <th onClick={() => handleSort('name')} className={sortClass('name')}>Наименование</th>
+                )}
+                {isColumnVisible('inventoryNumber') && (
+                  <th onClick={() => handleSort('inventoryNumber')} className={sortClass('inventoryNumber')}>Инв. номер</th>
+                )}
+                {isColumnVisible('status') && (
+                  <th onClick={() => handleSort('status')} className={sortClass('status')}>Состояние</th>
+                )}
+                {isColumnVisible('category') && (
+                  <th onClick={() => handleSort('categoryName')} className={sortClass('categoryName')}>Категория</th>
+                )}
+                {isColumnVisible('room') && (
+                  <th onClick={() => handleSort('roomName')} className={sortClass('roomName')}>Помещение</th>
+                )}
+                {isColumnVisible('works') && <th>Работы</th>}
+                {isColumnVisible('photo') && <th>Фото</th>}
+                {isColumnVisible('actions') && <th>Действия</th>}
               </tr>
             </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan="8" className="no-results-cell">Оборудование не найдено</td></tr>
-            ) : (
-              filtered.map(item => {
-                const st = STATUS_MAP[item.status] || STATUS_MAP.working;
-                return (
-                  <tr key={item.id}>
-                    <td><Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link></td>
-                    <td>{item.inventoryNumber}</td>
-                    <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                    <td>{item.category || '—'}</td>
-                    <td>{roomMap[item.roomId] || '—'}</td>
-                    <td>{(Array.isArray(item.workIds) ? item.workIds : []).map(wid => workMap[wid]).filter(Boolean).join(', ') || '—'}</td>
-                    <td>
-                      {item.photo ? <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" /> : <span className="no-photo-small">—</span>}
-                    </td>
-                    <td>
-                      <ActionsMenu items={[
-                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
-                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
-                      ]} />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={visibleColumns.length} className="no-results-cell">
+                    Оборудование не найдено
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(item => {
+                  const st = STATUS_MAP[item.status] || STATUS_MAP.working;
+                  return (
+                    <tr key={item.id}>
+                      {isColumnVisible('name') && (
+                        <td><Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link></td>
+                      )}
+                      {isColumnVisible('inventoryNumber') && (
+                        <td>{item.inventoryNumber}</td>
+                      )}
+                      {isColumnVisible('status') && (
+                        <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                      )}
+                      {isColumnVisible('category') && (
+                        <td>{item.categoryName || '—'}</td>
+                      )}
+                      {isColumnVisible('room') && (
+                        <td>{roomMap[item.roomId] || '—'}</td>
+                      )}
+                      {isColumnVisible('works') && (
+                        <td>{(Array.isArray(item.workIds) ? item.workIds : []).map(wid => workMap[wid]).filter(Boolean).join(', ') || '—'}</td>
+                      )}
+                      {isColumnVisible('photo') && (
+                        <td>
+                          {item.photo ? <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" /> : <span className="no-photo-small">—</span>}
+                        </td>
+                      )}
+                      {isColumnVisible('actions') && (
+                        <td>
+                          <ActionsMenu items={[
+                            { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
+                            { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                          ]} />
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
           </table>
         </div>
       </div>
