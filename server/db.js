@@ -73,7 +73,7 @@ async function migrate() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR(255) NOT NULL,
         description TEXT DEFAULT '',
-        company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+        company_id UUID,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         UNIQUE(name, company_id)
@@ -361,17 +361,24 @@ async function migrate() {
 
     // Migrate: create equipment_categories table and add category_id
     try {
+      // Create equipment_categories without FK first (companies may not exist yet)
       await client.query(`
         CREATE TABLE IF NOT EXISTS equipment_categories (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           name VARCHAR(255) NOT NULL,
           description TEXT DEFAULT '',
-          company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+          company_id UUID,
           created_at TIMESTAMPTZ DEFAULT NOW(),
-          updated_at TIMESTAMPTZ DEFAULT NOW(),
-          UNIQUE(name, company_id)
+          updated_at TIMESTAMPTZ DEFAULT NOW()
         )
       `);
+      // Add FK constraint separately
+      try {
+        await client.query(`ALTER TABLE equipment_categories ADD CONSTRAINT fk_equipment_categories_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE`);
+      } catch (fkErr) {
+        // Constraint may already exist or companies table not ready
+        console.log('FK constraint note:', fkErr.message);
+      }
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES equipment_categories(id) ON DELETE SET NULL`);
       // Remove old category column if exists
       await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS category`);

@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const EquipmentCategory = require('../models/equipmentCategory');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate: authenticateToken } = require('../middleware/auth');
 
 // All routes require authentication
 router.use(authenticateToken);
