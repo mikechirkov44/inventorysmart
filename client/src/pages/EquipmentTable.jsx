@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FolderTree, Pencil, Trash2 } from 'lucide-react';
+import { FolderTree, Pencil, Trash2, Settings } from 'lucide-react';
 import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -13,7 +13,7 @@ import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 import { useTableSettings } from '../hooks/useTableSettings';
-import TableColumnManager, { TableSettingsButton } from '../components/TableColumnManager';
+import TableColumnManager from '../components/TableColumnManager';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -145,11 +145,6 @@ function EquipmentTable() {
       <div className="header">
         <h1><FolderTree size={24} />Оборудование (таблица)</h1>
         <div className="header-actions">
-          <TableSettingsButton 
-            onClick={() => setIsManaging(true)} 
-            visibleColumns={visibleColumns.length} 
-            totalColumns={columns.length} 
-          />
           <Link to="/" className="btn">Карточки</Link>
           <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
         </div>
@@ -195,6 +190,13 @@ function EquipmentTable() {
       </div>
 
       <div className="table-container">
+        <button 
+          className="table-settings-corner-btn" 
+          onClick={() => setIsManaging(true)}
+          title="Настройка колонок"
+        >
+          <Settings size={18} />
+        </button>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
