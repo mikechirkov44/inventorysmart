@@ -6828,7 +6828,7 @@ textarea:focus {
 .oh-work-item input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  margin: 0;
+  margin: 0 8px 0 0;
   flex-shrink: 0;
   cursor: pointer;
 }
