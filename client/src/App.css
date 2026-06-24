@@ -6761,6 +6761,10 @@ textarea:focus {
   margin-bottom: 0;
 }
 
+.oh-form-group-spaced {
+  margin-top: 16px;
+}
+
 .oh-intervals-list {
   margin-bottom: 8px;
 }
