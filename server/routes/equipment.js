@@ -138,6 +138,7 @@ router.put('/:id/operating-hours', requirePermission('equipment', 'edit'), async
       currentValue,
       inputDate,
       assignedTo,
+      workIds,
       autoCreateTasks,
       preventDecrease
     } = req.body;
@@ -149,6 +150,7 @@ router.put('/:id/operating-hours', requirePermission('equipment', 'edit'), async
       currentValue,
       inputDate,
       assignedTo,
+      workIds,
       autoCreateTasks,
       preventDecrease
     });

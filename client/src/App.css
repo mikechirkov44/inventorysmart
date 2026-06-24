@@ -1201,6 +1201,19 @@ input, textarea, select { font-family: inherit; }
   font-size: 1.5rem;
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.detail-title-row h1 {
+  margin-bottom: 0;
+  flex: 1;
+}
+
 .info-row {
   display: flex;
   margin-bottom: 10px;
@@ -3060,6 +3073,16 @@ input, textarea, select { font-family: inherit; }
 
   .detail-info h1 {
     font-size: 1.15rem;
+  }
+
+  .detail-title-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .detail-title-row h1 {
+    width: 100%;
+    margin-bottom: 8px;
   }
 
   /* --- Modal --- */

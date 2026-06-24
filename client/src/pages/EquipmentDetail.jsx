@@ -142,36 +142,9 @@ function EquipmentDetail() {
         { label: 'Оборудование', to: '/' },
         { label: equipment.name }
       ]} />
-      <div className="detail-header">
+        <div className="detail-header">
         <div className="detail-header-main">
           <Link to="/" className="back-link">← Назад к списку</Link>
-        </div>
-        <div className="detail-actions">
-          <ActionsMenu
-            items={[
-              {
-                label: showPassport ? '← Назад к карточке' : 'Паспорт',
-                icon: <FileText size={16} />,
-                onClick: () => setShowPassport(!showPassport)
-              },
-              {
-                label: 'Моточасы',
-                icon: <Clock size={16} />,
-                onClick: () => setShowOperatingHours(true)
-              },
-              {
-                label: 'Редактировать',
-                icon: <Pencil size={16} />,
-                onClick: () => navigate(`/equipment/${id}/edit`)
-              },
-              {
-                label: 'Удалить',
-                icon: <Trash2 size={16} />,
-                danger: true,
-                onClick: handleDelete
-              }
-            ]}
-          />
         </div>
       </div>
 
@@ -197,7 +170,34 @@ function EquipmentDetail() {
             </div>
 
             <div className="detail-info">
-              <h1>{equipment.name}</h1>
+              <div className="detail-title-row">
+                <h1>{equipment.name}</h1>
+                <ActionsMenu
+                  items={[
+                    {
+                      label: showPassport ? '← Назад к карточке' : 'Паспорт',
+                      icon: <FileText size={16} />,
+                      onClick: () => setShowPassport(!showPassport)
+                    },
+                    {
+                      label: 'Моточасы',
+                      icon: <Clock size={16} />,
+                      onClick: () => setShowOperatingHours(true)
+                    },
+                    {
+                      label: 'Редактировать',
+                      icon: <Pencil size={16} />,
+                      onClick: () => navigate(`/equipment/${id}/edit`)
+                    },
+                    {
+                      label: 'Удалить',
+                      icon: <Trash2 size={16} />,
+                      danger: true,
+                      onClick: handleDelete
+                    }
+                  ]}
+                />
+              </div>
               <div className="info-row">
                 <span className="label">Состояние:</span>
                 <span className="value"><span className={`status-badge ${st.className}`}>{st.label}</span></span>
