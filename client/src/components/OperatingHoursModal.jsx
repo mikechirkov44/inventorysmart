@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Info, Clock, Calendar, User, Settings } from 'lucide-react';
-import { operatingHoursAPI, employeesAPI } from '../services/api';
+import { X, Plus, Trash2, Info, Clock, Calendar, User, Settings, Wrench } from 'lucide-react';
+import { operatingHoursAPI, employeesAPI, worksAPI } from '../services/api';
 import { useToast } from './Toast';
 import Toggle from './Toggle';
 import CustomSelect from './CustomSelect';
@@ -18,11 +18,13 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [works, setWorks] = useState([]);
   const [formData, setFormData] = useState({
     unit: 'Моточасы (м/ч)',
     currentValue: 0,
     inputDate: '',
     assignedTo: '',
+    workIds: [],
     autoCreateTasks: true,
     preventDecrease: true,
     intervals: []
@@ -30,16 +32,18 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
   const [newInterval, setNewInterval] = useState({ value: '', description: '' });
   const toast = useToast();
 
-  // Load existing data and employees
+  // Load existing data, employees and works
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [ohRes, empRes] = await Promise.all([
+        const [ohRes, empRes, worksRes] = await Promise.all([
           operatingHoursAPI.getByEquipmentId(equipmentId),
-          employeesAPI.getAll()
+          employeesAPI.getAll(),
+          worksAPI.getAll()
         ]);
 
         setEmployees(empRes.data || []);
+        setWorks(worksRes.data || []);
 
         if (ohRes.data?.data) {
           const data = ohRes.data.data;
@@ -48,6 +52,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
             currentValue: data.currentValue || 0,
             inputDate: data.inputDate ? data.inputDate.split('T')[0] : '',
             assignedTo: data.assignedTo || '',
+            workIds: data.workIds || [],
             autoCreateTasks: data.autoCreateTasks !== false,
             preventDecrease: data.preventDecrease !== false,
             intervals: data.intervals || []
@@ -73,6 +78,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
         currentValue: parseFloat(formData.currentValue) || 0,
         inputDate: formData.inputDate || null,
         assignedTo: formData.assignedTo || null,
+        workIds: formData.workIds || [],
         autoCreateTasks: formData.autoCreateTasks,
         preventDecrease: formData.preventDecrease
       });
@@ -263,6 +269,37 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
                 label: `${e.first_name || ''} ${e.last_name || ''}`.trim() || e.job_title || 'Без имени'
               }))}
             />
+          </div>
+
+          {/* Works selection */}
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Wrench size={16} />
+              Работы при ТО
+              <span className="badge">{formData.workIds?.length || 0}</span>
+            </label>
+            <div className="checkbox-list" style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 8 }}>
+              {works.length === 0 ? (
+                <span className="form-hint">Нет доступных работ</span>
+              ) : (
+                works.map(work => (
+                  <label key={work.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.workIds?.includes(work.id)}
+                      onChange={(e) => {
+                        const newWorkIds = e.target.checked
+                          ? [...(formData.workIds || []), work.id]
+                          : (formData.workIds || []).filter(id => id !== work.id);
+                        setFormData({ ...formData, workIds: newWorkIds });
+                      }}
+                    />
+                    <span style={{ fontSize: 14 }}>{work.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            <span className="form-hint">Выберите работы, которые будут выполняться при достижении интервала ТО</span>
           </div>
 
           {/* Settings */}

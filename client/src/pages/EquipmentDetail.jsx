@@ -11,7 +11,8 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-import { Clock } from 'lucide-react';
+import ActionsMenu from '../components/ActionsMenu';
+import { Clock, FileText, Pencil, Trash2 } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -146,14 +147,31 @@ function EquipmentDetail() {
           <Link to="/" className="back-link">← Назад к списку</Link>
         </div>
         <div className="detail-actions">
-          <button onClick={() => setShowPassport(!showPassport)} className="btn btn-secondary">
-            {showPassport ? '← Назад к карточке' : '📄 Паспорт'}
-          </button>
-          <button onClick={() => setShowOperatingHours(true)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Clock size={16} /> Моточасы
-          </button>
-          <Link to={`/equipment/${id}/edit`} className="btn btn-primary">Редактировать</Link>
-          <button onClick={handleDelete} className="btn btn-danger">Удалить</button>
+          <ActionsMenu
+            items={[
+              {
+                label: showPassport ? '← Назад к карточке' : 'Паспорт',
+                icon: <FileText size={16} />,
+                onClick: () => setShowPassport(!showPassport)
+              },
+              {
+                label: 'Моточасы',
+                icon: <Clock size={16} />,
+                onClick: () => setShowOperatingHours(true)
+              },
+              {
+                label: 'Редактировать',
+                icon: <Pencil size={16} />,
+                onClick: () => navigate(`/equipment/${id}/edit`)
+              },
+              {
+                label: 'Удалить',
+                icon: <Trash2 size={16} />,
+                danger: true,
+                onClick: handleDelete
+              }
+            ]}
+          />
         </div>
       </div>
 

@@ -9,9 +9,10 @@ const { query } = require('../db');
 /**
  * Преобразует строку из БД в объект наработки
  * @param {Object|null} row - Строка из таблицы equipment_operating_hours
+ * @param {Array} [workIds] - Массив ID работ
  * @returns {Object|null} Объект наработки или null
  */
-function mapOperatingHoursRow(row) {
+function mapOperatingHoursRow(row, workIds = []) {
   if (!row) return null;
   return {
     id: row.id,
@@ -23,6 +24,7 @@ function mapOperatingHoursRow(row) {
     assignedTo: row.assigned_to,
     autoCreateTasks: row.auto_create_tasks,
     preventDecrease: row.prevent_decrease,
+    workIds: workIds,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -63,10 +65,10 @@ module.exports = {
   },
 
   /**
-   * Получает наработку с интервалами ТО
+   * Получает наработку с интервалами ТО и работами
    * @async
    * @param {string} equipmentId - ID оборудования
-   * @returns {Promise<Object|null>} Наработка с интервалами или null
+   * @returns {Promise<Object|null>} Наработка с интервалами и работами или null
    */
   getWithIntervals: async (equipmentId) => {
     const { rows } = await query(
@@ -75,12 +77,21 @@ module.exports = {
     );
     if (rows.length === 0) return null;
     
-    const operatingHours = mapOperatingHoursRow(rows[0]);
+    const ohId = rows[0].id;
+    
+    // Get workIds
+    const { rows: workRows } = await query(
+      'SELECT work_id FROM equipment_operating_hours_works WHERE operating_hours_id = $1',
+      [ohId]
+    );
+    const workIds = workRows.map(r => r.work_id);
+    
+    const operatingHours = mapOperatingHoursRow(rows[0], workIds);
     
     // Get intervals
     const { rows: intervalRows } = await query(
       'SELECT * FROM equipment_maintenance_intervals WHERE operating_hours_id = $1 ORDER BY interval_value',
-      [operatingHours.id]
+      [ohId]
     );
     
     operatingHours.intervals = intervalRows.map(mapIntervalRow);
@@ -97,12 +108,15 @@ module.exports = {
    * @param {number} [data.currentValue] - Текущее значение
    * @param {string} [data.inputDate] - Дата ввода
    * @param {string} [data.assignedTo] - ID сотрудника
+   * @param {Array} [data.workIds] - Массив ID работ
    * @param {boolean} [data.autoCreateTasks] - Автосоздание задач
    * @param {boolean} [data.preventDecrease] - Запрет уменьшения
    * @returns {Promise<Object>} Созданная/обновленная наработка
    */
   upsert: async (data) => {
     const existing = await module.exports.getByEquipmentId(data.equipmentId);
+    
+    let result;
     
     if (existing) {
       // Check prevent_decrease
@@ -134,7 +148,34 @@ module.exports = {
           data.equipmentId
         ]
       );
-      return mapOperatingHoursRow(rows[0]);
+      result = rows[0];
+      
+      // Update work associations if provided
+      if (data.workIds !== undefined) {
+        // Delete existing associations
+        await query(
+          'DELETE FROM equipment_operating_hours_works WHERE operating_hours_id = $1',
+          [result.id]
+        );
+        // Insert new associations
+        if (Array.isArray(data.workIds) && data.workIds.length > 0) {
+          for (const workId of data.workIds) {
+            await query(
+              'INSERT INTO equipment_operating_hours_works (operating_hours_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+              [result.id, workId]
+            );
+          }
+        }
+      }
+      
+      // Get updated workIds
+      const { rows: workRows } = await query(
+        'SELECT work_id FROM equipment_operating_hours_works WHERE operating_hours_id = $1',
+        [result.id]
+      );
+      const workIds = workRows.map(r => r.work_id);
+      
+      return mapOperatingHoursRow(result, workIds);
     } else {
       // Insert
       const { rows } = await query(
@@ -153,7 +194,19 @@ module.exports = {
           data.preventDecrease !== false
         ]
       );
-      return mapOperatingHoursRow(rows[0]);
+      result = rows[0];
+      
+      // Insert work associations if provided
+      if (Array.isArray(data.workIds) && data.workIds.length > 0) {
+        for (const workId of data.workIds) {
+          await query(
+            'INSERT INTO equipment_operating_hours_works (operating_hours_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [result.id, workId]
+          );
+        }
+      }
+      
+      return mapOperatingHoursRow(result, data.workIds || []);
     }
   },
 
