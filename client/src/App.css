@@ -6820,7 +6820,7 @@ textarea:focus {
 .add-interval-row.compact {
   display: grid;
   grid-template-columns: 100px 1fr 36px;
-  gap: 16px;
+  gap: 20px;
   margin-top: 12px;
 }
 
@@ -6828,11 +6828,7 @@ textarea:focus {
   height: 32px;
   padding: 0 10px;
   font-size: 13px;
-  margin-right: 8px;
-}
-
-.add-interval-row.compact input:last-of-type {
-  margin-right: 0;
+  box-sizing: border-box;
 }
 
 .add-interval-row.compact .btn-sm {
