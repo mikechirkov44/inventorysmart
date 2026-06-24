@@ -6820,7 +6820,7 @@ textarea:focus {
 .add-interval-row.compact {
   display: grid;
   grid-template-columns: 100px 1fr 36px;
-  gap: 10px;
+  gap: 16px;
   margin-top: 12px;
 }
 

@@ -11,7 +11,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-
+import { FileText, Clock, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -175,14 +175,18 @@ function EquipmentDetail() {
               <div className="detail-title-row">
                 <h1>{equipment.name}</h1>
                 <div className="detail-action-buttons">
-                  <button onClick={() => setShowPassport(!showPassport)} className="btn btn-sm btn-secondary">
-                    {showPassport ? '← Назад' : '📄 Паспорт'}
+                  <button onClick={() => setShowPassport(!showPassport)} className="btn btn-sm btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {showPassport ? <><ArrowLeft size={16} /> Назад</> : <><FileText size={16} /> Паспорт</>}
                   </button>
-                  <button onClick={() => setShowOperatingHours(true)} className="btn btn-sm btn-secondary">
-                    ⏱ Моточасы
+                  <button onClick={() => setShowOperatingHours(true)} className="btn btn-sm btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={16} /> Моточасы
                   </button>
-                  <Link to={`/equipment/${id}/edit`} className="btn btn-sm btn-primary">✏️ Редактировать</Link>
-                  <button onClick={handleDelete} className="btn btn-sm btn-danger">🗑 Удалить</button>
+                  <Link to={`/equipment/${id}/edit`} className="btn btn-sm btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Pencil size={16} /> Редактировать
+                  </Link>
+                  <button onClick={handleDelete} className="btn btn-sm btn-danger" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Trash2 size={16} /> Удалить
+                  </button>
                 </div>
               </div>
               <div className="info-row">
