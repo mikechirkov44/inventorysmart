@@ -18,11 +18,6 @@ router.use(authenticate);
 /**
  * @route GET /equipment
  * @description Получение списка оборудования с фильтрацией
- * @param {string} [req.query.name] - Фильтр по названию (частичное совпадение)
- * @param {string} [req.query.category] - Фильтр по категории
- * @param {string} [req.query.location] - Фильтр по местоположению
- * @param {string} [req.query.search] - Поиск по названию, инвентарному номеру, описанию
- * @returns {Object[]} Список оборудования
  */
 router.get('/', async (req, res) => {
   try {
@@ -55,35 +50,33 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * @route GET /equipment/:id
- * @description Получение оборудования по идентификатору
- * @param {string} req.params.id - Идентификатор оборудования
- * @returns {Object} Данные оборудования
- * @returns {404} Если оборудование не найдено
+ * @route POST /equipment
+ * @description Создание нового оборудования
  */
-router.get('/:id', async (req, res) => {
+router.post('/', imageUpload.single('photo'), async (req, res) => {
   try {
-    const equipment = await Equipment.findById(req.params.id, req.user.companyId);
-    if (!equipment) {
-      return res.status(404).json({ error: 'Equipment not found' });
+    const equipmentData = req.body;
+    if (req.file) {
+      equipmentData.photo = req.file.filename;
     }
-    res.json(equipment);
+    
+    if (typeof equipmentData.workIds === 'string') {
+      equipmentData.workIds = JSON.parse(equipmentData.workIds);
+    }
+    
+    const equipment = await Equipment.create(equipmentData, req.user.companyId);
+    res.status(201).json(equipment);
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
+// ===== SPECIFIC ROUTES (must be BEFORE /:id) =====
+
 /**
  * @route GET /equipment/:id/qr
  * @description Генерация QR-кода для оборудования
- * @param {string} req.params.id - Идентификатор оборудования
- * @returns {Object} Данные QR-кода
- * @returns {string} return.equipmentId - Идентификатор оборудования
- * @returns {string} return.qrCode - UUID QR-кода
- * @returns {string} return.qrImage - Base64 Data URL изображения QR-кода
- * @returns {string} return.scanUrl - URL для сканирования
- * @returns {404} Если оборудование не найдено
  */
 router.get('/:id/qr', async (req, res) => {
   try {
@@ -214,26 +207,19 @@ router.post('/:id/operating-hours/intervals', requirePermission('equipment', 'ed
   }
 });
 
+// ===== GENERIC ROUTES (must be AFTER specific routes) =====
+
 /**
- * @route POST /equipment
- * @description Создание нового оборудования
- * @param {Object} req.body - Данные оборудования (name, inventoryNumber, description, location, category, workIds)
- * @param {File} [req.file] - Фотография оборудования (multipart/form-data)
- * @returns {Object} Созданное оборудование (201)
+ * @route GET /equipment/:id
+ * @description Получение оборудования по идентификатору
  */
-router.post('/', imageUpload.single('photo'), async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const equipmentData = req.body;
-    if (req.file) {
-      equipmentData.photo = req.file.filename;
+    const equipment = await Equipment.findById(req.params.id, req.user.companyId);
+    if (!equipment) {
+      return res.status(404).json({ error: 'Equipment not found' });
     }
-    
-    if (typeof equipmentData.workIds === 'string') {
-      equipmentData.workIds = JSON.parse(equipmentData.workIds);
-    }
-    
-    const equipment = await Equipment.create(equipmentData, req.user.companyId);
-    res.status(201).json(equipment);
+    res.json(equipment);
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -243,11 +229,6 @@ router.post('/', imageUpload.single('photo'), async (req, res) => {
 /**
  * @route PUT /equipment/:id
  * @description Обновление данных оборудования
- * @param {string} req.params.id - Идентификатор оборудования
- * @param {Object} req.body - Обновлённые данные оборудования
- * @param {File} [req.file] - Новая фотография оборудования (multipart/form-data)
- * @returns {Object} Обновлённое оборудование
- * @returns {404} Если оборудование не найдено
  */
 router.put('/:id', imageUpload.single('photo'), async (req, res) => {
   try {
@@ -274,9 +255,6 @@ router.put('/:id', imageUpload.single('photo'), async (req, res) => {
 /**
  * @route DELETE /equipment/:id
  * @description Удаление оборудования
- * @param {string} req.params.id - Идентификатор оборудования
- * @returns {Object} Сообщение об успешном удалении
- * @returns {404} Если оборудование не найдено
  */
 router.delete('/:id', async (req, res) => {
   try {
