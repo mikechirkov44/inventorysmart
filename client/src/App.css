@@ -1141,8 +1141,8 @@ input, textarea, select { font-family: inherit; }
 
 .detail-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .detail-actions .btn {
