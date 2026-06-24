@@ -9,7 +9,11 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const Equipment = require('../models/equipment');
 const OperatingHours = require('../models/operatingHours');
+const { authenticate, requirePermission } = require('../middleware/auth');
 const { imageUpload } = require('../utils/upload');
+
+// Apply authentication to all routes
+router.use(authenticate);
 
 /**
  * @route GET /equipment
@@ -115,7 +119,7 @@ router.get('/:id/qr', async (req, res) => {
  * @route GET /equipment/:id/operating-hours
  * @description Получить наработку оборудования с интервалами ТО
  */
-router.get('/:id/operating-hours', async (req, res) => {
+router.get('/:id/operating-hours', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     const { id } = req.params;
     const data = await OperatingHours.getWithIntervals(id);
@@ -133,7 +137,7 @@ router.get('/:id/operating-hours', async (req, res) => {
  * @route PUT /equipment/:id/operating-hours
  * @description Создать или обновить наработку оборудования
  */
-router.put('/:id/operating-hours', async (req, res) => {
+router.put('/:id/operating-hours', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -170,7 +174,7 @@ router.put('/:id/operating-hours', async (req, res) => {
  * @route DELETE /equipment/:id/operating-hours
  * @description Удалить наработку оборудования
  */
-router.delete('/:id/operating-hours', async (req, res) => {
+router.delete('/:id/operating-hours', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     await OperatingHours.delete(id);
@@ -185,7 +189,7 @@ router.delete('/:id/operating-hours', async (req, res) => {
  * @route POST /equipment/:id/operating-hours/intervals
  * @description Добавить интервал ТО
  */
-router.post('/:id/operating-hours/intervals', async (req, res) => {
+router.post('/:id/operating-hours/intervals', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { intervalValue, lastMaintenanceValue, description } = req.body;
