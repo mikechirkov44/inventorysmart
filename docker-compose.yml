@@ -24,6 +24,7 @@ services:
     container_name: inventorysmart-server
     restart: unless-stopped
     volumes:
+      - ./server:/app/server
       - server-uploads:/app/server/uploads
     expose:
       - "3001"
