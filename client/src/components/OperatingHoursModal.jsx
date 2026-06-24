@@ -206,7 +206,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           </div>
 
           {/* Maintenance intervals */}
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: 20 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Settings size={14} />
               Периоды ТО
@@ -264,7 +264,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           </div>
 
           {/* Works selection */}
-          <div className="form-group oh-form-group-spaced" style={{ marginTop: 20 }}>
+          <div className="form-group oh-form-group-spaced">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Wrench size={14} />
               Работы при ТО
