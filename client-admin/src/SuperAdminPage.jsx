@@ -728,6 +728,23 @@ function LicensesTab() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDeactivate = async (companyId, companyName) => {
+    if (!confirm(`Деактивировать лицензию для компании "${companyName}"?\n\nКомпания перейдёт в демо-режим.`)) {
+      return;
+    }
+    try {
+      await superadminAPI.deactivateLicense(companyId);
+      showToast('Лицензия деактивирована');
+      setCompanies(prev => prev.map(c =>
+        c.companyId === companyId
+          ? { ...c, license: null, licenseKey: '' }
+          : c
+      ));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка деактивации');
+    }
+  };
+
   const filteredCompanies = companies.filter(c =>
     (c.companyName || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -800,11 +817,12 @@ function LicensesTab() {
               <th>План</th>
               <th>Действует до</th>
               <th>Статус</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             {filteredCompanies.filter(c => c.license).length === 0 ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--gray-400)', padding: 32 }}>Нет активных лицензий</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--gray-400)', padding: 32 }}>Нет активных лицензий</td></tr>
             ) : filteredCompanies.filter(c => c.license).map(c => (
               <tr key={c.id}>
                 <td className="td-bold">{c.companyName || 'Без названия'}</td>
@@ -814,6 +832,17 @@ function LicensesTab() {
                   <span className={`sa-badge ${new Date(c.license.expiresAt) < new Date() ? 'sa-badge-danger' : 'sa-badge-success'}`}>
                     {new Date(c.license.expiresAt) < new Date() ? 'Истекла' : 'Активна'}
                   </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-small btn-danger"
+                    onClick={() => handleDeactivate(c.companyId, c.companyName)}
+                    disabled={new Date(c.license.expiresAt) < new Date()}
+                    title={new Date(c.license.expiresAt) < new Date() ? 'Лицензия уже истекла' : 'Деактивировать лицензию'}
+                  >
+                    Деактивировать
+                  </button>
                 </td>
               </tr>
             ))}

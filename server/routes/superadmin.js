@@ -157,6 +157,33 @@ router.delete('/companies/:companyId', async (req, res) => {
 });
 
 /**
+ * @route POST /superadmin/deactivate-license
+ * @description Деактивация лицензии компании (удаление license_key)
+ * @requires authenticate
+ * @requires role superadmin
+ * @param {Object} req.body
+ * @param {string} req.body.companyId - Идентификатор компании
+ * @returns {Object} Результат деактивации
+ */
+router.post('/deactivate-license', async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    if (!companyId) {
+      return res.status(400).json({ error: 'Выберите компанию' });
+    }
+
+    await SuperAdmin.updateLicense(companyId, '');
+
+    res.json({
+      message: 'Лицензия деактивирована',
+      companyId,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * @route POST /superadmin/generate-license
  * @description Генерация лицензионного ключа для компании
  * @requires authenticate
