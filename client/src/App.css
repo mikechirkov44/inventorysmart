@@ -6805,16 +6805,24 @@ textarea:focus {
 .oh-work-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 0;
+  gap: 10px;
+  padding: 6px 8px;
   cursor: pointer;
   font-size: 13px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.oh-work-item:hover {
+  background: var(--gray-50);
 }
 
 .oh-work-item input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .oh-settings-row {
