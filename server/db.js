@@ -236,6 +236,9 @@ async function migrate() {
 
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS license_key TEXT DEFAULT '';
 
+      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS api_enabled BOOLEAN DEFAULT false;
+      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS api_key VARCHAR(255) DEFAULT '';
+
       ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id UUID;
 
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_id UUID;

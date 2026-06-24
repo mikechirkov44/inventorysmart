@@ -25,6 +25,8 @@ function mapRow(row) {
     timezone: row.timezone,
     allowInspectionWithoutQr: row.allow_inspection_without_qr,
     licenseKey: row.license_key || '',
+    apiEnabled: row.api_enabled,
+    apiKey: row.api_key || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -158,6 +160,8 @@ module.exports = {
    * @param {string} [data.timezone] - Часовая зона
    * @param {boolean} [data.allowInspectionWithoutQr] - Разрешить инспекции без QR
    * @param {string} [data.licenseKey] - Лицензионный ключ
+   * @param {boolean} [data.apiEnabled] - Включить API доступ
+   * @param {string} [data.apiKey] - API ключ для внешних сервисов
    * @returns {Promise<Object>} Обновлённые настройки компании
    */
   update: async (data) => {
@@ -168,6 +172,8 @@ module.exports = {
     if (data.timezone !== undefined) mapped.timezone = data.timezone;
     if (data.allowInspectionWithoutQr !== undefined) mapped.allow_inspection_without_qr = data.allowInspectionWithoutQr;
     if (data.licenseKey !== undefined) mapped.license_key = data.licenseKey;
+    if (data.apiEnabled !== undefined) mapped.api_enabled = data.apiEnabled;
+    if (data.apiKey !== undefined) mapped.api_key = data.apiKey;
     mapped.updated_at = new Date();
 
     const keys = Object.keys(mapped);

@@ -63,6 +63,16 @@ const TABS = [
   { id: 'appearance', label: 'Оформление' },
 ];
 
+/** Генерация случайного API ключа */
+function generateApiKey() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 /** Вкладка настроек подключения к API-серверу */
 function IntegrationsTab() {
   const [apiUrl, setApiUrl] = useState('');
@@ -71,12 +81,28 @@ function IntegrationsTab() {
   const [testResult, setTestResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [apiEnabled, setApiEnabled] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [apiSettingsLoading, setApiSettingsLoading] = useState(true);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const toast = useToast();
 
-  /** Загрузка сохранённого URL из localStorage */
+  /** Загрузка сохранённого URL из localStorage и API настроек */
   useEffect(() => {
     const stored = localStorage.getItem('inventorysmart_api_url') || '';
     setApiUrl(stored);
     setSavedUrl(stored);
+    
+    // Load API settings from company
+    companyAPI.get().then(res => {
+      if (res.data) {
+        setApiEnabled(res.data.apiEnabled || false);
+        setApiKey(res.data.apiKey || '');
+      }
+      setApiSettingsLoading(false);
+    }).catch(() => {
+      setApiSettingsLoading(false);
+    });
   }, []);
 
   /** Проверка соединения с API-сервером */
@@ -119,6 +145,34 @@ function IntegrationsTab() {
     setTestResult(null);
     setSuccess('URL сброшен на значение по умолчанию. Перезагрузите страницу.');
     setTimeout(() => setSuccess(''), 5000);
+  };
+
+  /** Сохранение настроек API доступа */
+  const handleSaveApiSettings = async () => {
+    setSaving(true);
+    try {
+      await companyAPI.update({
+        apiEnabled,
+        apiKey
+      });
+      setSuccess('Настройки API доступа сохранены.');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch {
+      toast.error('Ошибка', 'Не удалось сохранить настройки API');
+    }
+    setSaving(false);
+  };
+
+  /** Генерация нового API ключа */
+  const handleGenerateApiKey = () => {
+    const newKey = generateApiKey();
+    setApiKey(newKey);
+  };
+
+  /** Копирование API ключа в буфер обмена */
+  const handleCopyApiKey = () => {
+    navigator.clipboard.writeText(apiKey);
+    toast.success('Скопировано', 'API ключ скопирован в буфер обмена');
   };
 
   return (
@@ -170,6 +224,102 @@ function IntegrationsTab() {
             {testResult.ok ? <CheckCircle size={16} color="var(--success)" /> : <XCircle size={16} color="var(--danger)" />}
             <span style={{ color: testResult.ok ? 'var(--success)' : 'var(--danger)' }}>{testResult.message}</span>
           </div>
+        )}
+      </div>
+
+      <h2 className="settings-section-title" style={{ marginTop: 32 }}>Открытый API</h2>
+      <p className="settings-section-desc">Настройте доступ к данным оборудования для внешних сервисов через API.</p>
+
+      <div className="settings-card">
+        <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Shield size={18} /> Доступ по API ключу
+        </div>
+
+        {apiSettingsLoading ? (
+          <div className="form-group">Загрузка...</div>
+        ) : (
+          <>
+            <div className="form-group">
+              <Toggle
+                label="Включить API доступ"
+                checked={apiEnabled}
+                onChange={(checked) => setApiEnabled(checked)}
+              />
+              <span className="form-hint">Разрешить внешним сервисам получать данные об оборудовании по API ключу.</span>
+            </div>
+
+            {apiEnabled && (
+              <>
+                <div className="form-group">
+                  <label>API ключ</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="Нажмите 'Сгенерировать' для создания ключа"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? 'Скрыть' : 'Показать'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleCopyApiKey}
+                      disabled={!apiKey}
+                      title="Копировать в буфер обмена"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                  <span className="form-hint">Передайте этот ключ внешнему сервису для доступа к данным.</span>
+                </div>
+
+                <div className="form-group">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleGenerateApiKey}
+                  >
+                    Сгенерировать новый ключ
+                  </button>
+                  <span className="form-hint" style={{ color: 'var(--warning)' }}>Внимание: генерация нового ключа отзовёт старый ключ и потребует обновления настроек во внешних сервисах.</span>
+                </div>
+
+                <div className="form-group" style={{ background: 'var(--gray-50)', padding: 16, borderRadius: 8, marginTop: 16 }}>
+                  <label style={{ fontWeight: 500, marginBottom: 8, display: 'block' }}>Использование API:</label>
+                  <code style={{ display: 'block', background: 'var(--gray-100)', padding: 12, borderRadius: 4, fontSize: 13, wordBreak: 'break-all' }}>
+                    GET /api/public/equipment<br />
+                    Header: X-API-Key: {apiKey || 'ваш-api-ключ'}
+                  </code>
+                  <a 
+                    href="/help#api" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-block', marginTop: 8, fontSize: 13, color: 'var(--primary)' }}
+                  >
+                    Подробная документация →
+                  </a>
+                </div>
+              </>
+            )}
+
+            <div className="form-actions-inline" style={{ gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSaveApiSettings}
+                disabled={saving}
+              >
+                {saving ? 'Сохранение...' : 'Сохранить настройки API'}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

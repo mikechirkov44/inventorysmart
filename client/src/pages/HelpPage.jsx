@@ -1,4 +1,4 @@
-import { HelpCircle, BookOpen, CheckCircle, AlertCircle, Info, Search, Plus, QrCode, Calendar, Settings, Users, FileText, Bell, BarChart3, ClipboardList, Upload, ArrowRight, Camera } from 'lucide-react';
+import { HelpCircle, BookOpen, CheckCircle, AlertCircle, Info, Search, Plus, QrCode, Calendar, Settings, Users, FileText, Bell, BarChart3, ClipboardList, Upload, ArrowRight, Camera, Code, Key } from 'lucide-react';
 
 function HelpPage() {
   const Step = ({ number, icon: Icon, title, children }) => (
@@ -300,7 +300,44 @@ function HelpPage() {
           </Step>
         </div>
 
-        {/* Section 11: Tips */}
+        {/* Section 11: API Documentation */}
+        <div className="settings-card" id="api" style={{ marginBottom: 20 }}>
+          <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Code size={18} />Интеграция через API
+          </h3>
+          <p style={{ color: 'var(--gray-700)', lineHeight: 1.6, marginBottom: 16 }}>
+            InventorySmart предоставляет открытый API для интеграции с внешними системами. 
+            API позволяет получать данные об оборудовании в формате JSON.
+          </p>
+          
+          <Step number={1} icon={Settings} title="Включите API доступ">
+            Перейдите в «Настройки» → «Интеграции» и включите опцию «Включить API доступ». 
+            Сгенерируйте API ключ — он понадобится для всех запросов.
+          </Step>
+          
+          <Step number={2} icon={Key} title="Используйте API ключ">
+            Передайте API ключ в заголовке <code>X-API-Key</code> при каждом запросе:
+            <div style={{ background: 'var(--gray-100)', padding: 12, borderRadius: 6, marginTop: 8, fontSize: 13, fontFamily: 'monospace' }}>
+              GET /api/public/equipment<br />
+              Header: X-API-Key: ваш-api-ключ
+            </div>
+          </Step>
+          
+          <Step number={3} icon={CheckCircle} title="Доступные эндпоинты">
+            <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 2 }}>
+              <li><code>GET /api/public/equipment</code> — список всего оборудования</li>
+              <li><code>GET /api/public/equipment/:id</code> — детали оборудования по ID</li>
+              <li><code>GET /api/public/stats</code> — статистика по оборудованию</li>
+            </ul>
+          </Step>
+          
+          <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', padding: 12, borderRadius: 6, marginTop: 16 }}>
+            <strong style={{ color: 'var(--warning)' }}>⚠ Безопасность:</strong>
+            <span style={{ color: 'var(--gray-700)', fontSize: 14 }}> API ключ предоставляет доступ к данным вашей компании. Храните его в безопасности и не передавайте третьим лицам.</span>
+          </div>
+        </div>
+
+        {/* Section 12: Tips */}
         <div className="settings-card" style={{ marginBottom: 20 }}>
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BookOpen size={18} />Полезные советы

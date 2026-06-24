@@ -75,6 +75,10 @@ async function start() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Public API routes (require API key, not JWT)
+  const publicApiRoutes = require('./routes/publicApi');
+  app.use('/api/public', publicApiRoutes);
+
   // APK download (public)
   const fs = require('fs');
   const apkPath = path.join(__dirname, 'uploads', 'InventorySmart.apk');
