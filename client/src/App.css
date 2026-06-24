@@ -6716,3 +6716,147 @@ textarea:focus {
     justify-content: center;
   }
 }
+
+/* ===== COMPACT OPERATING HOURS MODAL ===== */
+.operating-hours-modal-compact {
+  max-width: 600px;
+  max-height: 85vh;
+}
+
+.operating-hours-modal-compact .modal-body.compact {
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.operating-hours-modal-compact .modal-header {
+  padding: 14px 20px;
+}
+
+.operating-hours-modal-compact .modal-header h3 {
+  font-size: 16px;
+}
+
+.operating-hours-modal-compact .modal-footer.compact {
+  padding: 12px 20px;
+}
+
+.oh-equipment-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--gray-50);
+  border-radius: 6px;
+}
+
+.oh-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.oh-form-row .form-group {
+  margin-bottom: 0;
+}
+
+.oh-intervals-list {
+  margin-bottom: 8px;
+}
+
+.interval-row.compact {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.add-interval-row.compact {
+  display: grid;
+  grid-template-columns: 100px 1fr 36px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.add-interval-row.compact input {
+  height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.add-interval-row.compact .btn-sm {
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oh-works-list {
+  max-height: 100px;
+  overflow-y: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.oh-work-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.oh-work-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.oh-settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.oh-setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oh-setting-hint {
+  font-size: 11px;
+  color: var(--gray-500);
+  line-height: 1.3;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+  height: 28px;
+}
+
+@media (max-width: 640px) {
+  .operating-hours-modal-compact {
+    max-height: 90vh;
+    margin: 10px;
+  }
+  
+  .oh-form-row,
+  .oh-settings-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .oh-works-list {
+    grid-template-columns: 1fr;
+  }
+}

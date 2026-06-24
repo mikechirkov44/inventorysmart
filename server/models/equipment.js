@@ -28,6 +28,7 @@ function mapRow(row) {
     manufacturer: row.manufacturer,
     serialNumber: row.serial_number,
     yearOfManufacture: row.year_of_manufacture,
+    commissioningDate: row.commissioning_date,
     companyId: row.company_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -132,7 +133,7 @@ module.exports = {
     const yearOfManufacture = yearVal && String(yearVal).trim() !== '' ? parseInt(yearVal, 10) : null;
 
     const { rows } = await query(
-      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category_id, status, manufacturer, serial_number, year_of_manufacture, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category_id, status, manufacturer, serial_number, year_of_manufacture, commissioning_date, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
       [
         data.name,
         data.inventoryNumber || '',
@@ -144,6 +145,7 @@ module.exports = {
         data.manufacturer || '',
         data.serialNumber || '',
         yearOfManufacture,
+        data.commissioningDate || null,
         companyId
       ]
     );
@@ -165,12 +167,13 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённое оборудование или null
    */
   update: async (id, data, companyId) => {
-    const fieldMap = { 
-      inventoryNumber: 'inventory_number', 
+    const fieldMap = {
+      inventoryNumber: 'inventory_number',
       roomId: 'room_id',
       categoryId: 'category_id',
       serialNumber: 'serial_number',
-      yearOfManufacture: 'year_of_manufacture'
+      yearOfManufacture: 'year_of_manufacture',
+      commissioningDate: 'commissioning_date'
     };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {

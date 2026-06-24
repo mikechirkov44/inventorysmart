@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Info, Clock, Calendar, User, Settings, Wrench } from 'lucide-react';
+import { X, Plus, Trash2, Clock, User, Settings, Wrench } from 'lucide-react';
 import { operatingHoursAPI, employeesAPI, worksAPI } from '../services/api';
 import { useToast } from './Toast';
 import Toggle from './Toggle';
@@ -22,7 +22,6 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
   const [formData, setFormData] = useState({
     unit: 'Моточасы (м/ч)',
     currentValue: 0,
-    inputDate: '',
     assignedTo: '',
     workIds: [],
     autoCreateTasks: true,
@@ -50,7 +49,6 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           setFormData({
             unit: data.unit || 'Моточасы (м/ч)',
             currentValue: data.currentValue || 0,
-            inputDate: data.inputDate ? data.inputDate.split('T')[0] : '',
             assignedTo: data.assignedTo || '',
             workIds: data.workIds || [],
             autoCreateTasks: data.autoCreateTasks !== false,
@@ -76,7 +74,6 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
       const ohRes = await operatingHoursAPI.upsert(equipmentId, {
         unit: formData.unit,
         currentValue: parseFloat(formData.currentValue) || 0,
-        inputDate: formData.inputDate || null,
         assignedTo: formData.assignedTo || null,
         workIds: formData.workIds || [],
         autoCreateTasks: formData.autoCreateTasks,
@@ -86,7 +83,6 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
       const operatingHoursId = ohRes.data.data.id;
 
       // Save intervals (delete and recreate for simplicity)
-      // First, get existing intervals to delete them
       const existingRes = await operatingHoursAPI.getByEquipmentId(equipmentId);
       const existingIntervals = existingRes.data?.data?.intervals || [];
       
@@ -124,7 +120,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
     setFormData(prev => ({
       ...prev,
       intervals: [...prev.intervals, {
-        id: Date.now().toString(), // temp ID
+        id: Date.now().toString(),
         intervalValue: parseFloat(newInterval.value),
         lastMaintenanceValue: 0,
         description: newInterval.description
@@ -143,10 +139,10 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
   if (loading) {
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal operating-hours-modal-compact" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <h3><Clock size={20} /> Загрузка...</h3>
-            <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+            <h3><Clock size={18} /> Наработка оборудования</h3>
+            <button className="btn-icon" onClick={onClose}><X size={18} /></button>
           </div>
           <div className="modal-body" style={{ padding: 40, textAlign: 'center' }}>
             Загрузка данных...
@@ -158,107 +154,45 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
+      <div className="modal operating-hours-modal-compact" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3><Clock size={20} /> Редактирование параметра наработки</h3>
-          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+          <h3><Clock size={18} /> Наработка оборудования</h3>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body compact">
           {/* Equipment name */}
-          <div style={{ marginBottom: 20, padding: 12, background: 'var(--gray-50)', borderRadius: 8 }}>
-            <strong>Оборудование:</strong> {equipmentName}
-          </div>
+          <div className="oh-equipment-name">{equipmentName}</div>
 
-          {/* Unit of measurement */}
-          <div className="form-group">
-            <label>Единица измерения наработки</label>
-            <input
-              type="text"
-              value={formData.unit}
-              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-              placeholder="Моточасы (м/ч)"
-            />
-          </div>
-
-          {/* Current value */}
-          <div className="form-group">
-            <label>Текущее значение наработки *</label>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={formData.currentValue}
-              onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
-              placeholder="0"
-            />
-          </div>
-
-          {/* Maintenance intervals */}
-          <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Settings size={16} />
-              Периоды ТО
-              <span className="badge">{formData.intervals.length}</span>
-            </label>
-            
-            {/* Existing intervals */}
-            {formData.intervals.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                {formData.intervals.map((interval, index) => (
-                  <div key={interval.id || index} className="interval-row">
-                    <div className="interval-info">
-                      <strong>Каждые {interval.intervalValue} {formData.unit}</strong>
-                      {interval.description && (
-                        <span className="interval-desc">{interval.description}</span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-icon btn-danger"
-                      onClick={() => handleDeleteInterval(index)}
-                      title="Удалить"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add new interval */}
-            <div className="add-interval-row">
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={newInterval.value}
-                onChange={(e) => setNewInterval({ ...newInterval, value: e.target.value })}
-                placeholder="Интервал (например: 250)"
-                className="interval-input"
-              />
+          {/* Two column layout */}
+          <div className="oh-form-row">
+            <div className="form-group">
+              <label>Единица измерения</label>
               <input
                 type="text"
-                value={newInterval.description}
-                onChange={(e) => setNewInterval({ ...newInterval, description: e.target.value })}
-                placeholder="Описание (например: ТО-1)"
-                className="interval-desc-input"
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                placeholder="Моточасы (м/ч)"
               />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleAddInterval}
-              >
-                <Plus size={16} /> Добавить
-              </button>
+            </div>
+            <div className="form-group">
+              <label>Текущее значение *</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={formData.currentValue}
+                onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
+                placeholder="0"
+              />
             </div>
           </div>
 
           {/* Assigned to */}
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <User size={16} />
-              Кто проводит ТО *
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <User size={14} />
+              Кто проводит ТО
             </label>
             <CustomSelect
               value={formData.assignedTo}
@@ -271,19 +205,77 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
             />
           </div>
 
+          {/* Maintenance intervals */}
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Settings size={14} />
+              Периоды ТО
+              <span className="badge">{formData.intervals.length}</span>
+            </label>
+            
+            {formData.intervals.length > 0 && (
+              <div className="oh-intervals-list">
+                {formData.intervals.map((interval, index) => (
+                  <div key={interval.id || index} className="interval-row compact">
+                    <div className="interval-info">
+                      <strong>Каждые {interval.intervalValue} {formData.unit}</strong>
+                      {interval.description && (
+                        <span className="interval-desc">{interval.description}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon btn-danger btn-sm"
+                      onClick={() => handleDeleteInterval(index)}
+                      title="Удалить"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="add-interval-row compact">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={newInterval.value}
+                onChange={(e) => setNewInterval({ ...newInterval, value: e.target.value })}
+                placeholder="Интервал"
+                className="interval-input"
+              />
+              <input
+                type="text"
+                value={newInterval.description}
+                onChange={(e) => setNewInterval({ ...newInterval, description: e.target.value })}
+                placeholder="Описание (ТО-1)"
+                className="interval-desc-input"
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleAddInterval}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+
           {/* Works selection */}
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Wrench size={16} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Wrench size={14} />
               Работы при ТО
               <span className="badge">{formData.workIds?.length || 0}</span>
             </label>
-            <div className="checkbox-list" style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 8 }}>
+            <div className="oh-works-list">
               {works.length === 0 ? (
                 <span className="form-hint">Нет доступных работ</span>
               ) : (
                 works.map(work => (
-                  <label key={work.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', cursor: 'pointer' }}>
+                  <label key={work.id} className="oh-work-item">
                     <input
                       type="checkbox"
                       checked={formData.workIds?.includes(work.id)}
@@ -294,62 +286,35 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
                         setFormData({ ...formData, workIds: newWorkIds });
                       }}
                     />
-                    <span style={{ fontSize: 14 }}>{work.name}</span>
+                    <span>{work.name}</span>
                   </label>
                 ))
               )}
             </div>
-            <span className="form-hint">Выберите работы, которые будут выполняться при достижении интервала ТО</span>
           </div>
 
-          {/* Settings */}
-          <div className="form-group">
-            <Toggle
-              label="Создавать задачи на проведение ТО"
-              checked={formData.autoCreateTasks}
-              onChange={(checked) => setFormData({ ...formData, autoCreateTasks: checked })}
-            />
-            <span className="form-hint">
-              Система будет автоматически создавать задачи при достижении плановых показателей
-            </span>
-          </div>
-
-          <div className="form-group">
-            <Toggle
-              label="Запрещать уменьшение наработки"
-              checked={formData.preventDecrease}
-              onChange={(checked) => setFormData({ ...formData, preventDecrease: checked })}
-            />
-            <span className="form-hint">
-              Предотвращает случайное уменьшение значения наработки
-            </span>
-          </div>
-
-          {/* Input date */}
-          <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Calendar size={16} />
-              Дата ввода
-            </label>
-            <input
-              type="date"
-              value={formData.inputDate}
-              onChange={(e) => setFormData({ ...formData, inputDate: e.target.value })}
-            />
-          </div>
-
-          {/* Info box */}
-          <div className="info-box">
-            <Info size={18} />
-            <p>
-              Система фиксирует фактические значения наработки оборудования, автоматически 
-              контролирует достижение плановых показателей для технического обслуживания и 
-              создаёт задачи с уведомлениями при необходимости выполнения ТО.
-            </p>
+          {/* Settings - compact */}
+          <div className="oh-settings-row">
+            <div className="oh-setting-item">
+              <Toggle
+                label="Автозадачи"
+                checked={formData.autoCreateTasks}
+                onChange={(checked) => setFormData({ ...formData, autoCreateTasks: checked })}
+              />
+              <span className="oh-setting-hint">Создавать наряды при достижении интервала</span>
+            </div>
+            <div className="oh-setting-item">
+              <Toggle
+                label="Запрет уменьшения"
+                checked={formData.preventDecrease}
+                onChange={(checked) => setFormData({ ...formData, preventDecrease: checked })}
+              />
+              <span className="oh-setting-hint">Нельзя установить значение меньше текущего</span>
+            </div>
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer compact">
           <button 
             className="btn btn-primary" 
             onClick={handleSave}
@@ -357,7 +322,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           >
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
-          <button className="btn" onClick={onClose}>Отменить</button>
+          <button className="btn" onClick={onClose}>Отмена</button>
         </div>
       </div>
     </div>

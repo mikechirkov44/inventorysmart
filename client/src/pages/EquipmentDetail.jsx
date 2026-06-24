@@ -219,6 +219,10 @@ function EquipmentDetail() {
                 <span className="value">{equipment.yearOfManufacture || '—'}</span>
               </div>
               <div className="info-row">
+                <span className="label">Дата ввода:</span>
+                <span className="value">{equipment.commissioningDate ? new Date(equipment.commissioningDate).toLocaleDateString('ru-RU') : '—'}</span>
+              </div>
+              <div className="info-row">
                 <span className="label">Помещение:</span>
                 <span className="value">{room ? room.name : '—'}{room && room.building ? ` (${room.building})` : ''}</span>
               </div>

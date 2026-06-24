@@ -50,6 +50,7 @@ function EquipmentForm() {
     manufacturer: '',
     serialNumber: '',
     yearOfManufacture: '',
+    commissioningDate: '',
     workIds: []
   });
   const [photo, setPhoto] = useState(null);
@@ -85,6 +86,7 @@ function EquipmentForm() {
         manufacturer: response.data.manufacturer || '',
         serialNumber: response.data.serialNumber || '',
         yearOfManufacture: response.data.yearOfManufacture || '',
+        commissioningDate: response.data.commissioningDate ? response.data.commissioningDate.split('T')[0] : '',
         workIds: Array.isArray(response.data.workIds) ? response.data.workIds : []
       });
       if (response.data.photo) {
@@ -202,6 +204,16 @@ function EquipmentForm() {
               <div className="form-group">
                 <label>Год выпуска</label>
                 <input type="number" name="yearOfManufacture" value={formData.yearOfManufacture} onChange={handleChange} placeholder="2020" min="1900" max="2100" />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Дата ввода в эксплуатацию</label>
+                <input type="date" name="commissioningDate" value={formData.commissioningDate} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                {/* Empty spacer for alignment */}
               </div>
             </div>
 
