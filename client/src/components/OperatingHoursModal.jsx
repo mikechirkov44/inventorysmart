@@ -266,7 +266,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
               placeholder="Выберите сотрудника"
               options={employees.map(e => ({ 
                 value: e.id, 
-                label: `${e.first_name || ''} ${e.last_name || ''}`.trim() || e.job_title || 'Без имени'
+                label: `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.jobTitle || 'Без имени'
               }))}
             />
           </div>
