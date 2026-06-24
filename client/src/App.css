@@ -6826,8 +6826,13 @@ textarea:focus {
 
 .add-interval-row.compact input {
   height: 32px;
-  padding: 0 8px;
+  padding: 0 10px;
   font-size: 13px;
+  margin-right: 8px;
+}
+
+.add-interval-row.compact input:last-of-type {
+  margin-right: 0;
 }
 
 .add-interval-row.compact .btn-sm {
