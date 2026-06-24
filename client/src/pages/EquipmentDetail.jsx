@@ -4,15 +4,14 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI } from '../services/api';
+import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI } from '../services/api';
 import EquipmentPassport from '../components/EquipmentPassport';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-import ActionsMenu from '../components/ActionsMenu';
-import { Clock, FileText, Pencil, Trash2 } from 'lucide-react';
+
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -52,6 +51,7 @@ function EquipmentDetail() {
   const [error, setError] = useState(null);
   const [showPassport, setShowPassport] = useState(false);
   const [showOperatingHours, setShowOperatingHours] = useState(false);
+  const [operatingHours, setOperatingHours] = useState(null);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -60,15 +60,16 @@ function EquipmentDetail() {
     fetchData();
   }, [id]);
 
-  /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов */
+  /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов, моточасов */
   const fetchData = async () => {
     try {
-      const [equipRes, workOrdersRes, qrRes, spRes, incRes] = await Promise.all([
+      const [equipRes, workOrdersRes, qrRes, spRes, incRes, ohRes] = await Promise.all([
         equipmentAPI.getById(id),
         workOrderAPI.getByEquipment(id),
         equipmentAPI.getQR(id),
         sparePartsAPI.getByEquipment(id),
-        incidentsAPI.getAll({ equipmentId: id }).catch(() => ({ data: [] }))
+        incidentsAPI.getAll({ equipmentId: id }).catch(() => ({ data: [] })),
+        operatingHoursAPI.getByEquipmentId(id).catch(() => ({ data: { data: null } }))
       ]);
       const equip = equipRes.data;
       setEquipment(equip);
@@ -76,6 +77,7 @@ function EquipmentDetail() {
       setQrData(qrRes.data);
       setSpareParts(spRes.data);
       setIncidents(incRes.data || []);
+      setOperatingHours(ohRes.data?.data || null);
 
       if (equip.roomId) {
         roomsAPI.getById(equip.roomId).then(r => setRoom(r.data)).catch(() => {});
@@ -172,31 +174,16 @@ function EquipmentDetail() {
             <div className="detail-info">
               <div className="detail-title-row">
                 <h1>{equipment.name}</h1>
-                <ActionsMenu
-                  items={[
-                    {
-                      label: showPassport ? '← Назад к карточке' : 'Паспорт',
-                      icon: <FileText size={16} />,
-                      onClick: () => setShowPassport(!showPassport)
-                    },
-                    {
-                      label: 'Моточасы',
-                      icon: <Clock size={16} />,
-                      onClick: () => setShowOperatingHours(true)
-                    },
-                    {
-                      label: 'Редактировать',
-                      icon: <Pencil size={16} />,
-                      onClick: () => navigate(`/equipment/${id}/edit`)
-                    },
-                    {
-                      label: 'Удалить',
-                      icon: <Trash2 size={16} />,
-                      danger: true,
-                      onClick: handleDelete
-                    }
-                  ]}
-                />
+                <div className="detail-action-buttons">
+                  <button onClick={() => setShowPassport(!showPassport)} className="btn btn-sm btn-secondary">
+                    {showPassport ? '← Назад' : '📄 Паспорт'}
+                  </button>
+                  <button onClick={() => setShowOperatingHours(true)} className="btn btn-sm btn-secondary">
+                    ⏱ Моточасы
+                  </button>
+                  <Link to={`/equipment/${id}/edit`} className="btn btn-sm btn-primary">✏️ Редактировать</Link>
+                  <button onClick={handleDelete} className="btn btn-sm btn-danger">🗑 Удалить</button>
+                </div>
               </div>
               <div className="info-row">
                 <span className="label">Состояние:</span>
@@ -222,6 +209,21 @@ function EquipmentDetail() {
                 <span className="label">Дата ввода:</span>
                 <span className="value">{equipment.commissioningDate ? new Date(equipment.commissioningDate).toLocaleDateString('ru-RU') : '—'}</span>
               </div>
+              {operatingHours && (
+                <div className="info-row">
+                  <span className="label">Наработка:</span>
+                  <span className="value">
+                    <span className="oh-badge">
+                      {operatingHours.currentValue} {operatingHours.unit}
+                    </span>
+                    {operatingHours.intervals?.length > 0 && (
+                      <span className="oh-intervals-count">
+                        {operatingHours.intervals.length} интервал(ов) ТО
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="info-row">
                 <span className="label">Помещение:</span>
                 <span className="value">{room ? room.name : '—'}{room && room.building ? ` (${room.building})` : ''}</span>
@@ -311,7 +313,16 @@ function EquipmentDetail() {
           equipmentId={id}
           equipmentName={equipment?.name}
           onClose={() => setShowOperatingHours(false)}
-          onSave={() => toast.success('Успех', 'Параметры наработки сохранены')}
+          onSave={async () => {
+            toast.success('Успех', 'Параметры наработки сохранены');
+            // Refresh operating hours data
+            try {
+              const ohRes = await operatingHoursAPI.getByEquipmentId(id);
+              setOperatingHours(ohRes.data?.data || null);
+            } catch (err) {
+              console.error('Error refreshing operating hours:', err);
+            }
+          }}
         />
       )}
     </div>

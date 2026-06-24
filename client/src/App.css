@@ -1214,6 +1214,37 @@ input, textarea, select { font-family: inherit; }
   flex: 1;
 }
 
+.detail-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-action-buttons .btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  height: auto;
+  white-space: nowrap;
+}
+
+.oh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.oh-intervals-count {
+  margin-left: 8px;
+  color: var(--gray-500);
+  font-size: 12px;
+}
+
 .info-row {
   display: flex;
   margin-bottom: 10px;
@@ -6724,8 +6755,16 @@ textarea:focus {
 }
 
 .operating-hours-modal-compact .modal-body.compact {
-  padding: 16px 20px;
+  padding: 20px;
   overflow-y: auto;
+}
+
+.operating-hours-modal-compact .modal-body.compact .form-group {
+  margin-bottom: 16px;
+}
+
+.operating-hours-modal-compact .modal-body.compact .form-group:last-of-type {
+  margin-bottom: 0;
 }
 
 .operating-hours-modal-compact .modal-header {
@@ -6781,8 +6820,8 @@ textarea:focus {
 .add-interval-row.compact {
   display: grid;
   grid-template-columns: 100px 1fr 36px;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .add-interval-row.compact input {

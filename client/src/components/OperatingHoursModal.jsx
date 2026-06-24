@@ -263,10 +263,8 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
             </div>
           </div>
 
-          <div style={{ height: 16 }}></div>
-
           {/* Works selection */}
-          <div className="form-group oh-form-group-spaced">
+          <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Wrench size={14} />
               Работы при ТО
