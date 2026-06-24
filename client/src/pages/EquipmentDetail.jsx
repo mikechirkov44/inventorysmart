@@ -10,6 +10,8 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import OperatingHoursModal from '../components/OperatingHoursModal';
+import { Clock } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -48,6 +50,7 @@ function EquipmentDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPassport, setShowPassport] = useState(false);
+  const [showOperatingHours, setShowOperatingHours] = useState(false);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -145,6 +148,9 @@ function EquipmentDetail() {
         <div className="detail-actions">
           <button onClick={() => setShowPassport(!showPassport)} className="btn btn-secondary">
             {showPassport ? '← Назад к карточке' : '📄 Паспорт'}
+          </button>
+          <button onClick={() => setShowOperatingHours(true)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Clock size={16} /> Моточасы
           </button>
           <Link to={`/equipment/${id}/edit`} className="btn btn-primary">Редактировать</Link>
           <button onClick={handleDelete} className="btn btn-danger">Удалить</button>
@@ -277,6 +283,15 @@ function EquipmentDetail() {
           </div>
         </div>
       </>)}
+
+      {showOperatingHours && (
+        <OperatingHoursModal
+          equipmentId={id}
+          equipmentName={equipment?.name}
+          onClose={() => setShowOperatingHours(false)}
+          onSave={() => toast.success('Успех', 'Параметры наработки сохранены')}
+        />
+      )}
     </div>
   );
 }

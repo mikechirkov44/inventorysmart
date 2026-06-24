@@ -6497,3 +6497,95 @@ textarea:focus {
     max-height: 90vh;
   }
 }
+
+/* ===== OPERATING HOURS MODAL ===== */
+.operating-hours-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.interval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.interval-row:hover {
+  background: var(--gray-100);
+}
+
+.interval-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.interval-info strong {
+  color: var(--gray-900);
+  font-size: 14px;
+}
+
+.interval-desc {
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.add-interval-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.add-interval-row .interval-input {
+  width: 140px;
+}
+
+.add-interval-row .interval-desc-input {
+  flex: 1;
+}
+
+.info-box {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-glow);
+  border-radius: var(--radius);
+  margin-top: 20px;
+}
+
+.info-box svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.info-box p {
+  margin: 0;
+  color: var(--gray-700);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.modal-large {
+  max-width: 600px;
+  width: 90%;
+}

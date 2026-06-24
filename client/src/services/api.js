@@ -203,6 +203,16 @@ export const positionsAPI = {
   delete: (id) => api.delete(`/positions/${id}`),
 };
 
+/** API для управления наработкой оборудования */
+export const operatingHoursAPI = {
+  getByEquipmentId: (equipmentId) => api.get(`/equipment/${equipmentId}/operating-hours`),
+  upsert: (equipmentId, data) => api.put(`/equipment/${equipmentId}/operating-hours`, data),
+  delete: (equipmentId) => api.delete(`/equipment/${equipmentId}/operating-hours`),
+  addInterval: (operatingHoursId, data) => api.post(`/operating-hours/${operatingHoursId}/intervals`, data),
+  updateInterval: (intervalId, data) => api.put(`/operating-hours/intervals/${intervalId}`, data),
+  deleteInterval: (intervalId) => api.delete(`/operating-hours/intervals/${intervalId}`),
+};
+
 /** Экземпляр API для суперадминистратора (отдельная авторизация) */
 const superadminApi = axios.create({
   baseURL: getBaseUrl(),

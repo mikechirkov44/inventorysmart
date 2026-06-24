@@ -207,6 +207,33 @@ async function migrate() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      -- Operating hours tracking for equipment
+      CREATE TABLE IF NOT EXISTS equipment_operating_hours (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+        company_id UUID,
+        unit VARCHAR(100) DEFAULT 'Моточасы (м/ч)',
+        current_value DECIMAL(10,2) DEFAULT 0,
+        input_date DATE,
+        assigned_to UUID REFERENCES employees(id) ON DELETE SET NULL,
+        auto_create_tasks BOOLEAN DEFAULT true,
+        prevent_decrease BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(equipment_id)
+      );
+
+      -- Maintenance intervals for operating hours
+      CREATE TABLE IF NOT EXISTS equipment_maintenance_intervals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        operating_hours_id UUID REFERENCES equipment_operating_hours(id) ON DELETE CASCADE,
+        interval_value DECIMAL(10,2) NOT NULL,
+        last_maintenance_value DECIMAL(10,2) DEFAULT 0,
+        description TEXT DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS company_settings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         company_name VARCHAR(255) DEFAULT '',
@@ -249,7 +276,8 @@ async function migrate() {
     // Multi-tenant: add company_id to all data tables and backfill
     const tables = [
       'equipment', 'employees', 'works', 'rooms', 'spare_parts',
-      'spare_part_receipts', 'work_orders', 'incidents', 'common_faults'
+      'spare_part_receipts', 'work_orders', 'incidents', 'common_faults',
+      'equipment_operating_hours'
     ];
     for (const table of tables) {
       await client.query(`
