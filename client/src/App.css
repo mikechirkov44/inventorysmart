@@ -6762,7 +6762,11 @@ textarea:focus {
 }
 
 .oh-form-group-spaced {
-  margin-top: 16px;
+  margin-top: 24px !important;
+}
+
+.operating-hours-modal-compact .form-group + .form-group.oh-form-group-spaced {
+  margin-top: 24px !important;
 }
 
 .oh-intervals-list {
