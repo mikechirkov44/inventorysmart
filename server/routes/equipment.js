@@ -8,6 +8,7 @@ const express = require('express');
 const router = express.Router();
 const QRCode = require('qrcode');
 const Equipment = require('../models/equipment');
+const OperatingHours = require('../models/operatingHours');
 const { imageUpload } = require('../utils/upload');
 
 /**
@@ -107,6 +108,105 @@ router.get('/:id/qr', async (req, res) => {
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route GET /equipment/:id/operating-hours
+ * @description Получить наработку оборудования с интервалами ТО
+ */
+router.get('/:id/operating-hours', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await OperatingHours.getWithIntervals(id);
+    if (!data) {
+      return res.json({ success: true, data: null });
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error fetching operating hours:', err);
+    res.status(500).json({ error: 'Failed to fetch operating hours' });
+  }
+});
+
+/**
+ * @route PUT /equipment/:id/operating-hours
+ * @description Создать или обновить наработку оборудования
+ */
+router.put('/:id/operating-hours', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      unit,
+      currentValue,
+      inputDate,
+      assignedTo,
+      autoCreateTasks,
+      preventDecrease
+    } = req.body;
+
+    const data = await OperatingHours.upsert({
+      equipmentId: id,
+      companyId: req.user.companyId,
+      unit,
+      currentValue,
+      inputDate,
+      assignedTo,
+      autoCreateTasks,
+      preventDecrease
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error saving operating hours:', err);
+    if (err.message === 'Уменьшение наработки запрещено') {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Failed to save operating hours' });
+  }
+});
+
+/**
+ * @route DELETE /equipment/:id/operating-hours
+ * @description Удалить наработку оборудования
+ */
+router.delete('/:id/operating-hours', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await OperatingHours.delete(id);
+    res.json({ success: true, message: 'Operating hours deleted' });
+  } catch (err) {
+    console.error('Error deleting operating hours:', err);
+    res.status(500).json({ error: 'Failed to delete operating hours' });
+  }
+});
+
+/**
+ * @route POST /equipment/:id/operating-hours/intervals
+ * @description Добавить интервал ТО
+ */
+router.post('/:id/operating-hours/intervals', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { intervalValue, lastMaintenanceValue, description } = req.body;
+
+    // Get operating hours ID for this equipment
+    const oh = await OperatingHours.getByEquipmentId(id);
+    if (!oh) {
+      return res.status(404).json({ error: 'Operating hours not found' });
+    }
+
+    const data = await OperatingHours.addInterval({
+      operatingHoursId: oh.id,
+      intervalValue,
+      lastMaintenanceValue,
+      description
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Error adding interval:', err);
+    res.status(500).json({ error: 'Failed to add interval' });
   }
 });
 

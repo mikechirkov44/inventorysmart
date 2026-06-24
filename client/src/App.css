@@ -1142,12 +1142,12 @@ input, textarea, select { font-family: inherit; }
 .detail-actions {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .detail-actions .btn {
   white-space: nowrap;
-  padding: 8px 14px;
+  padding: 8px 12px;
   font-size: 13px;
 }
 
