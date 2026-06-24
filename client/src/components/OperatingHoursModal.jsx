@@ -206,7 +206,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           </div>
 
           {/* Maintenance intervals */}
-          <div className="form-group" style={{ marginBottom: 20 }}>
+          <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Settings size={14} />
               Периоды ТО
@@ -262,6 +262,8 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
               </button>
             </div>
           </div>
+
+          <div style={{ height: 16 }}></div>
 
           {/* Works selection */}
           <div className="form-group oh-form-group-spaced">
