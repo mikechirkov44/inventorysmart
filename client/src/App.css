@@ -3108,12 +3108,27 @@ input, textarea, select { font-family: inherit; }
 
   .detail-title-row {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
   }
 
   .detail-title-row h1 {
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    font-size: 1.25rem;
+  }
+
+  .detail-action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .detail-action-buttons .btn-sm {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   /* --- Modal --- */
