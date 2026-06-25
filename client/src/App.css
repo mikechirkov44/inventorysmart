@@ -6749,18 +6749,19 @@ textarea:focus {
 }
 
 /* ===== COMPACT OPERATING HOURS MODAL ===== */
+/* ===== OPERATING HOURS MODAL - OPTIMIZED ===== */
 .operating-hours-modal-compact {
-  max-width: 600px;
-  max-height: 85vh;
+  max-width: 520px;
+  max-height: 90vh;
 }
 
 .operating-hours-modal-compact .modal-body.compact {
-  padding: 20px;
+  padding: 16px 20px;
   overflow-y: auto;
 }
 
 .operating-hours-modal-compact .modal-body.compact .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .operating-hours-modal-compact .modal-body.compact .form-group:last-of-type {
@@ -6768,97 +6769,162 @@ textarea:focus {
 }
 
 .operating-hours-modal-compact .modal-header {
-  padding: 14px 20px;
+  padding: 12px 16px;
+  min-height: 48px;
 }
 
 .operating-hours-modal-compact .modal-header h3 {
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .operating-hours-modal-compact .modal-footer.compact {
-  padding: 12px 20px;
+  padding: 10px 16px;
 }
 
+/* Equipment name header */
 .oh-equipment-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gray-700);
   margin-bottom: 12px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: var(--gray-50);
   border-radius: 6px;
+  border-left: 3px solid var(--primary);
 }
 
+/* Two column layout for unit and value */
 .oh-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 0.8fr;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .oh-form-row .form-group {
   margin-bottom: 0;
 }
 
-.oh-form-group-spaced {
-  margin-top: 24px !important;
+.oh-form-row input {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
-.operating-hours-modal-compact .form-group + .form-group.oh-form-group-spaced {
-  margin-top: 24px !important;
+/* Compact form groups */
+.operating-hours-modal-compact .form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+.operating-hours-modal-compact .form-group input,
+.operating-hours-modal-compact .form-group select {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Intervals section */
 .oh-intervals-list {
   margin-bottom: 8px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .interval-row.compact {
-  padding: 8px 10px;
-  margin-bottom: 6px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
+.interval-row.compact .interval-info strong {
+  font-size: 12px;
+  color: var(--gray-700);
+}
+
+.interval-row.compact .interval-desc {
+  font-size: 11px;
+  color: var(--gray-500);
+}
+
+/* Add interval row - FIXED */
 .add-interval-row.compact {
-  display: grid;
-  grid-template-columns: 100px 1fr 36px;
-  gap: 20px;
-  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: stretch;
 }
 
-.add-interval-row.compact input {
-  height: 32px;
-  padding: 0 10px;
+.add-interval-row.compact .interval-input {
+  width: 90px;
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 8px;
   font-size: 13px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.add-interval-row.compact .interval-desc-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
   box-sizing: border-box;
 }
 
 .add-interval-row.compact .btn-sm {
-  height: 32px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  border-radius: 6px;
 }
 
+/* Works list - more compact */
 .oh-works-list {
-  max-height: 100px;
+  max-height: 90px;
   overflow-y: auto;
   border: 1px solid var(--gray-200);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 4px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
+  gap: 2px;
 }
 
 .oh-work-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 4px 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   border-radius: 4px;
   transition: background 0.15s ease;
+  min-height: 28px;
 }
 
 .oh-work-item:hover {
@@ -6866,53 +6932,95 @@ textarea:focus {
 }
 
 .oh-work-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  margin: 0 8px 0 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
   flex-shrink: 0;
   cursor: pointer;
 }
 
+/* Settings row - more compact */
 .oh-settings-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
-  padding-top: 12px;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--gray-200);
 }
 
 .oh-setting-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+}
+
+.oh-setting-item .toggle-label {
+  font-size: 12px;
 }
 
 .oh-setting-hint {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--gray-500);
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
+/* Compact button */
 .btn-sm {
   padding: 4px 8px;
   font-size: 12px;
   height: 28px;
 }
 
+/* Badge in label */
+.operating-hours-modal-compact .badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  min-width: 16px;
+  height: 16px;
+}
+
+/* Mobile responsive */
 @media (max-width: 640px) {
   .operating-hours-modal-compact {
-    max-height: 90vh;
-    margin: 10px;
+    max-height: 95vh;
+    margin: 8px;
   }
   
-  .oh-form-row,
-  .oh-settings-row {
+  .operating-hours-modal-compact .modal-body.compact {
+    padding: 12px 16px;
+  }
+  
+  .oh-form-row {
     grid-template-columns: 1fr;
     gap: 8px;
   }
   
+  .add-interval-row.compact {
+    flex-wrap: wrap;
+  }
+  
+  .add-interval-row.compact .interval-input {
+    width: calc(50% - 4px);
+  }
+  
+  .add-interval-row.compact .interval-desc-input {
+    width: calc(100% - 42px);
+    order: 3;
+    margin-top: 4px;
+  }
+  
+  .add-interval-row.compact .btn-sm {
+    order: 2;
+  }
+  
   .oh-works-list {
     grid-template-columns: 1fr;
+    max-height: 120px;
+  }
+  
+  .oh-settings-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }

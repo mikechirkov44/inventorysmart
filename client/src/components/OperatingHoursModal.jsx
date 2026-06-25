@@ -164,7 +164,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
           {/* Equipment name */}
           <div className="oh-equipment-name">{equipmentName}</div>
 
-          {/* Two column layout */}
+          {/* Two column layout - Unit and Value */}
           <div className="oh-form-row">
             <div className="form-group">
               <label>Единица измерения</label>
@@ -190,8 +190,8 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
 
           {/* Assigned to */}
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <User size={14} />
+            <label>
+              <User size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Кто проводит ТО
             </label>
             <CustomSelect
@@ -207,8 +207,8 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
 
           {/* Maintenance intervals */}
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Settings size={14} />
+            <label>
+              <Settings size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Периоды ТО
               <span className="badge">{formData.intervals.length}</span>
             </label>
@@ -258,21 +258,21 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
                 className="btn btn-secondary btn-sm"
                 onClick={handleAddInterval}
               >
-                <Plus size={14} />
+                <Plus size={16} />
               </button>
             </div>
           </div>
 
           {/* Works selection */}
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Wrench size={14} />
+            <label>
+              <Wrench size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Работы при ТО
               <span className="badge">{formData.workIds?.length || 0}</span>
             </label>
             <div className="oh-works-list">
               {works.length === 0 ? (
-                <span className="form-hint">Нет доступных работ</span>
+                <span className="form-hint" style={{ fontSize: 11, padding: 4 }}>Нет доступных работ</span>
               ) : (
                 works.map(work => (
                   <label key={work.id} className="oh-work-item">
@@ -293,7 +293,7 @@ function OperatingHoursModal({ equipmentId, equipmentName, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Settings - compact */}
+          {/* Settings */}
           <div className="oh-settings-row">
             <div className="oh-setting-item">
               <Toggle
