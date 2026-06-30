@@ -198,34 +198,34 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
       {activeTab === 'pdf' && (
         <div className="instruction-content">
           {hasPdf ? (
-            <div className="pdf-viewer">
-              <div className="pdf-info">
-                <File size={16} />
-                <span>Инструкция загружена</span>
+            <div className="pdf-file-card">
+              <div className="pdf-file-icon">
+                <FileText size={32} />
               </div>
-              <div className="pdf-actions">
+              <div className="pdf-file-info">
+                <span className="pdf-file-name">Инструкция.pdf</span>
+                <span className="pdf-file-hint">Нажмите чтобы открыть</span>
+              </div>
+              <div className="pdf-file-actions">
                 <a
                   href={`/uploads/${instructionPdf}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-secondary btn-sm"
+                  title="Открыть PDF"
                 >
                   <FileText size={14} />
-                  Открыть PDF
+                  Открыть
                 </a>
                 <button
                   onClick={handlePdfDelete}
                   className="btn btn-danger btn-sm"
+                  title="Удалить PDF"
                 >
                   <Trash2 size={14} />
                   Удалить
                 </button>
               </div>
-              <iframe
-                src={`/uploads/${instructionPdf}`}
-                className="pdf-iframe"
-                title="PDF Инструкция"
-              />
             </div>
           ) : (
             <div className="upload-area">
