@@ -97,6 +97,78 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
     }, 0);
   };
 
+  const renderMarkdown = (text) => {
+    if (!text) return '';
+    
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
+    let inOrderedList = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (inList && !line.startsWith('- ')) {
+        html += '</ul>';
+        inList = false;
+      }
+      if (inOrderedList && !line.match(/^\d+\. /)) {
+        html += '</ol>';
+        inOrderedList = false;
+      }
+      
+      if (line.startsWith('# ')) {
+        html += `<h1>${escapeHtml(line.slice(2))}</h1>`;
+      } else if (line.startsWith('## ')) {
+        html += `<h2>${escapeHtml(line.slice(3))}</h2>`;
+      } else if (line.startsWith('### ')) {
+        html += `<h3>${escapeHtml(line.slice(4))}</h3>`;
+      } else if (line.startsWith('#### ')) {
+        html += `<h4>${escapeHtml(line.slice(5))}</h4>`;
+      } else if (line.startsWith('- ')) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += `<li>${processInline(line.slice(2))}</li>`;
+      } else if (line.match(/^\d+\. /)) {
+        if (!inOrderedList) { html += '<ol>'; inOrderedList = true; }
+        html += `<li>${processInline(line.replace(/^\d+\. /, ''))}</li>`;
+      } else if (line.startsWith('> ')) {
+        html += `<blockquote>${processInline(line.slice(2))}</blockquote>`;
+      } else if (line.startsWith('```')) {
+        html += `<pre><code>${escapeHtml(line.slice(3))}</code></pre>`;
+      } else if (line.startsWith('---') || line.startsWith('***')) {
+        html += '<hr />';
+      } else if (line.trim() === '') {
+        html += '<br />';
+      } else {
+        html += `<p>${processInline(line)}</p>`;
+      }
+    }
+    
+    if (inList) html += '</ul>';
+    if (inOrderedList) html += '</ol>';
+    
+    return html;
+  };
+
+  const escapeHtml = (text) => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const processInline = (text) => {
+    let result = escapeHtml(text);
+    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    result = result.replace(/`(.+?)`/g, '<code>$1</code>');
+    result = result.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    result = result.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width:100%" />');
+    return result;
+  };
+
   const hasPdf = !!instructionPdf;
   const hasMd = !!instructionMd;
 
@@ -178,16 +250,16 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
         <div className="instruction-content">
           {hasMd && !isEditing ? (
             <div className="md-viewer">
-              <div className="md-content">
-                <pre>{mdContent}</pre>
+              <div className="md-content-rendered" dangerouslySetInnerHTML={{ __html: renderMarkdown(mdContent) }} />
+              <div className="md-viewer-actions">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Edit3 size={14} />
+                  Редактировать
+                </button>
               </div>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn btn-secondary btn-sm"
-              >
-                <Edit3 size={14} />
-                Редактировать
-              </button>
             </div>
           ) : !hasMd && !isEditing ? (
             <div className="md-empty">

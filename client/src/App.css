@@ -7555,3 +7555,133 @@ textarea:focus {
     flex: 1;
   }
 }
+
+/* ===== MARKDOWN VIEWER (rendered) ===== */
+.md-viewer-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.md-content-rendered {
+  max-width: 100%;
+  padding: 20px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.md-content-rendered h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 24px 0 16px;
+  color: var(--gray-900);
+  border-bottom: 2px solid var(--gray-200);
+  padding-bottom: 8px;
+}
+
+.md-content-rendered h1:first-child {
+  margin-top: 0;
+}
+
+.md-content-rendered h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 20px 0 12px;
+  color: var(--gray-900);
+}
+
+.md-content-rendered h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 16px 0 10px;
+  color: var(--gray-800);
+}
+
+.md-content-rendered h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 14px 0 8px;
+  color: var(--gray-800);
+}
+
+.md-content-rendered p {
+  margin: 12px 0;
+  line-height: 1.7;
+  color: var(--gray-700);
+  font-size: 15px;
+}
+
+.md-content-rendered strong {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.md-content-rendered em {
+  font-style: italic;
+}
+
+.md-content-rendered code {
+  background: var(--gray-100);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--primary);
+}
+
+.md-content-rendered pre {
+  background: var(--gray-100);
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.md-content-rendered pre code {
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  color: var(--gray-800);
+}
+
+.md-content-rendered blockquote {
+  border-left: 4px solid var(--primary);
+  padding-left: 16px;
+  margin: 16px 0;
+  color: var(--gray-600);
+  font-style: italic;
+}
+
+.md-content-rendered a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.md-content-rendered a:hover {
+  text-decoration: none;
+}
+
+.md-content-rendered ul,
+.md-content-rendered ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.md-content-rendered li {
+  margin: 8px 0;
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+.md-content-rendered hr {
+  border: none;
+  border-top: 2px solid var(--gray-200);
+  margin: 24px 0;
+}
+
+.md-content-rendered img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 16px 0;
+}
