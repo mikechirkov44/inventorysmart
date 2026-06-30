@@ -7287,6 +7287,7 @@ textarea:focus {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 900px;
+  min-height: 80vh;
   max-height: 95vh;
   display: flex;
   flex-direction: column;
@@ -7366,6 +7367,7 @@ textarea:focus {
 .md-editor-textarea {
   flex: 1;
   width: 100%;
+  min-height: 500px;
   padding: 20px;
   border: none;
   font-family: 'Courier New', 'Consolas', monospace;
