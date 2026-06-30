@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI } from '../services/api';
 import EquipmentPassport from '../components/EquipmentPassport';
+import EquipmentInstructions from '../components/EquipmentInstructions';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
@@ -308,6 +309,21 @@ function EquipmentDetail() {
                 ))}
               </ul>
             </div>
+
+            {/* Instructions Section */}
+            <EquipmentInstructions
+              equipmentId={id}
+              instructionPdf={equipment.instructionPdf}
+              instructionMd={equipment.instructionMd}
+              onUpdate={async () => {
+                try {
+                  const equipRes = await equipmentAPI.getById(id);
+                  setEquipment(equipRes.data);
+                } catch (err) {
+                  console.error('Error refreshing equipment:', err);
+                }
+              }}
+            />
           </div>
         </div>
       </>)}

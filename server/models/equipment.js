@@ -29,6 +29,8 @@ function mapRow(row) {
     serialNumber: row.serial_number,
     yearOfManufacture: row.year_of_manufacture,
     commissioningDate: row.commissioning_date,
+    instructionPdf: row.instruction_pdf,
+    instructionMd: row.instruction_md,
     companyId: row.company_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -133,7 +135,7 @@ module.exports = {
     const yearOfManufacture = yearVal && String(yearVal).trim() !== '' ? parseInt(yearVal, 10) : null;
 
     const { rows } = await query(
-      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category_id, status, manufacturer, serial_number, year_of_manufacture, commissioning_date, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+      'INSERT INTO equipment (name, inventory_number, description, photo, room_id, category_id, status, manufacturer, serial_number, year_of_manufacture, commissioning_date, instruction_pdf, instruction_md, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
       [
         data.name,
         data.inventoryNumber || '',
@@ -146,6 +148,8 @@ module.exports = {
         data.serialNumber || '',
         yearOfManufacture,
         data.commissioningDate || null,
+        data.instructionPdf || null,
+        data.instructionMd || null,
         companyId
       ]
     );
@@ -173,7 +177,9 @@ module.exports = {
       categoryId: 'category_id',
       serialNumber: 'serial_number',
       yearOfManufacture: 'year_of_manufacture',
-      commissioningDate: 'commissioning_date'
+      commissioningDate: 'commissioning_date',
+      instructionPdf: 'instruction_pdf',
+      instructionMd: 'instruction_md'
     };
     const mapped = {};
     for (const [key, val] of Object.entries(data)) {

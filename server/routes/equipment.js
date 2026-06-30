@@ -10,7 +10,7 @@ const QRCode = require('qrcode');
 const Equipment = require('../models/equipment');
 const OperatingHours = require('../models/operatingHours');
 const { authenticate, requirePermission } = require('../middleware/auth');
-const { imageUpload } = require('../utils/upload');
+const { imageUpload, pdfUpload } = require('../utils/upload');
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -265,6 +265,79 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Equipment not found' });
     }
     res.json({ message: 'Equipment deleted successfully' });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route POST /equipment/:id/instruction-pdf
+ * @description Загрузка PDF инструкции
+ */
+router.post('/:id/instruction-pdf', pdfUpload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не загружен' });
+    }
+    
+    const equipment = await Equipment.update(req.params.id, {
+      instructionPdf: req.file.filename
+    }, req.user.companyId);
+    
+    if (!equipment) {
+      return res.status(404).json({ error: 'Оборудование не найдено' });
+    }
+    
+    res.json({ 
+      success: true, 
+      filename: req.file.filename,
+      url: `/uploads/${req.file.filename}`
+    });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route DELETE /equipment/:id/instruction-pdf
+ * @description Удаление PDF инструкции
+ */
+router.delete('/:id/instruction-pdf', async (req, res) => {
+  try {
+    const equipment = await Equipment.update(req.params.id, {
+      instructionPdf: null
+    }, req.user.companyId);
+    
+    if (!equipment) {
+      return res.status(404).json({ error: 'Оборудование не найдено' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route PUT /equipment/:id/instruction-md
+ * @description Обновление Markdown инструкции
+ */
+router.put('/:id/instruction-md', async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    const equipment = await Equipment.update(req.params.id, {
+      instructionMd: content || null
+    }, req.user.companyId);
+    
+    if (!equipment) {
+      return res.status(404).json({ error: 'Оборудование не найдено' });
+    }
+    
+    res.json({ success: true });
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

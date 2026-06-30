@@ -48,6 +48,11 @@ export const equipmentAPI = {
   update: (id, data) => api.put(`/equipment/${id}`, data),
   delete: (id) => api.delete(`/equipment/${id}`),
   getQR: (id) => api.get(`/equipment/${id}/qr`),
+  uploadInstructionPdf: (id, formData) => api.post(`/equipment/${id}/instruction-pdf`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteInstructionPdf: (id) => api.delete(`/equipment/${id}/instruction-pdf`),
+  updateInstructionMd: (id, content) => api.put(`/equipment/${id}/instruction-md`, { content }),
 };
 
 /** API для работы с категориями оборудования */

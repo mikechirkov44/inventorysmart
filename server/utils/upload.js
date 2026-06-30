@@ -57,6 +57,20 @@ function excelFilter(req, file, cb) {
   }
 }
 
+/**
+ * Фильтр для PDF-файлов.
+ */
+function pdfFilter(req, file, cb) {
+  const allowedTypes = /pdf/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = file.mimetype === 'application/pdf';
+  if (extname && mimetype) {
+    cb(null, true);
+  } else {
+    cb(new Error('Допустимы только PDF файлы'));
+  }
+}
+
 // Загрузчик изображений (5 МБ по умолчанию)
 const imageUpload = multer({
   storage: createStorage(),
@@ -78,4 +92,11 @@ const excelUpload = multer({
   fileFilter: excelFilter
 });
 
-module.exports = { imageUpload, incidentUpload, excelUpload };
+// Загрузчик PDF-файлов (20 МБ, префикс 'instruction')
+const pdfUpload = multer({
+  storage: createStorage('instruction'),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: pdfFilter
+});
+
+module.exports = { imageUpload, incidentUpload, excelUpload, pdfUpload };
