@@ -7560,7 +7560,7 @@ textarea:focus {
 .pdf-file-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   padding: 20px;
   background: var(--gray-50);
   border: 1px solid var(--gray-200);
@@ -7588,6 +7588,7 @@ textarea:focus {
   gap: 4px;
   min-width: 0;
   box-sizing: border-box;
+  margin-right: 16px;
 }
 
 .pdf-file-name {
@@ -7607,15 +7608,17 @@ textarea:focus {
 
 .pdf-file-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
   align-items: center;
   box-sizing: border-box;
+  margin-left: auto;
 }
 
 .pdf-file-actions .btn {
   white-space: nowrap;
   box-sizing: border-box;
+  margin: 0;
 }
 
 /* Mobile responsive for PDF card */
@@ -7623,17 +7626,19 @@ textarea:focus {
   .pdf-file-card {
     flex-direction: column;
     text-align: center;
-    gap: 12px;
+    gap: 16px;
   }
   
   .pdf-file-info {
     align-items: center;
     width: 100%;
+    margin-right: 0;
   }
   
   .pdf-file-actions {
     width: 100%;
     justify-content: center;
+    margin-left: 0;
   }
   
   .pdf-file-actions .btn {
