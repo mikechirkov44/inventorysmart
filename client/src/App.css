@@ -7565,6 +7565,7 @@ textarea:focus {
   background: var(--gray-50);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
+  box-sizing: border-box;
 }
 
 .pdf-file-icon {
@@ -7577,6 +7578,7 @@ textarea:focus {
   color: var(--danger);
   border-radius: 12px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .pdf-file-info {
@@ -7585,23 +7587,35 @@ textarea:focus {
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .pdf-file-name {
   font-size: 15px;
   font-weight: 600;
   color: var(--gray-900);
+  margin: 0;
+  padding: 0;
 }
 
 .pdf-file-hint {
   font-size: 12px;
   color: var(--gray-500);
+  margin: 0;
+  padding: 0;
 }
 
 .pdf-file-actions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.pdf-file-actions .btn {
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 /* Mobile responsive for PDF card */
@@ -7609,14 +7623,17 @@ textarea:focus {
   .pdf-file-card {
     flex-direction: column;
     text-align: center;
+    gap: 12px;
   }
   
   .pdf-file-info {
     align-items: center;
+    width: 100%;
   }
   
   .pdf-file-actions {
     width: 100%;
+    justify-content: center;
   }
   
   .pdf-file-actions .btn {
