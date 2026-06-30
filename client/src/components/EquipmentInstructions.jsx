@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Upload, Trash2, Edit3, Save, X, File } from 'lucide-react';
+import { FileText, Upload, Trash2, Edit3, Save, X, File, Bold, Italic, List, ListOrdered, Link, Image, Code, Heading1, Heading2, Heading3, Quote, Eye } from 'lucide-react';
 import { useToast } from './Toast';
 
 /**
@@ -10,6 +10,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
   const [activeTab, setActiveTab] = useState(instructionPdf ? 'pdf' : 'md');
   const [mdContent, setMdContent] = useState(instructionMd || '');
   const [isEditing, setIsEditing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
@@ -69,6 +70,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
       
       toast.success('Успех', 'Markdown инструкция сохранена');
       setIsEditing(false);
+      setShowPreview(false);
       if (onUpdate) onUpdate();
     } catch (err) {
       console.error('Error saving MD:', err);
@@ -76,6 +78,23 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
     } finally {
       setSaving(false);
     }
+  };
+
+  const insertMarkdown = (before, after = '') => {
+    const textarea = document.querySelector('.md-editor-textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = mdContent.substring(start, end);
+    const newText = mdContent.substring(0, start) + before + selectedText + after + mdContent.substring(end);
+    
+    setMdContent(newText);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+    }, 0);
   };
 
   const hasPdf = !!instructionPdf;
@@ -157,64 +176,163 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
 
       {activeTab === 'md' && (
         <div className="instruction-content">
-          {isEditing ? (
-            <div className="md-editor">
-              <textarea
-                value={mdContent}
-                onChange={(e) => setMdContent(e.target.value)}
-                placeholder="Введите инструкцию в формате Markdown..."
-                className="md-textarea"
-              />
-              <div className="md-actions">
+          {hasMd && !isEditing ? (
+            <div className="md-viewer">
+              <div className="md-content">
+                <pre>{mdContent}</pre>
+              </div>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn btn-secondary btn-sm"
+              >
+                <Edit3 size={14} />
+                Редактировать
+              </button>
+            </div>
+          ) : !hasMd && !isEditing ? (
+            <div className="md-empty">
+              <p>Markdown инструкция не создана</p>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Edit3 size={14} />
+                Создать инструкцию
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Markdown Editor Modal */}
+      {isEditing && (
+        <div className="md-editor-modal-overlay" onClick={() => setIsEditing(false)}>
+          <div className="md-editor-modal" onClick={e => e.stopPropagation()}>
+            <div className="md-editor-header">
+              <h3>
+                <Edit3 size={18} />
+                Редактор Markdown инструкции
+              </h3>
+              <div className="md-editor-header-actions">
                 <button
-                  onClick={handleMdSave}
-                  className="btn btn-primary btn-sm"
-                  disabled={saving}
+                  className={`btn btn-sm ${showPreview ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowPreview(!showPreview)}
                 >
-                  <Save size={14} />
-                  {saving ? 'Сохранение...' : 'Сохранить'}
+                  <Eye size={14} />
+                  {showPreview ? 'Редактор' : 'Превью'}
                 </button>
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setMdContent(instructionMd || '');
-                  }}
-                  className="btn btn-secondary btn-sm"
-                >
-                  <X size={14} />
-                  Отмена
+                <button className="btn-icon" onClick={() => setIsEditing(false)}>
+                  <X size={20} />
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="md-viewer">
-              {hasMd ? (
-                <>
-                  <div className="md-content">
-                    <pre>{mdContent}</pre>
-                  </div>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Edit3 size={14} />
-                    Редактировать
-                  </button>
-                </>
+
+            {!showPreview && (
+              <div className="md-editor-toolbar">
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('**', '**')} title="Жирный">
+                  <Bold size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('*', '*')} title="Курсив">
+                  <Italic size={16} />
+                </button>
+                <div className="toolbar-separator" />
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('# ')} title="Заголовок 1">
+                  <Heading1 size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('## ')} title="Заголовок 2">
+                  <Heading2 size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('### ')} title="Заголовок 3">
+                  <Heading3 size={16} />
+                </button>
+                <div className="toolbar-separator" />
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('- ')} title="Маркированный список">
+                  <List size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('1. ')} title="Нумерованный список">
+                  <ListOrdered size={16} />
+                </button>
+                <div className="toolbar-separator" />
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('> ')} title="Цитата">
+                  <Quote size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('`', '`')} title="Код">
+                  <Code size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('[', '](url)')} title="Ссылка">
+                  <Link size={16} />
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => insertMarkdown('![', '](url)')} title="Изображение">
+                  <Image size={16} />
+                </button>
+              </div>
+            )}
+
+            <div className="md-editor-body">
+              {!showPreview ? (
+                <textarea
+                  className="md-editor-textarea"
+                  value={mdContent}
+                  onChange={(e) => setMdContent(e.target.value)}
+                  placeholder="# Заголовок инструкции&#10;&#10;Введите текст инструкции в формате Markdown...&#10;&#10;**Советы:**&#10;- Используйте **жирный** для акцентов&#10;- Используйте # для заголовков&#10;- Используйте - для списков"
+                />
               ) : (
-                <div className="md-empty">
-                  <p>Markdown инструкция не создана</p>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Edit3 size={14} />
-                    Создать инструкцию
-                  </button>
+                <div className="md-preview">
+                  <div className="md-preview-content">
+                    {mdContent.split('\n').map((line, idx) => {
+                      if (line.startsWith('# ')) return <h1 key={idx}>{line.slice(2)}</h1>;
+                      if (line.startsWith('## ')) return <h2 key={idx}>{line.slice(3)}</h2>;
+                      if (line.startsWith('### ')) return <h3 key={idx}>{line.slice(4)}</h3>;
+                      if (line.startsWith('- ')) return <li key={idx}>{line.slice(2)}</li>;
+                      if (line.match(/^\d+\. /)) return <li key={idx}>{line.replace(/^\d+\. /, '')}</li>;
+                      if (line.startsWith('> ')) return <blockquote key={idx}>{line.slice(2)}</blockquote>;
+                      if (line.startsWith('```')) return <code key={idx}>{line.slice(3)}</code>;
+                      if (line.trim() === '') return <br key={idx} />;
+                      
+                      let processed = line;
+                      processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                      processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                      processed = processed.replace(/`(.+?)`/g, '<code>$1</code>');
+                      processed = processed.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+                      
+                      return <p key={idx} dangerouslySetInnerHTML={{ __html: processed }} />;
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-          )}
+
+            <div className="md-editor-footer">
+              <div className="md-editor-hints">
+                <span><strong>**жирный**</strong></span>
+                <span><em>*курсив*</em></span>
+                <span><code>`код`</code></span>
+                <span># заголовок</span>
+                <span>- список</span>
+                <span>&gt; цитата</span>
+              </div>
+              <div className="md-editor-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setShowPreview(false);
+                    setMdContent(instructionMd || '');
+                  }}
+                >
+                  Отмена
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleMdSave}
+                  disabled={saving}
+                >
+                  <Save size={16} />
+                  {saving ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
