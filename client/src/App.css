@@ -7558,91 +7558,91 @@ textarea:focus {
 
 /* ===== PDF FILE CARD (icon view) ===== */
 .pdf-file-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius);
-  box-sizing: border-box;
+  display: flex !important;
+  align-items: center !important;
+  gap: 20px !important;
+  padding: 20px !important;
+  background: var(--gray-50) !important;
+  border: 1px solid var(--gray-200) !important;
+  border-radius: var(--radius) !important;
+  box-sizing: border-box !important;
 }
 
 .pdf-file-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  background: var(--danger-light);
-  color: var(--danger);
-  border-radius: 12px;
-  flex-shrink: 0;
-  box-sizing: border-box;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 64px !important;
+  height: 64px !important;
+  background: var(--danger-light) !important;
+  color: var(--danger) !important;
+  border-radius: 12px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .pdf-file-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  box-sizing: border-box;
-  margin-right: 16px;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin-right: 16px !important;
 }
 
 .pdf-file-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--gray-900);
-  margin: 0;
-  padding: 0;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--gray-900) !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .pdf-file-hint {
-  font-size: 12px;
-  color: var(--gray-500);
-  margin: 0;
-  padding: 0;
+  font-size: 12px !important;
+  color: var(--gray-500) !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .pdf-file-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-  align-items: center;
-  box-sizing: border-box;
-  margin-left: auto;
+  display: flex !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  margin-left: auto !important;
 }
 
 .pdf-file-actions .btn {
-  white-space: nowrap;
-  box-sizing: border-box;
-  margin: 0;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
 }
 
 /* Mobile responsive for PDF card */
 @media (max-width: 640px) {
   .pdf-file-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 16px;
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 16px !important;
   }
   
   .pdf-file-info {
-    align-items: center;
-    width: 100%;
-    margin-right: 0;
+    align-items: center !important;
+    width: 100% !important;
+    margin-right: 0 !important;
   }
   
   .pdf-file-actions {
-    width: 100%;
-    justify-content: center;
-    margin-left: 0;
+    width: 100% !important;
+    justify-content: center !important;
+    margin-left: 0 !important;
   }
   
   .pdf-file-actions .btn {
-    flex: 1;
+    flex: 1 !important;
   }
 }
 
