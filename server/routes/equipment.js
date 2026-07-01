@@ -274,8 +274,9 @@ router.delete('/:id', async (req, res) => {
 /**
  * @route POST /equipment/:id/instruction-pdf
  * @description Загрузка PDF инструкции
+ * @requires permission instructions:full
  */
-router.post('/:id/instruction-pdf', pdfUpload.single('pdf'), async (req, res) => {
+router.post('/:id/instruction-pdf', requirePermission('instructions', 'full'), pdfUpload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Файл не загружен' });
@@ -303,8 +304,9 @@ router.post('/:id/instruction-pdf', pdfUpload.single('pdf'), async (req, res) =>
 /**
  * @route DELETE /equipment/:id/instruction-pdf
  * @description Удаление PDF инструкции
+ * @requires permission instructions:full
  */
-router.delete('/:id/instruction-pdf', async (req, res) => {
+router.delete('/:id/instruction-pdf', requirePermission('instructions', 'full'), async (req, res) => {
   try {
     const equipment = await Equipment.update(req.params.id, {
       instructionPdf: null
@@ -324,8 +326,9 @@ router.delete('/:id/instruction-pdf', async (req, res) => {
 /**
  * @route PUT /equipment/:id/instruction-md
  * @description Обновление Markdown инструкции
+ * @requires permission instructions:full
  */
-router.put('/:id/instruction-md', async (req, res) => {
+router.put('/:id/instruction-md', requirePermission('instructions', 'full'), async (req, res) => {
   try {
     const { content } = req.body;
     

@@ -44,6 +44,7 @@ const PERMISSION_LABELS = {
   incidents: 'Инциденты',
   analytics: 'Аналитика',
   import: 'Импорт',
+  instructions: 'Инструкции',
   settings: 'Настройки',
 };
 
@@ -444,6 +445,7 @@ function PositionsTab() {
                 {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
                   const val = formData.permissions[key];
                   const isBoolean = typeof val === 'boolean' || key === 'scanner' || key === 'schedule' || key === 'analytics' || key === 'import';
+                  const isInstructions = key === 'instructions';
                   return (
                     <div key={key} className="permission-row">
                       <span className="permission-label">{label}</span>
@@ -452,6 +454,16 @@ function PositionsTab() {
                           checked={val === true}
                           onChange={(checked) => handlePermChange(key, checked)}
                           label=""
+                        />
+                      ) : isInstructions ? (
+                        <CustomSelect
+                          value={val || 'none'}
+                          onChange={(v) => handlePermChange(key, v)}
+                          options={[
+                            { value: 'full', label: 'Полный доступ' },
+                            { value: 'view', label: 'Только просмотр' },
+                            { value: 'none', label: 'Нет доступа' },
+                          ]}
                         />
                       ) : (
                         <CustomSelect

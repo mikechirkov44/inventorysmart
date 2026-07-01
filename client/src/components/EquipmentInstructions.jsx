@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { FileText, Upload, Trash2, Edit3, Save, X, File, Bold, Italic, List, ListOrdered, Link, Image, Code, Heading1, Heading2, Heading3, Quote, Eye } from 'lucide-react';
 import { useToast } from './Toast';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * @module EquipmentInstructions
  * @description Компонент для управления инструкциями оборудования (PDF и Markdown)
  */
 function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onUpdate }) {
+  const { can, canEdit } = useAuth();
   const [activeTab, setActiveTab] = useState(instructionPdf ? 'pdf' : 'md');
   const [mdContent, setMdContent] = useState(instructionMd || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -14,6 +16,9 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
+
+  const canViewInstructions = can('instructions');
+  const canEditInstructions = canEdit('instructions');
 
   const handlePdfUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -172,6 +177,10 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
   const hasPdf = !!instructionPdf;
   const hasMd = !!instructionMd;
 
+  if (!canViewInstructions) {
+    return null;
+  }
+
   return (
     <div className="equipment-instructions">
       <div className="instructions-header">
@@ -218,30 +227,38 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
                   <FileText size={14} />
                   Открыть PDF
                 </a>
-                <button
-                  onClick={handlePdfDelete}
-                  className="btn btn-danger"
-                >
-                  <Trash2 size={14} />
-                  Удалить
-                </button>
+                {canEditInstructions && (
+                  <button
+                    onClick={handlePdfDelete}
+                    className="btn btn-danger"
+                  >
+                    <Trash2 size={14} />
+                    Удалить
+                  </button>
+                )}
               </div>
             </div>
           ) : (
-            <div className="upload-area">
-              <label className="upload-label">
-                <Upload size={24} />
-                <span>Загрузить PDF инструкцию</span>
-                <span className="upload-hint">Максимум 20 МБ</span>
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={handlePdfUpload}
-                  disabled={uploading}
-                />
-              </label>
-              {uploading && <div className="upload-progress">Загрузка...</div>}
-            </div>
+            canEditInstructions ? (
+              <div className="upload-area">
+                <label className="upload-label">
+                  <Upload size={24} />
+                  <span>Загрузить PDF инструкцию</span>
+                  <span className="upload-hint">Максимум 20 МБ</span>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handlePdfUpload}
+                    disabled={uploading}
+                  />
+                </label>
+                {uploading && <div className="upload-progress">Загрузка...</div>}
+              </div>
+            ) : (
+              <div className="md-empty">
+                <p>PDF инструкция не загружена</p>
+              </div>
+            )
           )}
         </div>
       )}
@@ -251,27 +268,35 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
           {hasMd && !isEditing ? (
             <div className="md-viewer">
               <div className="md-content-rendered" dangerouslySetInnerHTML={{ __html: renderMarkdown(mdContent) }} />
-              <div className="md-viewer-actions">
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  <Edit3 size={14} />
-                  Редактировать
-                </button>
-              </div>
+              {canEditInstructions && (
+                <div className="md-viewer-actions">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Edit3 size={14} />
+                    Редактировать
+                  </button>
+                </div>
+              )}
             </div>
           ) : !hasMd && !isEditing ? (
-            <div className="md-empty">
-              <p>Markdown инструкция не создана</p>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn btn-primary btn-sm"
-              >
-                <Edit3 size={14} />
-                Создать инструкцию
-              </button>
-            </div>
+            canEditInstructions ? (
+              <div className="md-empty">
+                <p>Markdown инструкция не создана</p>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  <Edit3 size={14} />
+                  Создать инструкцию
+                </button>
+              </div>
+            ) : (
+              <div className="md-empty">
+                <p>Markdown инструкция не создана</p>
+              </div>
+            )
           ) : null}
         </div>
       )}
