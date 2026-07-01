@@ -14,7 +14,7 @@ function CommonFaultsDirectory() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ equipmentId: '', name: '' });
+  const [form, setForm] = useState({ equipmentIds: [], name: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const toast = useToast();
@@ -42,15 +42,15 @@ function CommonFaultsDirectory() {
       const s = search.toLowerCase();
       result = result.filter(i =>
         i.name.toLowerCase().includes(s) ||
-        (i.equipment_name && i.equipment_name.toLowerCase().includes(s))
+        (i.equipment_names && i.equipment_names.some(n => n.toLowerCase().includes(s)))
       );
     }
     return result;
   }, [items, search]);
 
   const handleSubmit = async () => {
-    if (!form.equipmentId || !form.name.trim()) {
-      toast.error('Ошибка', 'Заполните все поля');
+    if (!form.name.trim()) {
+      toast.error('Ошибка', 'Введите название неисправности');
       return;
     }
     setSubmitting(true);
@@ -64,7 +64,7 @@ function CommonFaultsDirectory() {
       }
       setShowForm(false);
       setEditing(null);
-      setForm({ equipmentId: '', name: '' });
+      setForm({ equipmentIds: [], name: '' });
       fetchData();
     } catch {
       toast.error('Ошибка', 'Не удалось сохранить');
@@ -75,13 +75,13 @@ function CommonFaultsDirectory() {
 
   const handleEdit = (item) => {
     setEditing(item);
-    setForm({ equipmentId: item.equipment_id, name: item.name });
+    setForm({ equipmentIds: item.equipment_ids || [], name: item.name });
     setShowForm(true);
   };
 
   const handleDuplicate = (item) => {
     setEditing(null);
-    setForm({ equipmentId: item.equipment_id, name: item.name + ' (копия)' });
+    setForm({ equipmentIds: item.equipment_ids || [], name: item.name + ' (копия)' });
     setShowForm(true);
   };
 
@@ -97,13 +97,22 @@ function CommonFaultsDirectory() {
     }
   };
 
+  const toggleEquipment = (eqId) => {
+    setForm(prev => ({
+      ...prev,
+      equipmentIds: prev.equipmentIds.includes(eqId)
+        ? prev.equipmentIds.filter(id => id !== eqId)
+        : [...prev.equipmentIds, eqId]
+    }));
+  };
+
   if (loading) return <SkeletonTable rows={6} cols={3} />;
 
   return (
     <div className="directory-page">
       <div className="header">
         <h1><Wrench size={24} />Типовые неисправности</h1>
-        <button onClick={() => { setShowForm(true); setEditing(null); setForm({ equipmentId: '', name: '' }); }} className="btn btn-primary">
+        <button onClick={() => { setShowForm(true); setEditing(null); setForm({ equipmentIds: [], name: '' }); }} className="btn btn-primary">
           + Добавить
         </button>
       </div>
@@ -129,8 +138,20 @@ function CommonFaultsDirectory() {
                 filtered.map(item => (
                   <tr key={item.id}>
                     <td>
-                      <div>{item.equipment_name || '—'}</div>
-                      <div className="td-muted">{item.inventory_number || ''}</div>
+                      {item.equipment_names && item.equipment_names.length > 0 ? (
+                        <div>
+                          {item.equipment_names.map((name, idx) => (
+                            <div key={idx}>
+                              {name}
+                              {item.equipment_inventory_numbers && item.equipment_inventory_numbers[idx] && (
+                                <span className="td-muted"> ({item.equipment_inventory_numbers[idx]})</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="td-muted">Не привязано</span>
+                      )}
                     </td>
                     <td>{item.name}</td>
                     <td>
@@ -153,13 +174,20 @@ function CommonFaultsDirectory() {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>{editing ? 'Редактирование' : 'Новая типовая неисправность'}</h3>
             <div className="form-group">
-              <label>Оборудование *</label>
-              <CustomSelect
-                value={form.equipmentId}
-                onChange={(v) => setForm({ ...form, equipmentId: v })}
-                placeholder="Выберите оборудование"
-                options={equipment.map(e => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
-              />
+              <label>Оборудование</label>
+              <div className="equipment-multi-select">
+                {equipment.map(eq => (
+                  <label key={eq.id} className="equipment-option">
+                    <input
+                      type="checkbox"
+                      checked={form.equipmentIds.includes(eq.id)}
+                      onChange={() => toggleEquipment(eq.id)}
+                    />
+                    <span>{eq.name}</span>
+                    {eq.inventoryNumber && <span className="td-muted">({eq.inventoryNumber})</span>}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="form-group">
               <label>Неисправность *</label>

@@ -271,6 +271,21 @@ async function migrate() {
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_id UUID;
 
       ALTER TABLE incidents ADD COLUMN IF NOT EXISTS common_fault_id UUID REFERENCES common_faults(id) ON DELETE SET NULL;
+
+      -- Many-to-many relationship between common faults and equipment
+      CREATE TABLE IF NOT EXISTS common_faults_equipment (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        common_fault_id UUID REFERENCES common_faults(id) ON DELETE CASCADE,
+        equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(common_fault_id, equipment_id)
+      );
+
+      -- Migrate existing equipment_id from common_faults to the new table
+      INSERT INTO common_faults_equipment (common_fault_id, equipment_id)
+      SELECT id, equipment_id FROM common_faults
+      WHERE equipment_id IS NOT NULL
+      ON CONFLICT (common_fault_id, equipment_id) DO NOTHING;
     `);
 
     // Multi-tenant: add company_id to all data tables and backfill

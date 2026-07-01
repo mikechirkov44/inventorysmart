@@ -23,13 +23,13 @@ router.get('/equipment/:equipmentId', authenticate, async (req, res) => {
 
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { equipmentId, name } = req.body;
-    if (!equipmentId || !name) {
-      return res.status(400).json({ error: 'Оборудование и название обязательны' });
+    const { equipmentIds, name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Название обязательно' });
     }
     const item = await CommonFault.create({
       companyId: req.user.companyId,
-      equipmentId,
+      equipmentIds: equipmentIds || [],
       name
     });
     res.status(201).json(item);
@@ -40,8 +40,8 @@ router.post('/', authenticate, async (req, res) => {
 
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const { equipmentId, name } = req.body;
-    const item = await CommonFault.update(req.params.id, req.user.companyId, { equipmentId, name });
+    const { equipmentIds, name } = req.body;
+    const item = await CommonFault.update(req.params.id, req.user.companyId, { equipmentIds: equipmentIds || [], name });
     if (!item) return res.status(404).json({ error: 'Не найдено' });
     res.json(item);
   } catch (err) {

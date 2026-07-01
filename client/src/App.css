@@ -7890,3 +7890,43 @@ textarea:focus {
 .btn-xs.danger:hover {
   background: var(--danger-light);
 }
+
+/* ===== EQUIPMENT MULTI-SELECT ===== */
+.equipment-multi-select {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  background: white;
+}
+
+.equipment-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+}
+
+.equipment-option:hover {
+  background: var(--gray-50);
+}
+
+.equipment-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.equipment-option span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
