@@ -7924,15 +7924,16 @@ textarea:focus {
 }
 
 .equipment-option {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
   font-size: 13px;
   flex-wrap: nowrap;
+  line-height: 1;
 }
 
 .equipment-option:hover {
@@ -7944,6 +7945,7 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  line-height: 0;
 }
 
 .equipment-checkbox-wrapper input[type="checkbox"] {
@@ -7953,6 +7955,7 @@ textarea:focus {
   accent-color: var(--primary);
   margin: 0;
   padding: 0;
+  display: block;
 }
 
 .equipment-name {
