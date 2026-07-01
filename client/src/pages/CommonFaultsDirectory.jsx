@@ -16,6 +16,7 @@ function CommonFaultsDirectory() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ equipmentIds: [], name: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [equipmentSearch, setEquipmentSearch] = useState('');
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -47,6 +48,15 @@ function CommonFaultsDirectory() {
     }
     return result;
   }, [items, search]);
+
+  const filteredEquipment = useMemo(() => {
+    if (!equipmentSearch) return equipment;
+    const s = equipmentSearch.toLowerCase();
+    return equipment.filter(eq =>
+      eq.name.toLowerCase().includes(s) ||
+      (eq.inventoryNumber && eq.inventoryNumber.toLowerCase().includes(s))
+    );
+  }, [equipment, equipmentSearch]);
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
@@ -176,17 +186,30 @@ function CommonFaultsDirectory() {
             <div className="form-group">
               <label>Оборудование</label>
               <div className="equipment-multi-select">
-                {equipment.map(eq => (
-                  <label key={eq.id} className="equipment-option">
-                    <input
-                      type="checkbox"
-                      checked={form.equipmentIds.includes(eq.id)}
-                      onChange={() => toggleEquipment(eq.id)}
-                    />
-                    <span>{eq.name}</span>
-                    {eq.inventoryNumber && <span className="td-muted">({eq.inventoryNumber})</span>}
-                  </label>
-                ))}
+                <input
+                  type="text"
+                  className="equipment-search-input"
+                  placeholder="Поиск оборудования..."
+                  value={equipmentSearch}
+                  onChange={(e) => setEquipmentSearch(e.target.value)}
+                />
+                <div className="equipment-options-list">
+                  {filteredEquipment.length > 0 ? (
+                    filteredEquipment.map(eq => (
+                      <label key={eq.id} className="equipment-option">
+                        <input
+                          type="checkbox"
+                          checked={form.equipmentIds.includes(eq.id)}
+                          onChange={() => toggleEquipment(eq.id)}
+                        />
+                        <span className="equipment-name">{eq.name}</span>
+                        {eq.inventoryNumber && <span className="equipment-inventory">({eq.inventoryNumber})</span>}
+                      </label>
+                    ))
+                  ) : (
+                    <div className="equipment-no-results">Оборудование не найдено</div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="form-group">
