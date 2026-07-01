@@ -72,7 +72,9 @@ export function AuthProvider({ children }) {
    */
   const can = (resource, action = 'view') => {
     const perm = permissions[resource];
-    if (perm === undefined || perm === null || perm === 'none') return false;
+    // Если право не определено - считать что есть доступ (для обратной совместимости)
+    if (perm === undefined || perm === null) return true;
+    if (perm === 'none') return false;
     if (typeof perm === 'boolean') return perm;
     if (typeof perm === 'string') {
       if (perm === 'full') return true;
