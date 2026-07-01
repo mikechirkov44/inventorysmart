@@ -7932,6 +7932,8 @@ textarea:focus {
   cursor: pointer;
   transition: background 0.15s;
   font-size: 13px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .equipment-option:hover {
@@ -7942,8 +7944,9 @@ textarea:focus {
   position: relative;
   width: 16px;
   height: 16px;
+  min-width: 16px;
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
@@ -7961,11 +7964,13 @@ textarea:focus {
 .custom-checkbox svg {
   width: 16px;
   height: 16px;
+  min-width: 16px;
   border: 1.5px solid var(--gray-300);
   border-radius: 3px;
   background: white;
   color: transparent;
   transition: all 0.15s;
+  display: block;
 }
 
 .custom-checkbox.checked svg {
