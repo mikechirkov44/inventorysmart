@@ -5274,6 +5274,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 8px 12px;
   background: var(--gray-50);
   border-radius: var(--radius-sm);
@@ -5284,6 +5285,8 @@ input, textarea, select { font-family: inherit; }
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-700);
+  flex: 1;
+  min-width: 0;
 }
 
 .permission-row select {
