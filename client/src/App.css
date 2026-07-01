@@ -7932,6 +7932,7 @@ textarea:focus {
   cursor: pointer;
   transition: background 0.15s;
   font-size: 13px;
+  flex-wrap: nowrap;
 }
 
 .equipment-option:hover {
@@ -7939,11 +7940,9 @@ textarea:focus {
 }
 
 .equipment-checkbox-wrapper {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
   flex-shrink: 0;
 }
 
@@ -7970,6 +7969,7 @@ textarea:focus {
   font-size: 12px;
   flex-shrink: 0;
   margin-left: 4px;
+  white-space: nowrap;
 }
 
 .equipment-no-results {
