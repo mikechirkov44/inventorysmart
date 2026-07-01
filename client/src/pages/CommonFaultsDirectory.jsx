@@ -197,11 +197,13 @@ function CommonFaultsDirectory() {
                   {filteredEquipment.length > 0 ? (
                     filteredEquipment.map(eq => (
                       <label key={eq.id} className="equipment-option">
-                        <input
-                          type="checkbox"
-                          checked={form.equipmentIds.includes(eq.id)}
-                          onChange={() => toggleEquipment(eq.id)}
-                        />
+                        <span className="equipment-checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            checked={form.equipmentIds.includes(eq.id)}
+                            onChange={() => toggleEquipment(eq.id)}
+                          />
+                        </span>
                         <span className="equipment-name">{eq.name}</span>
                         {eq.inventoryNumber && <span className="equipment-inventory">({eq.inventoryNumber})</span>}
                       </label>
