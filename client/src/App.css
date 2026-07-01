@@ -5282,7 +5282,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   padding: 8px 12px;
   background: var(--gray-50);
   border-radius: var(--radius-sm);
@@ -5299,7 +5299,7 @@ input, textarea, select { font-family: inherit; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 4px;
+  padding-right: 8px;
 }
 
 .permission-row .cs-wrapper {
