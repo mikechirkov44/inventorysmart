@@ -7802,3 +7802,91 @@ textarea:focus {
   border-radius: 6px;
   margin: 16px 0;
 }
+
+/* ===== COMMON FAULTS SECTION ===== */
+.common-faults-section {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+}
+
+.common-faults-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.common-faults-section .section-header h3 {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.fault-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fault-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-100);
+  transition: all 0.15s;
+}
+
+.fault-item:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+.fault-name {
+  font-size: 13px;
+  color: var(--gray-800);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fault-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.no-faults {
+  text-align: center;
+  padding: 16px;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+
+.btn-xs {
+  padding: 4px 6px;
+  font-size: 12px;
+  height: 24px;
+  width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-xs.danger {
+  color: var(--danger);
+}
+
+.btn-xs.danger:hover {
+  background: var(--danger-light);
+}

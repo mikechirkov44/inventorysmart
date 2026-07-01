@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI } from '../services/api';
+import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI, commonFaultsAPI } from '../services/api';
 const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
 import EquipmentInstructions from '../components/EquipmentInstructions';
 import { useToast } from '../components/Toast';
@@ -12,7 +12,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-import { FileText, Clock, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus } from 'lucide-react';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -48,10 +48,14 @@ function EquipmentDetail() {
   const [assignedWorks, setAssignedWorks] = useState([]);
   const [spareParts, setSpareParts] = useState([]);
   const [incidents, setIncidents] = useState([]);
+  const [commonFaults, setCommonFaults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPassport, setShowPassport] = useState(false);
   const [showOperatingHours, setShowOperatingHours] = useState(false);
+  const [showCommonFaultForm, setShowCommonFaultForm] = useState(false);
+  const [editingFault, setEditingFault] = useState(null);
+  const [faultForm, setFaultForm] = useState({ name: '' });
   const [operatingHours, setOperatingHours] = useState(null);
   const toast = useToast();
   const confirm = useConfirm();
@@ -61,16 +65,17 @@ function EquipmentDetail() {
     fetchData();
   }, [id]);
 
-  /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов, моточасов */
+  /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов, моточасов, типовых неисправностей */
   const fetchData = async () => {
     try {
-      const [equipRes, workOrdersRes, qrRes, spRes, incRes, ohRes] = await Promise.all([
+      const [equipRes, workOrdersRes, qrRes, spRes, incRes, ohRes, cfRes] = await Promise.all([
         equipmentAPI.getById(id),
         workOrderAPI.getByEquipment(id),
         equipmentAPI.getQR(id),
         sparePartsAPI.getByEquipment(id),
         incidentsAPI.getAll({ equipmentId: id }).catch(() => ({ data: [] })),
-        operatingHoursAPI.getByEquipmentId(id).catch(() => ({ data: { data: null } }))
+        operatingHoursAPI.getByEquipmentId(id).catch(() => ({ data: { data: null } })),
+        commonFaultsAPI.getByEquipment(id).catch(() => ({ data: [] }))
       ]);
       const equip = equipRes.data;
       setEquipment(equip);
@@ -79,6 +84,7 @@ function EquipmentDetail() {
       setSpareParts(spRes.data);
       setIncidents(incRes.data || []);
       setOperatingHours(ohRes.data?.data || null);
+      setCommonFaults(cfRes.data || []);
 
       if (equip.roomId) {
         roomsAPI.getById(equip.roomId).then(r => setRoom(r.data)).catch(() => {});
@@ -130,6 +136,56 @@ function EquipmentDetail() {
       </body></html>
     `);
     win.document.close();
+  };
+
+  /** Обработчики типовых неисправностей */
+  const handleAddFault = () => {
+    setEditingFault(null);
+    setFaultForm({ name: '' });
+    setShowCommonFaultForm(true);
+  };
+
+  const handleEditFault = (fault) => {
+    setEditingFault(fault);
+    setFaultForm({ name: fault.name });
+    setShowCommonFaultForm(true);
+  };
+
+  const handleSaveFault = async () => {
+    if (!faultForm.name.trim()) {
+      toast.error('Ошибка', 'Введите название неисправности');
+      return;
+    }
+    try {
+      if (editingFault) {
+        await commonFaultsAPI.update(editingFault.id, { equipmentId: id, name: faultForm.name });
+        toast.success('Обновлено');
+      } else {
+        await commonFaultsAPI.create({ equipmentId: id, name: faultForm.name });
+        toast.success('Создано');
+      }
+      setShowCommonFaultForm(false);
+      setEditingFault(null);
+      setFaultForm({ name: '' });
+      // Refresh common faults
+      const cfRes = await commonFaultsAPI.getByEquipment(id);
+      setCommonFaults(cfRes.data || []);
+    } catch {
+      toast.error('Ошибка', 'Не удалось сохранить');
+    }
+  };
+
+  const handleDeleteFault = async (faultId) => {
+    const confirmed = await confirm({ title: 'Удалить?', message: 'Типовая неисправность будет удалена.', type: 'danger' });
+    if (!confirmed) return;
+    try {
+      await commonFaultsAPI.delete(faultId);
+      toast.success('Удалено');
+      const cfRes = await commonFaultsAPI.getByEquipment(id);
+      setCommonFaults(cfRes.data || []);
+    } catch {
+      toast.error('Ошибка', 'Не удалось удалить');
+    }
   };
 
   if (loading) return <SkeletonPage />;
@@ -299,6 +355,34 @@ function EquipmentDetail() {
               )}
             </div>
 
+            <div className="common-faults-section">
+              <div className="section-header">
+                <h3>Типовые неисправности ({commonFaults.length})</h3>
+                <button onClick={handleAddFault} className="btn-icon btn-sm" title="Добавить неисправность">
+                  <Plus size={16} />
+                </button>
+              </div>
+              {commonFaults.length > 0 ? (
+                <ul className="fault-list">
+                  {commonFaults.map(fault => (
+                    <li key={fault.id} className="fault-item">
+                      <span className="fault-name">{fault.name}</span>
+                      <div className="fault-actions">
+                        <button onClick={() => handleEditFault(fault)} className="btn-icon btn-xs" title="Редактировать">
+                          <Pencil size={12} />
+                        </button>
+                        <button onClick={() => handleDeleteFault(fault.id)} className="btn-icon btn-xs danger" title="Удалить">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="no-faults">Нет типовых неисправностей</p>
+              )}
+            </div>
+
             <div className="history-section">
               <h3>История работ ({workOrders.length})</h3>
               <ul className="history-list">
@@ -346,6 +430,30 @@ function EquipmentDetail() {
             }
           }}
         />
+      )}
+
+      {showCommonFaultForm && (
+        <div className="complete-task-modal" onClick={() => setShowCommonFaultForm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>{editingFault ? 'Редактирование неисправности' : 'Новая типовая неисправность'}</h3>
+            <div className="form-group">
+              <label>Неисправность *</label>
+              <input
+                type="text"
+                value={faultForm.name}
+                onChange={(e) => setFaultForm({ ...faultForm, name: e.target.value })}
+                placeholder="Например: Поломка двигателя"
+                autoFocus
+              />
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleSaveFault} className="btn btn-primary" disabled={!faultForm.name.trim()}>
+                {editingFault ? 'Обновить' : 'Создать'}
+              </button>
+              <button onClick={() => setShowCommonFaultForm(false)} className="btn">Отмена</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
