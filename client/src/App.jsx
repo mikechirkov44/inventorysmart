@@ -6,7 +6,7 @@
  */
 
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download } from 'lucide-react';
 
@@ -27,29 +27,29 @@ import { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import EquipmentList from './pages/EquipmentList';
-import EquipmentTable from './pages/EquipmentTable';
-import EquipmentDetail from './pages/EquipmentDetail';
-import EquipmentForm from './pages/EquipmentForm';
-import QRScanner from './pages/QRScanner';
-import ScanResult from './pages/ScanResult';
-import WorkOrders from './pages/WorkOrders';
-import WorksDirectory from './pages/WorksDirectory';
-import RoomsDirectory from './pages/RoomsDirectory';
-import EmployeesDirectory from './pages/EmployeesDirectory';
-import EquipmentCategoriesDirectory from './pages/EquipmentCategoriesDirectory';
-import ImportExcel from './pages/ImportExcel';
-import IncidentsPage from './pages/IncidentsPage';
-import SparePartsDirectory from './pages/SparePartsDirectory';
-import SparePartsReceipts from './pages/SparePartsReceipts';
-import CommonFaultsDirectory from './pages/CommonFaultsDirectory';
-import AnalyticsPage from './pages/AnalyticsPage';
-import SchedulePage from './pages/SchedulePage';
-import SettingsPage from './pages/SettingsPage';
-import SetupPage from './pages/SetupPage';
-import NotificationsPage from './pages/NotificationsPage';
-import HelpPage from './pages/HelpPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const EquipmentList = lazy(() => import('./pages/EquipmentList'));
+const EquipmentTable = lazy(() => import('./pages/EquipmentTable'));
+const EquipmentDetail = lazy(() => import('./pages/EquipmentDetail'));
+const EquipmentForm = lazy(() => import('./pages/EquipmentForm'));
+const QRScanner = lazy(() => import('./pages/QRScanner'));
+const ScanResult = lazy(() => import('./pages/ScanResult'));
+const WorkOrders = lazy(() => import('./pages/WorkOrders'));
+const WorksDirectory = lazy(() => import('./pages/WorksDirectory'));
+const RoomsDirectory = lazy(() => import('./pages/RoomsDirectory'));
+const EmployeesDirectory = lazy(() => import('./pages/EmployeesDirectory'));
+const EquipmentCategoriesDirectory = lazy(() => import('./pages/EquipmentCategoriesDirectory'));
+const ImportExcel = lazy(() => import('./pages/ImportExcel'));
+const IncidentsPage = lazy(() => import('./pages/IncidentsPage'));
+const SparePartsDirectory = lazy(() => import('./pages/SparePartsDirectory'));
+const SparePartsReceipts = lazy(() => import('./pages/SparePartsReceipts'));
+const CommonFaultsDirectory = lazy(() => import('./pages/CommonFaultsDirectory'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const SchedulePage = lazy(() => import('./pages/SchedulePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SetupPage = lazy(() => import('./pages/SetupPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 import './App.css';
 
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
@@ -222,13 +222,15 @@ function LicenseBlockScreen() {
   );
 }
 
-/** Обёртка страницы с анимацией входа при смене маршрута */
+/** Обёртка страницы с анимацией входа при смене маршрута и ленивой загрузкой */
 function PageWrapper({ children }) {
   const location = useLocation();
   return (
-    <div key={location.pathname} className="page-enter">
-      {children}
-    </div>
+    <Suspense fallback={<div className="loading-spinner">Загрузка...</div>}>
+      <div key={location.pathname} className="page-enter">
+        {children}
+      </div>
+    </Suspense>
   );
 }
 

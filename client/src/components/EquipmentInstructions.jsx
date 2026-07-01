@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileText, Upload, Trash2, Edit3, Save, X, File, Bold, Italic, List, ListOrdered, Link, Image, Code, Heading1, Heading2, Heading3, Quote, Eye } from 'lucide-react';
 import { useToast } from './Toast';
 import { useAuth } from '../contexts/AuthContext';
+import { equipmentAPI } from '../services/api';
 
 /**
  * @module EquipmentInstructions
@@ -39,7 +40,6 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
       const formData = new FormData();
       formData.append('pdf', file);
 
-      const { equipmentAPI } = await import('../services/api');
       await equipmentAPI.uploadInstructionPdf(equipmentId, formData);
       
       toast.success('Успех', 'PDF инструкция загружена');
@@ -56,7 +56,6 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
     if (!window.confirm('Удалить PDF инструкцию?')) return;
 
     try {
-      const { equipmentAPI } = await import('../services/api');
       await equipmentAPI.deleteInstructionPdf(equipmentId);
       
       toast.success('Успех', 'PDF инструкция удалена');
@@ -70,7 +69,6 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
   const handleMdSave = async () => {
     setSaving(true);
     try {
-      const { equipmentAPI } = await import('../services/api');
       await equipmentAPI.updateInstructionMd(equipmentId, mdContent);
       
       toast.success('Успех', 'Markdown инструкция сохранена');
@@ -375,27 +373,11 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
                 />
               ) : (
                 <div className="md-preview">
-                  <div className="md-preview-content">
-                    {mdContent.split('\n').map((line, idx) => {
-                      if (line.startsWith('# ')) return <h1 key={idx}>{line.slice(2)}</h1>;
-                      if (line.startsWith('## ')) return <h2 key={idx}>{line.slice(3)}</h2>;
-                      if (line.startsWith('### ')) return <h3 key={idx}>{line.slice(4)}</h3>;
-                      if (line.startsWith('- ')) return <li key={idx}>{line.slice(2)}</li>;
-                      if (line.match(/^\d+\. /)) return <li key={idx}>{line.replace(/^\d+\. /, '')}</li>;
-                      if (line.startsWith('> ')) return <blockquote key={idx}>{line.slice(2)}</blockquote>;
-                      if (line.startsWith('```')) return <code key={idx}>{line.slice(3)}</code>;
-                      if (line.trim() === '') return <br key={idx} />;
-                      
-                      let processed = line;
-                      processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                      processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
-                      processed = processed.replace(/`(.+?)`/g, '<code>$1</code>');
-                      processed = processed.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
-                      
-                      return <p key={idx} dangerouslySetInnerHTML={{ __html: processed }} />;
-                    })}
-                  </div>
-                </div>
+                <div
+                  className="md-preview-content"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(mdContent) }}
+                />
+              </div>
               )}
             </div>
 

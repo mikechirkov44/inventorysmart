@@ -2,10 +2,10 @@
  * @module EquipmentDetail
  * @description Карточка оборудования: основная информация, QR-код, плановые работы, ЗИП, история ремонтов.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI } from '../services/api';
-import EquipmentPassport from '../components/EquipmentPassport';
+const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
 import EquipmentInstructions from '../components/EquipmentInstructions';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -152,15 +152,17 @@ function EquipmentDetail() {
       </div>
 
       {showPassport ? (
-        <EquipmentPassport
-          equipment={equipment}
-          room={room}
-          assignedWorks={assignedWorks}
-          spareParts={spareParts}
-          workOrders={workOrders}
-          incidents={incidents}
-          qrData={qrData}
-        />
+        <Suspense fallback={<div className="loading-spinner">Загрузка паспорта...</div>}>
+          <EquipmentPassport
+            equipment={equipment}
+            room={room}
+            assignedWorks={assignedWorks}
+            spareParts={spareParts}
+            workOrders={workOrders}
+            incidents={incidents}
+            qrData={qrData}
+          />
+        </Suspense>
       ) : (<>
         <div className="detail-content">
           <div className="detail-main">
