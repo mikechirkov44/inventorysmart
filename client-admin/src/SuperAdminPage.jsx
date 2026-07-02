@@ -705,7 +705,7 @@ function LicensesTab() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!form.companyId) { setError('Выберите компанию'); return; }
-    setGenerating(true); setError(''); setSuccess(''); setGeneratedKey('');
+    setGenerating(true); setError(''); setGeneratedKey('');
     try {
       const res = await superadminAPI.generateLicense(form.companyId, form.plan, parseInt(form.daysValid));
       setGeneratedKey(res.data.key);
