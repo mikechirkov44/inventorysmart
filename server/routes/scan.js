@@ -13,6 +13,7 @@ const Work = require('../models/work');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 const SparePart = require('../models/sparePart');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /scan/:code
@@ -28,7 +29,7 @@ const SparePart = require('../models/sparePart');
  * @returns {number} return.completedTotal - Общее количество выполненных работ
  * @returns {404} Если оборудование не найдено
  */
-router.get('/:code', async (req, res) => {
+router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
   try {
     const code = req.params.code;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -161,7 +162,7 @@ router.get('/:code', async (req, res) => {
  * @param {Array} [req.body.sparePartsUsed] - Использованные запчасти [{sparePartId, quantity}]
  * @returns {Object} Созданная запись WorkOrder и список списанных запчастей
  */
-router.post('/complete', async (req, res) => {
+router.post('/complete', requirePermission('scanner', 'view'), async (req, res) => {
   try {
     const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;
 

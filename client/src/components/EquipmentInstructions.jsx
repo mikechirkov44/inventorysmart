@@ -1,14 +1,16 @@
+import DOMPurify from 'dompurify';
 import { useState } from 'react';
 import { FileText, Upload, Trash2, Edit3, Save, X, File, Bold, Italic, List, ListOrdered, Link, Image, Code, Heading1, Heading2, Heading3, Quote, Eye } from 'lucide-react';
 import { useToast } from './Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { equipmentAPI } from '../services/api';
+import { resolveUploadField } from '../utils/uploads';
 
 /**
  * @module EquipmentInstructions
  * @description Компонент для управления инструкциями оборудования (PDF и Markdown)
  */
-function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onUpdate }) {
+function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, instructionPdfUrl, onUpdate }) {
   const { can, canEdit } = useAuth();
   const [activeTab, setActiveTab] = useState(instructionPdf ? 'pdf' : 'md');
   const [mdContent, setMdContent] = useState(instructionMd || '');
@@ -150,7 +152,10 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
     if (inList) html += '</ul>';
     if (inOrderedList) html += '</ol>';
     
-    return html;
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'hr', 'br', 'strong', 'em', 'a', 'img'],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'style'],
+    });
   };
 
   const escapeHtml = (text) => {
@@ -162,14 +167,34 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
       .replace(/'/g, '&#039;');
   };
 
+  const sanitizeUrl = (url) => {
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'mailto:') return parsed.href;
+      if (parsed.protocol === 'http:' && window.location.protocol === 'http:') return parsed.href;
+      return '#';
+    } catch {
+      return '#';
+    }
+  };
+
   const processInline = (text) => {
     let result = escapeHtml(text);
     result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
     result = result.replace(/`(.+?)`/g, '<code>$1</code>');
-    result = result.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    result = result.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width:100%" />');
-    return result;
+    result = result.replace(/\[(.+?)\]\((.+?)\)/g, (_, label, url) => {
+      const safeUrl = sanitizeUrl(url);
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    });
+    result = result.replace(/!\[(.+?)\]\((.+?)\)/g, (_, alt, url) => {
+      const safeUrl = sanitizeUrl(url);
+      return `<img src="${safeUrl}" alt="${alt}" style="max-width:100%" />`;
+    });
+    return DOMPurify.sanitize(result, {
+      ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'img'],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'style'],
+    });
   };
 
   const hasPdf = !!instructionPdf;
@@ -217,7 +242,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, onU
               </div>
               <div className="pdf-file-buttons">
                 <a
-                  href={`/uploads/${instructionPdf}`}
+                  href={instructionPdfUrl || resolveUploadField({ instructionPdf, instructionPdfUrl }, 'instructionPdf')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-secondary"

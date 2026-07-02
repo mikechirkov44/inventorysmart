@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const SparePart = require('../models/sparePart');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /spareParts
@@ -15,7 +16,7 @@ const SparePart = require('../models/sparePart');
  * @param {string} [req.query.equipmentId] - Фильтр по ID связанного оборудования
  * @returns {Object[]} Список запчастей
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('spareParts', 'view'), async (req, res) => {
   try {
     let items = await SparePart.findAll(req.user.companyId);
     const { search, equipmentId } = req.query;
@@ -44,7 +45,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Данные запчасти
  * @returns {404} Если запчасть не найдена
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('spareParts', 'view'), async (req, res) => {
   try {
     const item = await SparePart.findById(req.params.id, req.user.companyId);
     if (!item) return res.status(404).json({ error: 'Not found' });
@@ -61,7 +62,7 @@ router.get('/:id', async (req, res) => {
  * @param {Object} req.body - Данные запчасти (name, article, manufacturer, quantity, unit, equipmentIds)
  * @returns {Object} Созданная запчасть (201)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('spareParts', 'edit'), async (req, res) => {
   try {
     const item = await SparePart.create(req.body, req.user.companyId);
     res.status(201).json(item);
@@ -79,7 +80,7 @@ router.post('/', async (req, res) => {
  * @returns {Object} Обновлённая запчасть
  * @returns {404} Если запчасть не найдена
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('spareParts', 'edit'), async (req, res) => {
   try {
     const item = await SparePart.update(req.params.id, req.body, req.user.companyId);
     if (!item) return res.status(404).json({ error: 'Not found' });
@@ -97,7 +98,7 @@ router.put('/:id', async (req, res) => {
  * @returns {Object} Результат операции
  * @returns {404} Если запчасть не найдена
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('spareParts', 'edit'), async (req, res) => {
   try {
     const deleted = await SparePart.remove(req.params.id, req.user.companyId);
     if (!deleted) return res.status(404).json({ error: 'Not found' });
@@ -115,7 +116,7 @@ router.delete('/:id', async (req, res) => {
  * @param {Array} req.body.items - Массив для пополнения [{sparePartId, quantity}]
  * @returns {Object} Обновлённые запчасти
  */
-router.post('/replenish', async (req, res) => {
+router.post('/replenish', requirePermission('spareParts', 'edit'), async (req, res) => {
   try {
     const { items } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {

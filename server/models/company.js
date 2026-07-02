@@ -6,6 +6,7 @@
  */
 
 const { query } = require('../db');
+const { verifyLicense } = require('../utils/license');
 
 /** Количество рабочих дней в демо-режиме */
 const DEMO_WORKING_DAYS = 5;
@@ -77,22 +78,23 @@ function getDemoEndDate(createdAt) {
  */
 function checkLicense(company) {
   if (company.licenseKey) {
-    try {
-      const json = Buffer.from(company.licenseKey, 'base64').toString('utf-8');
-      const decoded = JSON.parse(json);
+    const decoded = verifyLicense(company.licenseKey);
+    if (decoded) {
+      if (company.companyId && decoded.companyId !== company.companyId) {
+        return { status: 'invalid', message: 'Лицензионный ключ не соответствует компании' };
+      }
       const expiresAt = new Date(decoded.expiresAt);
       if (!isNaN(expiresAt.getTime()) && expiresAt > new Date()) {
         return {
           status: 'active',
           plan: decoded.plan,
           expiresAt: decoded.expiresAt,
-          message: `Полная лицензия — ${decoded.plan} до ${expiresAt.toLocaleDateString('ru-RU')}`
+          message: `Полная лицензия — ${decoded.plan} до ${expiresAt.toLocaleDateString('ru-RU')}`,
         };
       }
       return { status: 'expired', message: 'Срок действия лицензии истёк' };
-    } catch {
-      return { status: 'invalid', message: 'Неверный лицензионный ключ' };
     }
+    return { status: 'invalid', message: 'Неверный лицензионный ключ' };
   }
 
   if (!company.createdAt) {

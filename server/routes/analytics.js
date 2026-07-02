@@ -11,6 +11,7 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * Рассчитывает аналитические данные по сотрудникам и оборудованию.
@@ -165,7 +166,7 @@ async function getAnalytics(companyId) {
  * @returns {number} return[].overdue - Количество просроченных работ
  * @returns {number} return[].completionRate - Процент выполнения
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('analytics', 'view'), async (req, res) => {
   try {
     const analytics = await getAnalytics(req.user.companyId);
     res.json(analytics);
@@ -187,7 +188,7 @@ router.get('/', async (req, res) => {
  * @returns {number} return.completionRate - Общий процент выполнения
  * @returns {number} return.employees - Количество сотрудников
  */
-router.get('/summary', async (req, res) => {
+router.get('/summary', requirePermission('analytics', 'view'), async (req, res) => {
   try {
     const analytics = await getAnalytics(req.user.companyId);
     const totalPlanned = analytics.reduce((s, e) => s + e.totalPlanned, 0);

@@ -8,7 +8,23 @@ const express = require('express');
 const router = express.Router();
 const Company = require('../models/company');
 const { authenticate, requirePermission } = require('../middleware/auth');
+const { verifyLicense } = require('../utils/license');
 const { imageUpload } = require('../utils/upload');
+
+function maskApiKey(apiKey) {
+  if (!apiKey) return '';
+  if (apiKey.length <= 8) return '********';
+  return `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`;
+}
+
+function sanitizeCompany(company, includeApiKey = false) {
+  if (!company) return company;
+  const copy = { ...company };
+  if (!includeApiKey && copy.apiKey) {
+    copy.apiKey = maskApiKey(copy.apiKey);
+  }
+  return copy;
+}
 
 /**
  * @route GET /company
@@ -18,7 +34,8 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const company = await Company.get(req.user.companyId);
     const license = await Company.getLicenseStatus(req.user.companyId);
-    res.json({ ...company, license });
+    const includeApiKey = req.user.permissions?.settings === 'full';
+    res.json({ ...sanitizeCompany(company, includeApiKey), license });
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -86,16 +103,13 @@ router.post('/activate-license', authenticate, requirePermission('settings', 'ed
       return res.status(400).json({ error: 'Введите лицензионный ключ' });
     }
 
-    let decoded;
-    try {
-      const json = Buffer.from(key.trim(), 'base64').toString('utf-8');
-      decoded = JSON.parse(json);
-    } catch {
+    const decoded = verifyLicense(key);
+    if (!decoded) {
       return res.status(400).json({ error: 'Неверный формат лицензионного ключа' });
     }
 
-    if (!decoded.plan || !decoded.expiresAt) {
-      return res.status(400).json({ error: 'Неверный формат лицензионного ключа' });
+    if (decoded.companyId !== req.user.companyId) {
+      return res.status(400).json({ error: 'Лицензионный ключ не соответствует вашей компании' });
     }
 
     const expiresDate = new Date(decoded.expiresAt);
@@ -107,7 +121,7 @@ router.post('/activate-license', authenticate, requirePermission('settings', 'ed
       return res.status(400).json({ error: 'Срок действия лицензии истёк' });
     }
 
-    await Company.update({ licenseKey: key.trim() });
+    await Company.update({ companyId: req.user.companyId, licenseKey: key.trim() });
 
     res.json({
       plan: decoded.plan,

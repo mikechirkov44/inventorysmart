@@ -14,6 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 import { useTableSettings } from '../hooks/useTableSettings';
 import TableColumnManager from '../components/TableColumnManager';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -271,7 +272,7 @@ function EquipmentTable({ embedded }) {
                             return (
                               <td key={col.key}>
                                 {item.photo ? (
-                                  <img src={`/uploads/${item.photo}`} alt="" className="table-thumb" />
+                                  <img src={resolveUploadField(item, 'photo')} alt="" className="table-thumb" />
                                 ) : (
                                   <span className="no-photo-small">—</span>
                                 )}

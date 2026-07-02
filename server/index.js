@@ -24,15 +24,14 @@ app.use(helmet());
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 if (ALLOWED_ORIGINS.length > 0) {
   app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+} else if (process.env.NODE_ENV === 'production') {
+  app.use(cors({ origin: false }));
 } else {
   app.use(cors());
 }
 
 // Body size limit
 app.use(express.json({ limit: '1mb' }));
-
-// Static files — require auth via separate route (uploads served through authenticated proxy)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Global rate limiter — 200 req/min per IP
 const globalLimiter = rateLimit({
@@ -79,6 +78,9 @@ async function start() {
   const publicApiRoutes = require('./routes/publicApi');
   app.use('/api/public', publicApiRoutes);
 
+  const uploadsRoutes = require('./routes/uploads');
+  app.use('/api/uploads', uploadsRoutes);
+
   // APK download (public)
   const fs = require('fs');
   const apkPath = path.join(__dirname, 'uploads', 'InventorySmart.apk');
@@ -98,7 +100,21 @@ async function start() {
     if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
     if (req.path === '/health') return next();
     if (req.path === '/superadmin' || req.path.startsWith('/superadmin/')) return next();
+    if (req.path === '/uploads' || req.path.startsWith('/uploads/')) return next();
     authenticate(req, res, next);
+  });
+
+  app.use('/api', (req, res, next) => {
+    if (req.path === '/uploads' || req.path.startsWith('/uploads/')) return next();
+    const originalJson = res.json.bind(res);
+    res.json = function jsonWithUploads(body) {
+      if (req.user?.companyId && body !== undefined && body !== null) {
+        const { withUploadUrls } = require('./utils/uploadAccess');
+        return originalJson(withUploadUrls(body, req.user.companyId));
+      }
+      return originalJson(body);
+    };
+    next();
   });
 
   // License check — block access if demo expired

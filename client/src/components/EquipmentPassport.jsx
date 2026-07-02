@@ -10,6 +10,7 @@ import { useRef, useState } from 'react';
 import { Printer, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Соответствие кодов состояния русским названиям */
 const STATUS_MAP = {
@@ -180,7 +181,7 @@ function EquipmentPassport({ equipment, room, assignedWorks, spareParts, workOrd
         <div className="passport-body">
           <div className="passport-photo">
             {equipment.photo ? (
-              <img src={`/uploads/${equipment.photo}`} alt={equipment.name} />
+              <img src={resolveUploadField(equipment, 'photo')} alt={equipment.name} />
             ) : (
               <div className="no-photo">Нет фото</div>
             )}

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const CommonFault = require('../models/commonFaults');
-const { authenticate } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', requirePermission('commonFaults', 'view'), async (req, res) => {
   try {
     const items = await CommonFault.findAll(req.user.companyId);
     res.json(items);
@@ -12,7 +12,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.get('/equipment/:equipmentId', authenticate, async (req, res) => {
+router.get('/equipment/:equipmentId', requirePermission('commonFaults', 'view'), async (req, res) => {
   try {
     const items = await CommonFault.findByEquipment(req.params.equipmentId, req.user.companyId);
     res.json(items);
@@ -21,7 +21,7 @@ router.get('/equipment/:equipmentId', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', requirePermission('commonFaults', 'edit'), async (req, res) => {
   try {
     const { equipmentIds, name } = req.body;
     if (!name) {
@@ -38,7 +38,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', requirePermission('commonFaults', 'edit'), async (req, res) => {
   try {
     const { equipmentIds, name } = req.body;
     const item = await CommonFault.update(req.params.id, req.user.companyId, { equipmentIds: equipmentIds || [], name });
@@ -49,7 +49,7 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', requirePermission('commonFaults', 'edit'), async (req, res) => {
   try {
     await CommonFault.delete(req.params.id, req.user.companyId);
     res.json({ success: true });

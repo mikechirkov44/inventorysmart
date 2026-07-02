@@ -5,6 +5,9 @@
  */
 
 const { query } = require('../db');
+const { pickAllowed } = require('../utils/allowlist');
+
+const EMPLOYEE_UPDATE_FIELDS = ['firstName', 'lastName', 'middleName', 'position', 'positionId', 'jobTitle', 'phone', 'email'];
 
 /**
  * Преобразует строку из БД в объект сотрудника.
@@ -77,11 +80,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённый сотрудник или null
    */
   update: async (id, data, companyId) => {
+    const safeData = pickAllowed(data, EMPLOYEE_UPDATE_FIELDS);
     const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id', jobTitle: 'job_title' };
     const fields = [];
     const values = [];
     let i = 1;
-    for (const [key, val] of Object.entries(data)) {
+    for (const [key, val] of Object.entries(safeData)) {
       if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       fields.push(`${col} = $${i}`);

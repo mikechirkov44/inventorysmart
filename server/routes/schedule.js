@@ -12,6 +12,7 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /schedule
@@ -22,7 +23,7 @@ const Employee = require('../models/employee');
  * @returns {Object[]} return.groups - Сгруппированные данные
  * @returns {number} return.total - Общее количество задач
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('schedule', 'view'), async (req, res) => {
   try {
     const groupBy = req.query.group || 'employee';
     const allEquipment = await Equipment.findAll(req.user.companyId);

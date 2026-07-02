@@ -6,6 +6,13 @@
  */
 
 const { query } = require('../db');
+const { pickAllowed } = require('../utils/allowlist');
+
+const EQUIPMENT_UPDATE_FIELDS = [
+  'name', 'inventoryNumber', 'description', 'location', 'category', 'roomId',
+  'categoryId', 'manufacturer', 'serialNumber', 'yearOfManufacture',
+  'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'workIds',
+];
 
 /**
  * Преобразует строку из БД в объект оборудования.
@@ -171,6 +178,7 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённое оборудование или null
    */
   update: async (id, data, companyId) => {
+    const safeData = pickAllowed(data, EQUIPMENT_UPDATE_FIELDS);
     const fieldMap = {
       inventoryNumber: 'inventory_number',
       roomId: 'room_id',
@@ -179,13 +187,12 @@ module.exports = {
       yearOfManufacture: 'year_of_manufacture',
       commissioningDate: 'commissioning_date',
       instructionPdf: 'instruction_pdf',
-      instructionMd: 'instruction_md'
+      instructionMd: 'instruction_md',
     };
     const mapped = {};
-    for (const [key, val] of Object.entries(data)) {
-      if (key === 'id' || key === 'qrCode' || key === 'createdAt' || key === 'updatedAt' || key === 'workIds') continue;
+    for (const [key, val] of Object.entries(safeData)) {
+      if (key === 'workIds') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      // Convert yearOfManufacture: empty string -> null, otherwise -> integer
       if (key === 'yearOfManufacture') {
         mapped[col] = val && String(val).trim() !== '' ? parseInt(val, 10) : null;
       } else {
@@ -197,14 +204,14 @@ module.exports = {
     if (Object.keys(mapped).length > 1) {
       const keys = Object.keys(mapped);
       const sets = keys.map((k, i) => `${k} = $${i + 1}`);
-      const vals = keys.map(k => mapped[k]);
+      const vals = keys.map((k) => mapped[k]);
       vals.push(id);
       vals.push(companyId);
       await query(`UPDATE equipment SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length}`, vals);
     }
 
-    if (data.workIds !== undefined) {
-      let ids = data.workIds;
+    if (safeData.workIds !== undefined) {
+      let ids = safeData.workIds;
       if (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (_) { ids = []; } }
       await query('DELETE FROM equipment_works WHERE equipment_id = $1', [id]);
       for (const wid of ids) {
@@ -212,7 +219,7 @@ module.exports = {
       }
     }
 
-    return await module.exports.findById(id, companyId);
+    return module.exports.findById(id, companyId);
   },
 
   /**
@@ -232,9 +239,11 @@ module.exports = {
    * @param {Array<Object>} items - Массив данных оборудования (см. create)
    * @returns {Promise<Array<Object>>} Список созданного оборудования
    */
-  createMany: async (items) => {
+  createMany: async (items, companyId) => {
     const results = [];
-    for (const item of items) { results.push(await module.exports.create(item)); }
+    for (const item of items) {
+      results.push(await module.exports.create(item, companyId));
+    }
     return results;
-  }
+  },
 };

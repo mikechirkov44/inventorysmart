@@ -9,6 +9,7 @@ const router = express.Router();
 const XLSX = require('xlsx');
 const Equipment = require('../models/equipment');
 const { excelUpload } = require('../utils/upload');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route POST /import/excel
@@ -18,7 +19,7 @@ const { excelUpload } = require('../utils/upload');
  * @returns {string} return.message - Сообщение о количестве импортированных записей
  * @returns {Object[]} return.equipment - Созданное оборудование
  */
-router.post('/excel', excelUpload.single('file'), async (req, res) => {
+router.post('/excel', requirePermission('import', 'edit'), excelUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -55,7 +56,7 @@ router.post('/excel', excelUpload.single('file'), async (req, res) => {
       };
     });
     
-    const created = await Equipment.createMany(equipmentData);
+    const created = await Equipment.createMany(equipmentData, req.user.companyId);
     
     const fs = require('fs');
     if (fs.existsSync(req.file.path)) {
@@ -77,7 +78,7 @@ router.post('/excel', excelUpload.single('file'), async (req, res) => {
  * @description Скачивание шаблона Excel-файла для импорта оборудования
  * @returns {File} Excel-файл equipment_template.xlsx для скачивания
  */
-router.get('/template', (req, res) => {
+router.get('/template', requirePermission('import', 'view'), (req, res) => {
   try {
     const wb = XLSX.utils.book_new();
     const wsData = [

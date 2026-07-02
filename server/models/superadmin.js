@@ -6,6 +6,7 @@
  */
 
 const { query } = require('../db');
+const { signLicense } = require('../utils/license');
 const bcrypt = require('bcryptjs');
 
 module.exports = {
@@ -108,8 +109,11 @@ module.exports = {
   generateLicenseKey: (companyId, plan, daysValid) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + daysValid);
-    const payload = { plan, expiresAt: expiresAt.toISOString().split('T')[0], companyId };
-    return Buffer.from(JSON.stringify(payload)).toString('base64');
+    return signLicense({
+      plan,
+      expiresAt: expiresAt.toISOString().split('T')[0],
+      companyId,
+    });
   },
 
   /**
@@ -124,6 +128,8 @@ module.exports = {
       'INSERT INTO company_settings (company_id, company_name) VALUES ($1, $2) RETURNING *',
       [companyId, companyName]
     );
+    const Position = require('./position');
+    await Position.seedDefaultsForCompany(companyId);
     return {
       id: rows[0].id,
       companyId: rows[0].company_id,

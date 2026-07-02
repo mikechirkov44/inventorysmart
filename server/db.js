@@ -5,8 +5,14 @@
 
 const { Pool } = require('pg');
 
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: DATABASE_URL must be set in production');
+  process.exit(1);
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://inventorysmart:inventorysmart_secret@localhost:5433/inventorysmart'
+  connectionString: connectionString || 'postgresql://inventorysmart:inventorysmart_secret@localhost:5433/inventorysmart',
 });
 
 pool.on('error', (err) => {
@@ -488,6 +494,59 @@ async function migrate() {
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS completed_on_time BOOLEAN`);
     } catch (e) {
       console.log('New columns migration note:', e.message);
+    }
+
+    // Migrate positions to per-company scope
+    await client.query('ALTER TABLE positions ADD COLUMN IF NOT EXISTS company_id UUID');
+    await client.query('ALTER TABLE positions DROP CONSTRAINT IF EXISTS positions_name_key');
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'positions_company_name_key'
+        ) THEN
+          ALTER TABLE positions ADD CONSTRAINT positions_company_name_key UNIQUE (company_id, name);
+        END IF;
+      END $$;
+    `);
+
+    const { rows: companiesForPositions } = await client.query(
+      'SELECT company_id FROM company_settings WHERE company_id IS NOT NULL'
+    );
+    const { rows: legacyPositions } = await client.query(
+      'SELECT * FROM positions WHERE company_id IS NULL ORDER BY name'
+    );
+
+    for (const company of companiesForPositions) {
+      const { rows: companyPositions } = await client.query(
+        'SELECT COUNT(*) FROM positions WHERE company_id = $1',
+        [company.company_id]
+      );
+      if (parseInt(companyPositions[0].count, 10) > 0) continue;
+
+      if (legacyPositions.length > 0) {
+        for (const pos of legacyPositions) {
+          const { rows: inserted } = await client.query(
+            'INSERT INTO positions (name, permissions, company_id) VALUES ($1, $2, $3) RETURNING id',
+            [pos.name, pos.permissions, company.company_id]
+          );
+          await client.query(
+            'UPDATE users SET position_id = $1 WHERE company_id = $2 AND position_id = $3',
+            [inserted[0].id, company.company_id, pos.id]
+          );
+          await client.query(
+            'UPDATE employees SET position_id = $1 WHERE company_id = $2 AND position_id = $3',
+            [inserted[0].id, company.company_id, pos.id]
+          );
+        }
+      } else {
+        const Position = require('./models/position');
+        await Position.seedDefaultsForCompany(company.company_id);
+      }
+    }
+
+    if (legacyPositions.length > 0) {
+      const legacyIds = legacyPositions.map((p) => p.id);
+      await client.query('DELETE FROM positions WHERE id = ANY($1::uuid[])', [legacyIds]);
     }
 
     await client.query('COMMIT');

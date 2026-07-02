@@ -10,6 +10,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
 import { Upload, FolderTree } from 'lucide-react';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -90,7 +91,7 @@ function EquipmentForm() {
         workIds: Array.isArray(response.data.workIds) ? response.data.workIds : []
       });
       if (response.data.photo) {
-        setPhotoPreview(`/uploads/${response.data.photo}`);
+        setPhotoPreview(resolveUploadField(response.data, 'photo'));
       }
     } catch (err) {
       toast.error('Ошибка', 'Ошибка загрузки данных');

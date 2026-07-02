@@ -14,6 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Список доступных часовых поясов */
 const TIMEZONES = [
@@ -594,7 +595,7 @@ function SettingsPage() {
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
       });
       if (res.data.logo) {
-        setLogoPreview(`/uploads/${res.data.logo}?t=${Date.now()}`);
+        setLogoPreview(`${resolveUploadField(res.data, 'logo')}?t=${Date.now()}`);
       }
       if (res.data.licenseKey) {
         try {

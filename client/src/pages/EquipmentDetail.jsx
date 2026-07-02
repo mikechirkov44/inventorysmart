@@ -13,6 +13,7 @@ import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
 import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus } from 'lucide-react';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -224,7 +225,7 @@ function EquipmentDetail() {
           <div className="detail-main">
             <div className="detail-photo">
               {equipment.photo ? (
-                <img src={`/uploads/${equipment.photo}`} alt={equipment.name} />
+                <img src={resolveUploadField(equipment, 'photo')} alt={equipment.name} />
               ) : (
                 <div className="no-photo-large">Нет фото</div>
               )}

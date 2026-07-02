@@ -47,12 +47,17 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
+      - name: Add SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
       - name: Upload archive to server
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          scp -o StrictHostKeyChecking=no deploy.tar.gz "${VPS_USER}@${VPS_HOST}:/tmp/deploy.tar.gz"
+          scp deploy.tar.gz "${VPS_USER}@${VPS_HOST}:/tmp/deploy.tar.gz"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

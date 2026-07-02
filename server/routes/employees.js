@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/employee');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /employees
@@ -16,7 +17,7 @@ const Employee = require('../models/employee');
  * @param {string} [req.query.search] - Поиск по ФИО (частичное совпадение)
  * @returns {Object[]} Список сотрудников
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('employees', 'view'), async (req, res) => {
   try {
     let employees = await Employee.findAll(req.user.companyId);
     const { lastName, positionId, search } = req.query;
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Данные сотрудника
  * @returns {404} Если сотрудник не найден
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('employees', 'view'), async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id, req.user.companyId);
     if (!employee) {
@@ -68,7 +69,7 @@ router.get('/:id', async (req, res) => {
  * @param {Object} req.body - Данные сотрудника (lastName, firstName, positionId и т.д.)
  * @returns {Object} Созданный сотрудник (201)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('employees', 'edit'), async (req, res) => {
   try {
     const employee = await Employee.create(req.body, req.user.companyId);
     res.status(201).json(employee);
@@ -86,7 +87,7 @@ router.post('/', async (req, res) => {
  * @returns {Object} Обновлённый сотрудник
  * @returns {404} Если сотрудник не найден
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('employees', 'edit'), async (req, res) => {
   try {
     const employee = await Employee.update(req.params.id, req.body, req.user.companyId);
     if (!employee) {
@@ -106,7 +107,7 @@ router.put('/:id', async (req, res) => {
  * @returns {Object} Сообщение об успешном удалении
  * @returns {404} Если сотрудник не найден
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('employees', 'edit'), async (req, res) => {
   try {
     const deleted = await Employee.remove(req.params.id, req.user.companyId);
     if (!deleted) {

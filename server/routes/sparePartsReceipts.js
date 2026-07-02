@@ -7,13 +7,14 @@
 const express = require('express');
 const router = express.Router();
 const SparePartReceipt = require('../models/sparePartReceipt');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /sparePartsReceipts
  * @description Получение списка всех приходных документов
  * @returns {Object[]} Список приходных
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('sparePartsReceipts', 'view'), async (req, res) => {
   try {
     const receipts = await SparePartReceipt.findAll(req.user.companyId);
     res.json(receipts);
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Номер документа
  * @returns {string} return.number
  */
-router.get('/next-number', async (req, res) => {
+router.get('/next-number', requirePermission('sparePartsReceipts', 'view'), async (req, res) => {
   try {
     const number = await SparePartReceipt.generateDocumentNumber(req.user.companyId);
     res.json({ number });
@@ -46,7 +47,7 @@ router.get('/next-number', async (req, res) => {
  * @returns {Object} Данные приходного документа
  * @returns {404} Если документ не найден
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('sparePartsReceipts', 'view'), async (req, res) => {
   try {
     const receipt = await SparePartReceipt.findById(req.params.id, req.user.companyId);
     if (!receipt) return res.status(404).json({ error: 'Not found' });
@@ -63,7 +64,7 @@ router.get('/:id', async (req, res) => {
  * @param {Object} req.body - Данные приходного (номер, дата, позиции запчастей)
  * @returns {Object} Созданный приходной документ (201)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('sparePartsReceipts', 'edit'), async (req, res) => {
   try {
     const receipt = await SparePartReceipt.create(req.body, req.user.companyId);
     res.status(201).json(receipt);
@@ -80,7 +81,7 @@ router.post('/', async (req, res) => {
  * @returns {Object} Результат операции
  * @returns {404} Если документ не найден
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('sparePartsReceipts', 'edit'), async (req, res) => {
   try {
     const deleted = await SparePartReceipt.remove(req.params.id, req.user.companyId);
     if (!deleted) return res.status(404).json({ error: 'Not found' });

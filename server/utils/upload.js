@@ -99,4 +99,4 @@ const pdfUpload = multer({
   fileFilter: pdfFilter
 });
 
-module.exports = { imageUpload, incidentUpload, excelUpload, pdfUpload };
+module.exports = { imageUpload, incidentUpload, excelUpload, pdfUpload, UPLOADS_DIR };

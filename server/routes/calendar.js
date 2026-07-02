@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const { getCalendarEvents } = require('../utils/schedule');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /calendar
@@ -15,7 +16,7 @@ const { getCalendarEvents } = require('../utils/schedule');
  * @param {number} req.query.year - Год (например, 2026)
  * @returns {Object[]} Список событий календаря на заданный период
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('schedule', 'view'), async (req, res) => {
   try {
     const now = new Date();
     const month = parseInt(req.query.month);

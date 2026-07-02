@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const Room = require('../models/room');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /rooms
@@ -16,7 +17,7 @@ const Room = require('../models/room');
  * @param {string} [req.query.search] - Поиск по названию, описанию, зданию
  * @returns {Object[]} Список помещений
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('rooms', 'view'), async (req, res) => {
   try {
     let rooms = await Room.findAll(req.user.companyId);
     const { name, building, search } = req.query;
@@ -50,7 +51,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Данные помещения
  * @returns {404} Если помещение не найдено
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('rooms', 'view'), async (req, res) => {
   try {
     const room = await Room.findById(req.params.id, req.user.companyId);
     if (!room) {
@@ -69,7 +70,7 @@ router.get('/:id', async (req, res) => {
  * @param {Object} req.body - Данные помещения (name, building, description, responsibleEmployeeId)
  * @returns {Object} Созданное помещение (201)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('rooms', 'edit'), async (req, res) => {
   try {
     const room = await Room.create(req.body, req.user.companyId);
     res.status(201).json(room);
@@ -87,7 +88,7 @@ router.post('/', async (req, res) => {
  * @returns {Object} Обновлённое помещение
  * @returns {404} Если помещение не найдено
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('rooms', 'edit'), async (req, res) => {
   try {
     const room = await Room.update(req.params.id, req.body, req.user.companyId);
     if (!room) {
@@ -107,7 +108,7 @@ router.put('/:id', async (req, res) => {
  * @returns {Object} Сообщение об успешном удалении
  * @returns {404} Если помещение не найдено
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('rooms', 'edit'), async (req, res) => {
   try {
     const deleted = await Room.remove(req.params.id, req.user.companyId);
     if (!deleted) {

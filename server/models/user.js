@@ -65,7 +65,7 @@ module.exports = {
              p.name as position_name, p.permissions as position_permissions,
              e.first_name, e.last_name
       FROM users u
-      LEFT JOIN positions p ON u.position_id = p.id
+      LEFT JOIN positions p ON u.position_id = p.id AND p.company_id = u.company_id
       LEFT JOIN employees e ON u.employee_id = e.id
       WHERE u.company_id = $1 AND u.role != 'superadmin'
       ORDER BY u.created_at
@@ -89,7 +89,7 @@ module.exports = {
              p.name as position_name, p.permissions as position_permissions,
              e.first_name, e.last_name
       FROM users u
-      LEFT JOIN positions p ON u.position_id = p.id
+      LEFT JOIN positions p ON u.position_id = p.id AND p.company_id = u.company_id
       LEFT JOIN employees e ON u.employee_id = e.id
       ORDER BY u.created_at
     `);
@@ -107,14 +107,19 @@ module.exports = {
    * @param {number} id - Идентификатор пользователя
    * @returns {Promise<Object|null>} Объект пользователя или null
    */
-  findById: async (id) => {
-    const { rows } = await query(`
-      SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.created_at, u.updated_at,
+  findById: async (id, companyId) => {
+    const params = [id];
+    let sql = `
+      SELECT u.id, u.username, u.full_name, u.position_id, u.employee_id, u.company_id, u.created_at, u.updated_at,
              p.name as position_name, p.permissions as position_permissions
       FROM users u
-      LEFT JOIN positions p ON u.position_id = p.id
-      WHERE u.id = $1
-    `, [id]);
+      LEFT JOIN positions p ON u.position_id = p.id AND p.company_id = u.company_id
+      WHERE u.id = $1`;
+    if (companyId) {
+      sql += ' AND u.company_id = $2';
+      params.push(companyId);
+    }
+    const { rows } = await query(sql, params);
     if (!rows[0]) return null;
     const r = rows[0];
     return {
@@ -134,7 +139,7 @@ module.exports = {
     const { rows } = await query(`
       SELECT u.*, p.name as position_name, p.permissions as position_permissions
       FROM users u
-      LEFT JOIN positions p ON u.position_id = p.id
+      LEFT JOIN positions p ON u.position_id = p.id AND p.company_id = u.company_id
       WHERE u.username = $1
     `, [username]);
     return rows[0] || null;
@@ -157,8 +162,8 @@ module.exports = {
 
     const hash = bcrypt.hashSync(data.password, 10);
     const { rows } = await query(
-      'INSERT INTO users (username, password_hash, full_name, position_id, employee_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, full_name, position_id, employee_id, created_at, updated_at',
-      [data.username, hash, data.fullName || '', data.positionId || null, data.employeeId || null]
+      'INSERT INTO users (username, password_hash, full_name, position_id, employee_id, company_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, full_name, position_id, employee_id, company_id, created_at, updated_at',
+      [data.username, hash, data.fullName || '', data.positionId || null, data.employeeId || null, data.companyId || null]
     );
     return mapRow(rows[0]);
   },
@@ -174,7 +179,7 @@ module.exports = {
    * @param {number} [data.employeeId] - ID сотрудника
    * @returns {Promise<Object|null>} Обновлённый пользователь или null
    */
-  update: async (id, data) => {
+  update: async (id, data, companyId) => {
     const mapped = {};
     if (data.password) {
       mapped.password_hash = bcrypt.hashSync(data.password, 10);
@@ -185,21 +190,28 @@ module.exports = {
     mapped.updated_at = new Date();
 
     const keys = Object.keys(mapped);
+    if (keys.length === 0) return null;
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
-    const vals = keys.map(k => mapped[k]);
+    const vals = keys.map((k) => mapped[k]);
     vals.push(id);
-    const { rows } = await query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING id, username, full_name, position_id, employee_id, created_at, updated_at`, vals);
+    let sql = `UPDATE users SET ${sets.join(', ')} WHERE id = $${vals.length}`;
+    if (companyId) {
+      vals.push(companyId);
+      sql += ` AND company_id = $${vals.length}`;
+    }
+    sql += ' RETURNING id, username, full_name, position_id, employee_id, company_id, created_at, updated_at';
+    const { rows } = await query(sql, vals);
     return mapRow(rows[0]);
   },
 
-  /**
-   * Удаляет пользователя по ID.
-   * @async
-   * @param {number} id - Идентификатор пользователя
-   * @returns {Promise<boolean>} true если удалён, иначе false
-   */
-  remove: async (id) => {
-    const { rowCount } = await query('DELETE FROM users WHERE id = $1', [id]);
+  remove: async (id, companyId) => {
+    const params = [id];
+    let sql = 'DELETE FROM users WHERE id = $1';
+    if (companyId) {
+      sql += ' AND company_id = $2';
+      params.push(companyId);
+    }
+    const { rowCount } = await query(sql, params);
     return rowCount > 0;
   },
 

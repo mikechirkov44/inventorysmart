@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const Work = require('../models/work');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /works
@@ -16,7 +17,7 @@ const Work = require('../models/work');
  * @param {string} [req.query.search] - Поиск по названию и описанию
  * @returns {Object[]} Список работ
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('works', 'view'), async (req, res) => {
   try {
     let works = await Work.findAll(req.user.companyId);
     const { name, category, search } = req.query;
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Данные работы
  * @returns {404} Если работа не найдена
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('works', 'view'), async (req, res) => {
   try {
     const work = await Work.findById(req.params.id, req.user.companyId);
     if (!work) {
@@ -68,7 +69,7 @@ router.get('/:id', async (req, res) => {
  * @param {Object} req.body - Данные работы (name, description, frequencyDays, category)
  * @returns {Object} Созданная работа (201)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('works', 'edit'), async (req, res) => {
   try {
     const work = await Work.create(req.body, req.user.companyId);
     res.status(201).json(work);
@@ -86,7 +87,7 @@ router.post('/', async (req, res) => {
  * @returns {Object} Обновлённая работа
  * @returns {404} Если работа не найдена
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('works', 'edit'), async (req, res) => {
   try {
     const work = await Work.update(req.params.id, req.body, req.user.companyId);
     if (!work) {
@@ -106,7 +107,7 @@ router.put('/:id', async (req, res) => {
  * @returns {Object} Сообщение об успешном удалении
  * @returns {404} Если работа не найдена
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('works', 'edit'), async (req, res) => {
   try {
     const deleted = await Work.remove(req.params.id, req.user.companyId);
     if (!deleted) {

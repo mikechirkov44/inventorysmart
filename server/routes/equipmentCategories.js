@@ -6,16 +6,13 @@
 const express = require('express');
 const router = express.Router();
 const EquipmentCategory = require('../models/equipmentCategory');
-const { authenticate: authenticateToken } = require('../middleware/auth');
-
-// All routes require authentication
-router.use(authenticateToken);
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /equipment-categories
  * @description Получение всех категорий оборудования
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     const categories = await EquipmentCategory.findAll(req.user.companyId);
     res.json(categories);
@@ -29,7 +26,7 @@ router.get('/', async (req, res) => {
  * @route GET /equipment-categories/:id
  * @description Получение категории по ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     const category = await EquipmentCategory.findById(req.params.id, req.user.companyId);
     if (!category) {
@@ -46,7 +43,7 @@ router.get('/:id', async (req, res) => {
  * @route POST /equipment-categories
  * @description Создание новой категории
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const { name, description } = req.body;
     if (!name || !name.trim()) {
@@ -67,7 +64,7 @@ router.post('/', async (req, res) => {
  * @route PUT /equipment-categories/:id
  * @description Обновление категории
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const { name, description } = req.body;
     if (!name || !name.trim()) {
@@ -91,7 +88,7 @@ router.put('/:id', async (req, res) => {
  * @route DELETE /equipment-categories/:id
  * @description Удаление категории
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const success = await EquipmentCategory.remove(req.params.id, req.user.companyId);
     if (!success) {

@@ -12,13 +12,14 @@ const SparePart = require('../models/sparePart');
 const Notification = require('../models/notification');
 const User = require('../models/user');
 const { imageUpload } = require('../utils/upload');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /work-orders
  * @description Получение списка всех наряд-заказов
  * @returns {Object[]} Список наряд-заказов
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('workOrders', 'view'), async (req, res) => {
   try {
     const workOrders = await WorkOrder.findAll(req.user.companyId);
     res.json(workOrders);
@@ -35,7 +36,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Данные наряд-заказа
  * @returns {404} Если наряд-заказ не найден
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('workOrders', 'view'), async (req, res) => {
   try {
     const workOrder = await WorkOrder.findById(req.params.id, req.user.companyId);
     if (!workOrder) {
@@ -54,7 +55,7 @@ router.get('/:id', async (req, res) => {
  * @param {string} req.params.equipmentId - Идентификатор оборудования
  * @returns {Object[]} Список наряд-заказов для указанного оборудования
  */
-router.get('/equipment/:equipmentId', async (req, res) => {
+router.get('/equipment/:equipmentId', requirePermission('workOrders', 'view'), async (req, res) => {
   try {
     const workOrders = await WorkOrder.findByEquipmentId(req.params.equipmentId, req.user.companyId);
     res.json(workOrders);
@@ -71,7 +72,7 @@ router.get('/equipment/:equipmentId', async (req, res) => {
  * @param {File[]} [req.files] - Фотографии (до 10 файлов, multipart/form-data)
  * @returns {Object} Созданный наряд-заказ (201)
  */
-router.post('/', imageUpload.array('photos', 10), async (req, res) => {
+router.post('/', requirePermission('workOrders', 'edit'), imageUpload.array('photos', 10), async (req, res) => {
   try {
     const workOrderData = req.body;
     if (req.files && req.files.length > 0) {
@@ -96,7 +97,7 @@ router.post('/', imageUpload.array('photos', 10), async (req, res) => {
  * @returns {Object[]} [return.sparePartsDeducted] - Списанные запчасти (при завершении)
  * @returns {404} Если наряд-заказ не найден
  */
-router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
+router.put('/:id', requirePermission('workOrders', 'edit'), imageUpload.array('photos', 10), async (req, res) => {
   try {
     const workOrderData = req.body;
     if (req.files && req.files.length > 0) {
@@ -172,7 +173,7 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
  * @returns {Object} Сообщение об успешном удалении
  * @returns {404} Если наряд-заказ не найден
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('workOrders', 'edit'), async (req, res) => {
   try {
     const deleted = await WorkOrder.remove(req.params.id, req.user.companyId);
     if (!deleted) {
@@ -191,7 +192,7 @@ router.delete('/:id', async (req, res) => {
  * @param {string} req.params.id - Идентификатор наряд-заказа
  * @returns {Object} Обновлённый наряд-заказ с информацией о принятии
  */
-router.post('/:id/accept', async (req, res) => {
+router.post('/:id/accept', requirePermission('workOrders', 'edit'), async (req, res) => {
   try {
     const { overdueReasonId } = req.body || {};
     const workOrder = await WorkOrder.accept(req.params.id, req.user.companyId, req.user.id, overdueReasonId || null);

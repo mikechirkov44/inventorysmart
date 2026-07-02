@@ -5,16 +5,14 @@
 
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../models/user');
+const User = require('../models/user');
+const Position = require('../models/position');
 
 /**
  * Проверяет JWT-токен из заголовка Authorization и декодирует
  * данные пользователя в req.user
- * @param {import('express').Request} req - Объект запроса Express
- * @param {import('express').Response} res - Объект ответа Express
- * @param {import('express').NextFunction} next - Функция передачи управления дальше
- * @returns {void}
  */
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authorization required' });
@@ -23,8 +21,32 @@ function authenticate(req, res, next) {
   const token = header.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
+
+    if (decoded.role === 'superadmin') {
+      req.user = decoded;
+      return next();
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user || (decoded.companyId && user.companyId !== decoded.companyId)) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    let permissions = decoded.permissions || {};
+    if (user.positionId && user.companyId) {
+      const position = await Position.findById(user.positionId, user.companyId);
+      if (position?.permissions) {
+        permissions = position.permissions;
+      }
+    }
+
+    req.user = {
+      ...decoded,
+      id: user.id,
+      companyId: user.companyId,
+      permissions,
+    };
+    return next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
@@ -33,9 +55,6 @@ function authenticate(req, res, next) {
 /**
  * Фабрика middleware, проверяющего наличие у пользователя права
  * на указанное действие (view / edit / full) над ресурсом
- * @param {string} resource - Идентификатор ресурса (equipment, works, rooms и т.д.)
- * @param {string} action - Требуемое действие ('view' или 'edit')
- * @returns {import('express').RequestHandler} Middleware-функция Express
  */
 function requirePermission(resource, action) {
   return (req, res, next) => {
@@ -69,10 +88,6 @@ function requirePermission(resource, action) {
 
 /**
  * Middleware, разрешающее доступ только пользователям с ролью superadmin
- * @param {import('express').Request} req - Объект запроса Express
- * @param {import('express').Response} res - Объект ответа Express
- * @param {import('express').NextFunction} next - Функция передачи управления дальше
- * @returns {void}
  */
 function requireSuperadmin(req, res, next) {
   if (!req.user) {

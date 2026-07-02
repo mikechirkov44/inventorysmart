@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const OverdueReason = require('../models/overdueReasons');
-const { authenticate } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', requirePermission('overdueReasons', 'view'), async (req, res) => {
   try {
     const items = await OverdueReason.findAll(req.user.companyId);
     res.json(items);
@@ -12,7 +12,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', requirePermission('overdueReasons', 'edit'), async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
@@ -28,7 +28,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', requirePermission('overdueReasons', 'edit'), async (req, res) => {
   try {
     const { name } = req.body;
     const item = await OverdueReason.update(req.params.id, req.user.companyId, { name });
@@ -39,7 +39,7 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', requirePermission('overdueReasons', 'edit'), async (req, res) => {
   try {
     await OverdueReason.delete(req.params.id, req.user.companyId);
     res.json({ success: true });

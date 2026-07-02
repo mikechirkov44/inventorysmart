@@ -6,6 +6,9 @@
  */
 
 const { query } = require('../db');
+const { pickAllowed } = require('../utils/allowlist');
+
+const WORK_UPDATE_FIELDS = ['name', 'description', 'frequencyDays', 'category', 'priority'];
 
 /**
  * Преобразует строку из БД в объект работы.
@@ -74,11 +77,12 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённая работа или null
    */
   update: async (id, data, companyId) => {
+    const safeData = pickAllowed(data, WORK_UPDATE_FIELDS);
     const fieldMap = { frequencyDays: 'frequency_days' };
     const fields = [];
     const values = [];
     let i = 1;
-    for (const [key, val] of Object.entries(data)) {
+    for (const [key, val] of Object.entries(safeData)) {
       if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       fields.push(`${col} = $${i}`);

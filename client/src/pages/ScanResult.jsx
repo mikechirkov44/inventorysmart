@@ -9,6 +9,7 @@ import { useParams, Link } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
 import CustomSelect from '../components/CustomSelect';
+import { resolveUploadField } from '../utils/uploads';
 
 /** Варианты периодичности работ для отображения */
 const FREQUENCY_OPTIONS = [
@@ -176,7 +177,7 @@ function ScanResult() {
       <div className="equipment-info-card">
         <div className="equipment-photo">
           {equipment.photo
-            ? <img src={`/uploads/${equipment.photo}`} alt={equipment.name} />
+            ? <img src={resolveUploadField(equipment, 'photo')} alt={equipment.name} />
             : <div className="no-photo">Нет фото</div>}
         </div>
         <div className="equipment-details">

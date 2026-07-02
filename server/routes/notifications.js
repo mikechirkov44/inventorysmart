@@ -11,6 +11,7 @@ const { getUpcomingTasks } = require('../utils/schedule');
 const Employee = require('../models/employee');
 const Room = require('../models/room');
 const Equipment = require('../models/equipment');
+const { requirePermission } = require('../middleware/auth');
 
 /**
  * @route GET /notifications
@@ -18,7 +19,7 @@ const Equipment = require('../models/equipment');
  * Для администраторов — все уведомления. Для сотрудников — персональные + генерация уведомлений о предстоящих работах.
  * @returns {Object[]} Список уведомлений
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('settings', 'view'), async (req, res) => {
   try {
     const userId = req.user.id;
     const userPermissions = req.user.permissions || {};
@@ -77,7 +78,7 @@ router.get('/', async (req, res) => {
  * @returns {Object} Количество непрочитанных уведомлений
  * @returns {number} return.count
  */
-router.get('/unread-count', async (req, res) => {
+router.get('/unread-count', requirePermission('settings', 'view'), async (req, res) => {
   try {
     const userId = req.user.id;
     const userPermissions = req.user.permissions || {};
@@ -104,7 +105,7 @@ router.get('/unread-count', async (req, res) => {
  * @returns {Object} Обновлённое уведомление
  * @returns {404} Если уведомление не найдено
  */
-router.put('/:id/read', async (req, res) => {
+router.put('/:id/read', requirePermission('settings', 'edit'), async (req, res) => {
   try {
     const notif = await Notification.markRead(req.params.id);
     if (!notif) return res.status(404).json({ error: 'Not found' });
@@ -122,7 +123,7 @@ router.put('/:id/read', async (req, res) => {
  * @returns {Object} Обновлённое уведомление
  * @returns {404} Если уведомление не найдено
  */
-router.put('/:id/unread', async (req, res) => {
+router.put('/:id/unread', requirePermission('settings', 'edit'), async (req, res) => {
   try {
     const notif = await Notification.markUnread(req.params.id);
     if (!notif) return res.status(404).json({ error: 'Not found' });
@@ -138,7 +139,7 @@ router.put('/:id/unread', async (req, res) => {
  * @description Пометка всех уведомлений пользователя как прочитанных
  * @returns {Object} Результат операции
  */
-router.put('/read-all', async (req, res) => {
+router.put('/read-all', requirePermission('settings', 'edit'), async (req, res) => {
   try {
     const userPermissions = req.user.permissions || {};
     const isAdmin = userPermissions.settings === 'full';
@@ -162,7 +163,7 @@ router.put('/read-all', async (req, res) => {
  * @returns {Object} Результат операции
  * @returns {404} Если уведомление не найдено
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('settings', 'edit'), async (req, res) => {
   try {
     const deleted = await Notification.remove(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Not found' });

@@ -19,7 +19,7 @@ router.use(authenticate);
  * @route GET /equipment
  * @description Получение списка оборудования с фильтрацией
  */
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     let equipment = await Equipment.findAll(req.user.companyId);
     const { name, category, location, search } = req.query;
@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
  * @route POST /equipment
  * @description Создание нового оборудования
  */
-router.post('/', imageUpload.single('photo'), async (req, res) => {
+router.post('/', requirePermission('equipment', 'edit'), imageUpload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -78,7 +78,7 @@ router.post('/', imageUpload.single('photo'), async (req, res) => {
  * @route GET /equipment/:id/qr
  * @description Генерация QR-кода для оборудования
  */
-router.get('/:id/qr', async (req, res) => {
+router.get('/:id/qr', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id, req.user.companyId);
     if (!equipment) {
@@ -215,7 +215,7 @@ router.post('/:id/operating-hours/intervals', requirePermission('equipment', 'ed
  * @route GET /equipment/:id
  * @description Получение оборудования по идентификатору
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id, req.user.companyId);
     if (!equipment) {
@@ -232,7 +232,7 @@ router.get('/:id', async (req, res) => {
  * @route PUT /equipment/:id
  * @description Обновление данных оборудования
  */
-router.put('/:id', imageUpload.single('photo'), async (req, res) => {
+router.put('/:id', requirePermission('equipment', 'edit'), imageUpload.single('photo'), async (req, res) => {
   try {
     const equipmentData = req.body;
     if (req.file) {
@@ -258,7 +258,7 @@ router.put('/:id', imageUpload.single('photo'), async (req, res) => {
  * @route DELETE /equipment/:id
  * @description Удаление оборудования
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const deleted = await Equipment.remove(req.params.id, req.user.companyId);
     if (!deleted) {
