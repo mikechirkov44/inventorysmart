@@ -1991,6 +1991,12 @@ input, textarea, select { font-family: inherit; }
   border: 1px solid var(--gray-200);
 }
 
+.equipment-view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
 .group-controls {
   display: flex;
   gap: 8px;

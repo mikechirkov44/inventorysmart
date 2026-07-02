@@ -34,7 +34,7 @@ const DEFAULT_COLUMNS = [
   { key: 'actions', label: 'Действия', visible: true },
 ];
 
-function EquipmentTable() {
+function EquipmentTable({ embedded }) {
   /** Состояние данных, фильтров, сортировки */
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -142,13 +142,15 @@ function EquipmentTable() {
 
   return (
     <div className="equipment-table-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Оборудование (таблица)</h1>
-        <div className="header-actions">
-          <Link to="/" className="btn">Карточки</Link>
-          <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
+      {!embedded && (
+        <div className="header">
+          <h1><FolderTree size={24} />Оборудование (таблица)</h1>
+          <div className="header-actions">
+            <Link to="/" className="btn">Карточки</Link>
+            <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 

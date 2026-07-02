@@ -28,8 +28,7 @@ import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-const EquipmentList = lazy(() => import('./pages/EquipmentList'));
-const EquipmentTable = lazy(() => import('./pages/EquipmentTable'));
+const EquipmentPage = lazy(() => import('./pages/EquipmentPage'));
 const EquipmentDetail = lazy(() => import('./pages/EquipmentDetail'));
 const EquipmentForm = lazy(() => import('./pages/EquipmentForm'));
 const QRScanner = lazy(() => import('./pages/QRScanner'));
@@ -123,8 +122,7 @@ function DirDropdown({ collapsed }) {
       </button>
       {open && createPortal(
         <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={menuStyle}>
-          {canView('equipment') && <li><NavLink to="/" end onClick={() => setOpen(false)}>Оборудование (карточки)</NavLink></li>}
-          {canView('equipment') && <li><NavLink to="/equipment-table" onClick={() => setOpen(false)}>Оборудование (таблица)</NavLink></li>}
+          {canView('equipment') && <li><NavLink to="/" end onClick={() => setOpen(false)}>Оборудование</NavLink></li>}
           {(canView('employees') || canView('works') || canView('rooms') || canView('spareParts')) && <li className="nav-dropdown-divider" />}
           {canView('employees') && <li><NavLink to="/employees" onClick={() => setOpen(false)}>Сотрудники</NavLink></li>}
           {canView('works') && <li><NavLink to="/works" onClick={() => setOpen(false)}>Работы</NavLink></li>}
@@ -267,8 +265,8 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <PageWrapper><LoginPage /></PageWrapper>} />
 
       {/* User routes */}
-      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentList /></PageWrapper></ProtectedRoute>} />
-      <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentTable /></PageWrapper></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentDetail /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />

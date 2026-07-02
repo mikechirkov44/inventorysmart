@@ -18,7 +18,7 @@ const STATUS_MAP = {
   needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
 };
 
-function EquipmentList() {
+function EquipmentList({ embedded }) {
   /** Состояние списка оборудования, помещений, загрузки, ошибки, поиска и свёрнутых групп */
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -93,13 +93,15 @@ function EquipmentList() {
 
   return (
     <div className="equipment-list">
-      <div className="header">
-        <h1><FolderTree size={24} />Справочник оборудования</h1>
-        <div className="header-actions">
-          <Link to="/equipment-table" className="btn">Таблица</Link>
-          <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
+      {!embedded && (
+        <div className="header">
+          <h1><FolderTree size={24} />Справочник оборудования</h1>
+          <div className="header-actions">
+            <Link to="/equipment-table" className="btn">Таблица</Link>
+            <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="search-bar">
         <input
