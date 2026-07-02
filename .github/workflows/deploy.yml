@@ -30,13 +30,17 @@ jobs:
 
       - name: Create deploy archive
         run: |
-          tar --exclude='.git' \
-              --exclude='node_modules' \
-              --exclude='client/node_modules' \
-              --exclude='client-admin/node_modules' \
-              --exclude='client/dist' \
-              --exclude='client-admin/dist' \
-              -czf deploy.tar.gz .
+          mkdir -p /tmp/deploy-stage
+          rsync -a \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='client/node_modules' \
+            --exclude='client-admin/node_modules' \
+            --exclude='client/dist' \
+            --exclude='client-admin/dist' \
+            --exclude='deploy.tar.gz' \
+            ./ /tmp/deploy-stage/
+          tar -czf deploy.tar.gz -C /tmp/deploy-stage .
 
       - name: Upload archive to server
         env:
