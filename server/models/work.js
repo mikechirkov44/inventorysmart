@@ -20,6 +20,7 @@ function mapRow(row) {
     description: row.description,
     frequencyDays: row.frequency_days,
     category: row.category,
+    priority: row.priority || 'B',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -59,8 +60,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO works (name, description, frequency_days, category, company_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '', companyId]
+      'INSERT INTO works (name, description, frequency_days, category, priority, company_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '', data.priority || 'B', companyId]
     );
     return mapRow(rows[0]);
   },

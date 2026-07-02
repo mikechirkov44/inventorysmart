@@ -44,6 +44,8 @@ const IncidentsPage = lazy(() => import('./pages/IncidentsPage'));
 const SparePartsDirectory = lazy(() => import('./pages/SparePartsDirectory'));
 const SparePartsReceipts = lazy(() => import('./pages/SparePartsReceipts'));
 const CommonFaultsDirectory = lazy(() => import('./pages/CommonFaultsDirectory'));
+const CausesDirectory = lazy(() => import('./pages/CausesDirectory'));
+const OverdueReasonsDirectory = lazy(() => import('./pages/OverdueReasonsDirectory'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SchedulePage = lazy(() => import('./pages/SchedulePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -103,10 +105,10 @@ function DirDropdown({ collapsed }) {
     }
   }, [open]);
 
-  const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts');
+  const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts') || canView('causes') || canView('overdueReasons');
   if (!hasDirAccess) return null;
 
-  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts', '/common-faults'].some(p => location.pathname === p);
+  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts', '/common-faults', '/causes', '/overdue-reasons'].some(p => location.pathname === p);
 
   const menuStyle = menuPos.isMobile
     ? { position: 'fixed', bottom: 68, left: 8, right: 8, top: 'auto', margin: 0 }
@@ -130,6 +132,8 @@ function DirDropdown({ collapsed }) {
           {canView('equipment') && <li><NavLink to="/equipment-categories" onClick={() => setOpen(false)}>Категории оборудования</NavLink></li>}
           {canView('spareParts') && <li><NavLink to="/spare-parts" onClick={() => setOpen(false)}>ЗИП</NavLink></li>}
           {canView('spareParts') && <li><NavLink to="/common-faults" onClick={() => setOpen(false)}>Типовые неисправности</NavLink></li>}
+          {canView('causes') && <li><NavLink to="/causes" onClick={() => setOpen(false)}>Причины возникновения</NavLink></li>}
+          {canView('overdueReasons') && <li><NavLink to="/overdue-reasons" onClick={() => setOpen(false)}>Причины просрочки</NavLink></li>}
         </ul>,
         document.body
       )}
@@ -270,6 +274,8 @@ function AppRoutes() {
       <Route path="/spare-parts" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><SparePartsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/spare-parts-receipts" element={<ProtectedRoute requiredPermission="sparePartsReceipts"><PageWrapper><SparePartsReceipts /></PageWrapper></ProtectedRoute>} />
       <Route path="/common-faults" element={<ProtectedRoute requiredPermission="spareParts"><PageWrapper><CommonFaultsDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/causes" element={<ProtectedRoute requiredPermission="causes"><PageWrapper><CausesDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/overdue-reasons" element={<ProtectedRoute requiredPermission="overdueReasons"><PageWrapper><OverdueReasonsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute requiredPermission="import"><PageWrapper><ImportExcel /></PageWrapper></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute requiredPermission="settings"><PageWrapper><NotificationsPage /></PageWrapper></ProtectedRoute>} />

@@ -72,6 +72,7 @@ export const workOrderAPI = {
   create: (data) => api.post('/work-orders', data),
   update: (id, data) => api.put(`/work-orders/${id}`, data),
   delete: (id) => api.delete(`/work-orders/${id}`),
+  accept: (id) => api.post(`/work-orders/${id}/accept`),
 };
 
 /** API для справочника работ */
@@ -176,6 +177,22 @@ export const commonFaultsAPI = {
   create: (data) => api.post('/common-faults', data),
   update: (id, data) => api.put(`/common-faults/${id}`, data),
   delete: (id) => api.delete(`/common-faults/${id}`),
+};
+
+/** API для причин возникновения */
+export const causesAPI = {
+  getAll: () => api.get('/causes'),
+  create: (data) => api.post('/causes', data),
+  update: (id, data) => api.put(`/causes/${id}`, data),
+  delete: (id) => api.delete(`/causes/${id}`),
+};
+
+/** API для причин просрочки выполнения работ */
+export const overdueReasonsAPI = {
+  getAll: () => api.get('/overdue-reasons'),
+  create: (data) => api.post('/overdue-reasons', data),
+  update: (id, data) => api.put(`/overdue-reasons/${id}`, data),
+  delete: (id) => api.delete(`/overdue-reasons/${id}`),
 };
 
 /** API для импорта данных из Excel */

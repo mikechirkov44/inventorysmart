@@ -30,7 +30,17 @@ function mapRow(row) {
     sparePartsUsed,
     completedAt: row.completed_at,
     createdAt: row.created_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    causeId: row.cause_id,
+    causeName: row.cause_name,
+    overdueReasonId: row.overdue_reason_id,
+    overdueReasonName: row.overdue_reason_name,
+    acceptedBy: row.accepted_by,
+    acceptedByName: row.accepted_by_name,
+    acceptedAt: row.accepted_at,
+    dueDate: row.due_date,
+    completedOnTime: row.completed_on_time,
+    priority: row.priority
   };
 }
 
@@ -41,7 +51,17 @@ module.exports = {
    * @returns {Promise<Array<Object>>} Список нарядов-заказов
    */
   findAll: async (companyId) => {
-    const { rows } = await query('SELECT * FROM work_orders WHERE company_id = $1 ORDER BY created_at DESC', [companyId]);
+    const { rows } = await query(
+      `SELECT wo.*, c.name as cause_name, or2.name as overdue_reason_name,
+              u.full_name as accepted_by_name, w.priority
+       FROM work_orders wo
+       LEFT JOIN causes c ON c.id = wo.cause_id
+       LEFT JOIN overdue_reasons or2 ON or2.id = wo.overdue_reason_id
+       LEFT JOIN users u ON u.id = wo.accepted_by
+       LEFT JOIN works w ON w.id = wo.task_id
+       WHERE wo.company_id = $1 ORDER BY wo.created_at DESC`,
+      [companyId]
+    );
     return rows.map(mapRow);
   },
 
@@ -52,7 +72,17 @@ module.exports = {
    * @returns {Promise<Object|null>} Объект наряда-заказа или null
    */
   findById: async (id, companyId) => {
-    const { rows } = await query('SELECT * FROM work_orders WHERE id = $1 AND company_id = $2', [id, companyId]);
+    const { rows } = await query(
+      `SELECT wo.*, c.name as cause_name, or2.name as overdue_reason_name,
+              u.full_name as accepted_by_name, w.priority
+       FROM work_orders wo
+       LEFT JOIN causes c ON c.id = wo.cause_id
+       LEFT JOIN overdue_reasons or2 ON or2.id = wo.overdue_reason_id
+       LEFT JOIN users u ON u.id = wo.accepted_by
+       LEFT JOIN works w ON w.id = wo.task_id
+       WHERE wo.id = $1 AND wo.company_id = $2`,
+      [id, companyId]
+    );
     return mapRow(rows[0]);
   },
 
@@ -63,7 +93,17 @@ module.exports = {
    * @returns {Promise<Array<Object>>} Список нарядов-заказов
    */
   findByEquipmentId: async (equipmentId, companyId) => {
-    const { rows } = await query('SELECT * FROM work_orders WHERE equipment_id = $1 AND company_id = $2 ORDER BY created_at DESC', [equipmentId, companyId]);
+    const { rows } = await query(
+      `SELECT wo.*, c.name as cause_name, or2.name as overdue_reason_name,
+              u.full_name as accepted_by_name, w.priority
+       FROM work_orders wo
+       LEFT JOIN causes c ON c.id = wo.cause_id
+       LEFT JOIN overdue_reasons or2 ON or2.id = wo.overdue_reason_id
+       LEFT JOIN users u ON u.id = wo.accepted_by
+       LEFT JOIN works w ON w.id = wo.task_id
+       WHERE wo.equipment_id = $1 AND wo.company_id = $2 ORDER BY wo.created_at DESC`,
+      [equipmentId, companyId]
+    );
     return rows.map(mapRow);
   },
 
@@ -84,7 +124,8 @@ module.exports = {
   create: async (data, companyId) => {
     const status = data.status || 'pending';
     const { rows } = await query(
-      'INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+      `INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id, cause_id, due_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         data.equipmentId,
         data.taskId || null,
@@ -95,7 +136,9 @@ module.exports = {
         JSON.stringify(data.photos || []),
         JSON.stringify(data.sparePartsUsed || []),
         status === 'completed' ? new Date().toISOString() : null,
-        companyId
+        companyId,
+        data.causeId || null,
+        data.dueDate || null
       ]
     );
     return mapRow(rows[0]);
@@ -165,5 +208,37 @@ module.exports = {
     const results = [];
     for (const item of items) { results.push(await module.exports.create(item, companyId)); }
     return results;
+  },
+
+  /**
+   * Принять выполненную работу руководителем.
+   * @async
+   * @param {number} id - Идентификатор наряда-заказа
+   * @param {string} companyId - ID компании
+   * @param {string} userId - ID пользователя (руководителя)
+   * @returns {Promise<Object|null>} Обновлённый наряд-заказ или null
+   */
+  accept: async (id, companyId, userId) => {
+    const { rows } = await query(
+      `UPDATE work_orders SET accepted_by = $1, accepted_at = NOW(), updated_at = NOW()
+       WHERE id = $2 AND company_id = $3 AND status = 'completed'
+       RETURNING *`,
+      [userId, id, companyId]
+    );
+    if (rows.length === 0) return null;
+
+    // Get full data with joins
+    const { rows: fullRows } = await query(
+      `SELECT wo.*, c.name as cause_name, or2.name as overdue_reason_name,
+              u.full_name as accepted_by_name, w.priority
+       FROM work_orders wo
+       LEFT JOIN causes c ON c.id = wo.cause_id
+       LEFT JOIN overdue_reasons or2 ON or2.id = wo.overdue_reason_id
+       LEFT JOIN users u ON u.id = wo.accepted_by
+       LEFT JOIN works w ON w.id = wo.task_id
+       WHERE wo.id = $1`,
+      [id]
+    );
+    return mapRow(fullRows[0]);
   }
 };

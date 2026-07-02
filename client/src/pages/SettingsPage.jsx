@@ -45,6 +45,9 @@ const PERMISSION_LABELS = {
   analytics: 'Аналитика',
   import: 'Импорт',
   instructions: 'Инструкции',
+  commonFaults: 'Типовые неисправности',
+  causes: 'Причины возникновения',
+  overdueReasons: 'Причины просрочки',
   settings: 'Настройки',
 };
 

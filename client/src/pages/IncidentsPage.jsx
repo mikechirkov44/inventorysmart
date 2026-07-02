@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Trash2, FileText } from 'lucide-react';
-import api, { incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI } from '../services/api';
+import api, { incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI, causesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
@@ -37,6 +37,8 @@ function IncidentsPage() {
   const [newPreviews, setNewPreviews] = useState([]);
   const [commonFaults, setCommonFaults] = useState([]);
   const [newCommonFaultId, setNewCommonFaultId] = useState('');
+  const [allCauses, setAllCauses] = useState([]);
+  const [newCauseId, setNewCauseId] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const fileInputRef = useRef(null);
   const addModalRef = useRef(null);
@@ -76,6 +78,14 @@ function IncidentsPage() {
     };
     fetchSettings();
     fetchAllEquipment();
+
+    const fetchCauses = async () => {
+      try {
+        const res = await causesAPI.getAll();
+        setAllCauses(res.data);
+      } catch {}
+    };
+    fetchCauses();
   }, []);
 
   /** Загрузка типовых неисправностей при выборе оборудования */
@@ -141,6 +151,7 @@ function IncidentsPage() {
       const formData = new FormData();
       formData.append('equipmentId', newEquipmentId);
       if (newCommonFaultId) formData.append('commonFaultId', newCommonFaultId);
+      if (newCauseId) formData.append('causeId', newCauseId);
       formData.append('description', newDescription);
       newPhotos.forEach(photo => formData.append('photos', photo));
       await incidentsAPI.create(formData);
@@ -152,6 +163,7 @@ function IncidentsPage() {
       setNewPreviews([]);
       setNewCommonFaultId('');
       setCommonFaults([]);
+      setNewCauseId('');
       fetchIncidents();
     } catch {
       toast.error('Ошибка', 'Не удалось создать инцидент');
@@ -251,6 +263,9 @@ function IncidentsPage() {
               <p><strong>Дата:</strong> {new Date(selectedIncident.createdAt).toLocaleString('ru-RU')}</p>
               <p><strong>Сотрудник:</strong> {selectedIncident.employeeName}</p>
               <p><strong>Проблема:</strong> {selectedIncident.description}</p>
+              {selectedIncident.causeName && (
+                <p><strong>Причина:</strong> {selectedIncident.causeName}</p>
+              )}
 
               {selectedIncident.photos?.length > 0 && (
                 <div className="incident-photos">
@@ -310,6 +325,17 @@ function IncidentsPage() {
                   }}
                   placeholder="Выберите из справочника (необязательно)"
                   options={commonFaults.map(f => ({ value: f.id, label: f.name }))}
+                />
+              </div>
+            )}
+            {allCauses.length > 0 && (
+              <div className="form-group">
+                <label>Причина возникновения</label>
+                <CustomSelect
+                  value={newCauseId}
+                  onChange={setNewCauseId}
+                  placeholder="Выберите причину (необязательно)"
+                  options={allCauses.map(c => ({ value: c.id, label: c.name }))}
                 />
               </div>
             )}

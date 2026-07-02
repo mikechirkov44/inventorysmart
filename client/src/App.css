@@ -2464,6 +2464,21 @@ input, textarea, select { font-family: inherit; }
   letter-spacing: 0.1px;
 }
 
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.priority-a { background: #fee2e2; color: #991b1b; }
+.priority-b { background: #fef3c7; color: #92400e; }
+.priority-c { background: #d1fae5; color: #065f46; }
+
 .equipment-count-badge {
   display: inline-flex;
   align-items: center;

@@ -28,6 +28,8 @@ function mapRow(row) {
     status: row.status,
     adminNotes: row.admin_notes,
     commonFaultId: row.common_fault_id,
+    causeId: row.cause_id,
+    causeName: row.cause_name,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -40,7 +42,13 @@ module.exports = {
    * @returns {Promise<Array<Object>>} Список инцидентов
    */
   findAll: async (companyId) => {
-    const { rows } = await query('SELECT * FROM incidents WHERE company_id = $1 ORDER BY created_at DESC', [companyId]);
+    const { rows } = await query(
+      `SELECT i.*, c.name as cause_name
+       FROM incidents i
+       LEFT JOIN causes c ON c.id = i.cause_id
+       WHERE i.company_id = $1 ORDER BY i.created_at DESC`,
+      [companyId]
+    );
     return rows.map(mapRow);
   },
 
@@ -79,8 +87,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes, common_fault_id, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '', data.commonFaultId || null, companyId]
+      'INSERT INTO incidents (equipment_id, employee_id, employee_name, description, photos, status, admin_notes, common_fault_id, cause_id, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+      [data.equipmentId, data.employeeId || null, data.employeeName || '', data.description || '', JSON.stringify(data.photos || []), 'new', '', data.commonFaultId || null, data.causeId || null, companyId]
     );
     return mapRow(rows[0]);
   },

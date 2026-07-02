@@ -158,4 +158,23 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /work-orders/:id/accept
+ * @description Принять выполненную работу руководителем
+ * @param {string} req.params.id - Идентификатор наряд-заказа
+ * @returns {Object} Обновлённый наряд-заказ с информацией о принятии
+ */
+router.post('/:id/accept', async (req, res) => {
+  try {
+    const workOrder = await WorkOrder.accept(req.params.id, req.user.companyId, req.user.id);
+    if (!workOrder) {
+      return res.status(404).json({ error: 'Work order not found' });
+    }
+    res.json(workOrder);
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 module.exports = router;

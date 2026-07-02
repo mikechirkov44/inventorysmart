@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, CheckCircle, Trash2 } from 'lucide-react';
-import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI } from '../services/api';
+import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI, causesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
@@ -19,6 +19,7 @@ function WorkOrders() {
   const [equipment, setEquipment] = useState([]);
   const [allSpareParts, setAllSpareParts] = useState([]);
   const [allWorks, setAllWorks] = useState([]);
+  const [allCauses, setAllCauses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -30,6 +31,8 @@ function WorkOrders() {
   const [newWorkId, setNewWorkId] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newStatus, setNewStatus] = useState('pending');
+  const [newCauseId, setNewCauseId] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const addModalRef = useRef(null);
 
@@ -55,16 +58,18 @@ function WorkOrders() {
   /** Параллельная загрузка нарядов, оборудования, запчастей и работ */
   const fetchData = async () => {
     try {
-      const [workOrdersRes, equipmentRes, spRes, worksRes] = await Promise.all([
+      const [workOrdersRes, equipmentRes, spRes, worksRes, causesRes] = await Promise.all([
         workOrderAPI.getAll(),
         equipmentAPI.getAll(),
         sparePartsAPI.getAll(),
-        worksAPI.getAll()
+        worksAPI.getAll(),
+        causesAPI.getAll()
       ]);
       setWorkOrders(workOrdersRes.data);
       setEquipment(equipmentRes.data);
       setAllSpareParts(spRes.data);
       setAllWorks(worksRes.data);
+      setAllCauses(causesRes.data);
       setLoading(false);
     } catch (err) {
       setError('Ошибка загрузки данных');
@@ -174,6 +179,19 @@ function WorkOrders() {
     }
   };
 
+  /** Принятие выполненной работы руководителем */
+  const handleAccept = async (id) => {
+    const ok = await confirm({ title: 'Принять работу?', message: 'Подтвердить принятие выполненной работы руководителем.', type: 'warning', confirmText: 'Принять' });
+    if (!ok) return;
+    try {
+      await workOrderAPI.accept(id);
+      toast.success('Работа принята руководителем');
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка', 'Не удалось принять работу');
+    }
+  };
+
   /** Создание новой записи журнала работ вручную */
   const handleAddSubmit = async () => {
     if (!newEquipmentId) {
@@ -192,6 +210,8 @@ function WorkOrders() {
         taskId: newWorkId,
         taskName: work ? work.name : '',
         status: newStatus,
+        causeId: newCauseId || undefined,
+        dueDate: newDueDate || undefined,
       };
       if (newDate && newStatus === 'completed') {
         payload.completedAt = newDate;
@@ -203,6 +223,8 @@ function WorkOrders() {
       setNewWorkId('');
       setNewDate('');
       setNewStatus('pending');
+      setNewCauseId('');
+      setNewDueDate('');
       fetchData();
     } catch (err) {
       toast.error('Ошибка', 'Не удалось создать запись');
@@ -252,44 +274,51 @@ function WorkOrders() {
           <table className="data-table">
             <thead>
               <tr>
+                <th>Дата</th>
                 <th>Оборудование</th>
                 <th>Работа</th>
+                <th>Приоритет</th>
                 <th>Статус</th>
-                <th>Дата</th>
-                <th>Мастер</th>
-                <th>ЗИП</th>
+                <th>Причина</th>
+                <th>Срок</th>
+                <th>Принято</th>
                 <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {filteredWorkOrders.length === 0 ? (
-                <tr><td colSpan="7" className="no-results-cell">Записей не найдено</td></tr>
+                <tr><td colSpan="9" className="no-results-cell">Записей не найдено</td></tr>
               ) : (
                 filteredWorkOrders.map(wo => (
                   <tr key={wo.id} className={`wo-row-${wo.status}`}>
+                    <td>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</td>
                     <td>
                       <Link to={`/equipment/${wo.equipmentId}`} className="table-link">
                         {getEquipmentName(wo.equipmentId)}
                       </Link>
                     </td>
                     <td>{wo.taskName}</td>
+                    <td><span className={`priority-badge priority-${(wo.priority || 'B').toLowerCase()}`}>{wo.priority || 'B'}</span></td>
                     <td>
                       <span className={`status-badge ${wo.status === 'completed' ? 'status-working' : 'status-needs-repair'}`}>
                         {wo.status === 'completed' ? 'Выполнена' : 'В ожидании'}
                       </span>
                     </td>
-                    <td>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</td>
-                    <td>{wo.masterName || '—'}</td>
+                    <td className="td-muted">{wo.causeName || '—'}</td>
+                    <td>{wo.dueDate ? new Date(wo.dueDate).toLocaleDateString('ru-RU') : '—'}</td>
                     <td>
-                      {wo.sparePartsUsed && wo.sparePartsUsed.length > 0 ? (
-                        <span className="td-muted">{wo.sparePartsUsed.length} поз.</span>
-                      ) : (
-                        <span className="td-muted">—</span>
-                      )}
+                      {wo.acceptedByName ? (
+                        <span className="status-badge status-working" title={wo.acceptedAt ? `Принято: ${new Date(wo.acceptedAt).toLocaleDateString('ru-RU')}` : ''}>
+                          {wo.acceptedByName}
+                        </span>
+                      ) : wo.status === 'completed' ? (
+                        <span className="status-badge status-needs-repair">Ожидает</span>
+                      ) : '—'}
                     </td>
                     <td>
                       <ActionsMenu items={[
                         ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
+                        ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo.id) }] : []),
                         { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
                       ]} />
                     </td>
@@ -325,6 +354,15 @@ function WorkOrders() {
               />
             </div>
             <div className="form-group">
+              <label>Причина возникновения</label>
+              <CustomSelect
+                value={newCauseId}
+                onChange={setNewCauseId}
+                placeholder="Выберите причину (необязательно)"
+                options={allCauses.map(c => ({ value: c.id, label: c.name }))}
+              />
+            </div>
+            <div className="form-group">
               <label>Статус</label>
               <CustomSelect
                 value={newStatus}
@@ -342,6 +380,10 @@ function WorkOrders() {
                 <CustomDatePicker value={newDate} onChange={setNewDate} placeholder="Выберите дату" />
               </div>
             )}
+            <div className="form-group">
+              <label>Срок устранения</label>
+              <CustomDatePicker value={newDueDate} onChange={setNewDueDate} placeholder="Выберите срок" />
+            </div>
             <div className="modal-actions">
               <button onClick={handleAddSubmit} className="btn btn-primary" disabled={addSubmitting}>
                 {addSubmitting ? 'Сохранение...' : 'Сохранить'}

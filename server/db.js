@@ -286,13 +286,31 @@ async function migrate() {
       SELECT id, equipment_id FROM common_faults
       WHERE equipment_id IS NOT NULL
       ON CONFLICT (common_fault_id, equipment_id) DO NOTHING;
+
+      -- Causes of occurrence (причины возникновения)
+      CREATE TABLE IF NOT EXISTS causes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      -- Overdue reasons (причины просрочки выполнения работ)
+      CREATE TABLE IF NOT EXISTS overdue_reasons (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
 
     // Multi-tenant: add company_id to all data tables and backfill
     const tables = [
       'equipment', 'employees', 'works', 'rooms', 'spare_parts',
       'spare_part_receipts', 'work_orders', 'incidents', 'common_faults',
-      'equipment_operating_hours'
+      'equipment_operating_hours', 'causes', 'overdue_reasons'
     ];
     for (const table of tables) {
       await client.query(`
@@ -351,21 +369,27 @@ async function migrate() {
           "rooms": "full", "spareParts": "full", "workOrders": "full",
           "sparePartsReceipts": "full", "scanner": true, "schedule": true,
           "incidents": "full", "analytics": true, "import": true,
-          "settings": "full"
+          "settings": "full", "instructions": "full",
+          "causes": "full", "overdueReasons": "full",
+          "commonFaults": "full"
         }'),
         ('Механик', '{
           "equipment": "view", "employees": "none", "works": "none",
           "rooms": "none", "spareParts": "none", "workOrders": "full",
           "sparePartsReceipts": "none", "scanner": true, "schedule": true,
           "incidents": "full", "analytics": false, "import": false,
-          "settings": "none"
+          "settings": "none", "instructions": "view",
+          "causes": "view", "overdueReasons": "view",
+          "commonFaults": "full"
         }'),
         ('Руководитель', '{
           "equipment": "full", "employees": "full", "works": "full",
           "rooms": "full", "spareParts": "full", "workOrders": "full",
           "sparePartsReceipts": "full", "scanner": false, "schedule": true,
           "incidents": "full", "analytics": true, "import": true,
-          "settings": "view"
+          "settings": "view", "instructions": "full",
+          "causes": "full", "overdueReasons": "full",
+          "commonFaults": "full"
         }')
       `);
     }
@@ -395,6 +419,21 @@ async function migrate() {
       SET permissions = jsonb_set(permissions, '{schedule}', 'true')
       WHERE name = 'Механик' AND permissions->>'schedule' = 'false'
     `);
+
+    // Ensure all positions have the new permission keys
+    const newPermDefaults = {
+      instructions: 'full',
+      causes: 'full',
+      overdueReasons: 'full',
+      commonFaults: 'full'
+    };
+    for (const [key, defaultVal] of Object.entries(newPermDefaults)) {
+      await client.query(`
+        UPDATE positions
+        SET permissions = jsonb_set(permissions, '{${key}}', '"${defaultVal}"')
+        WHERE NOT permissions ? '${key}'
+      `);
+    }
 
     // Migrate: add equipment columns if not exists
     try {
@@ -430,6 +469,25 @@ async function migrate() {
       await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS category`);
     } catch (e) {
       console.log('Equipment categories migration note:', e.message);
+    }
+
+    // Add new columns for causes, overdue reasons, priority, and acceptance
+    try {
+      // Add cause_id to incidents
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS cause_id UUID REFERENCES causes(id) ON DELETE SET NULL`);
+
+      // Add priority to works
+      await client.query(`ALTER TABLE works ADD COLUMN IF NOT EXISTS priority VARCHAR(10) DEFAULT 'B'`);
+
+      // Add new columns to work_orders
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS cause_id UUID REFERENCES causes(id) ON DELETE SET NULL`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS overdue_reason_id UUID REFERENCES overdue_reasons(id) ON DELETE SET NULL`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS accepted_by UUID REFERENCES users(id) ON DELETE SET NULL`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS due_date DATE`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS completed_on_time BOOLEAN`);
+    } catch (e) {
+      console.log('New columns migration note:', e.message);
     }
 
     await client.query('COMMIT');

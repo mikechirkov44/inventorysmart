@@ -39,7 +39,8 @@ function WorksDirectory() {
     name: '',
     description: '',
     frequencyDays: 30,
-    category: ''
+    category: '',
+    priority: 'B'
   });
   const toast = useToast();
   const confirm = useConfirm();
@@ -77,7 +78,7 @@ function WorksDirectory() {
 
   /** Сброс формы и закрытие */
   const resetForm = () => {
-    setFormData({ name: '', description: '', frequencyDays: 30, category: '' });
+    setFormData({ name: '', description: '', frequencyDays: 30, category: '', priority: 'B' });
     setEditId(null);
     setShowForm(false);
   };
@@ -88,7 +89,8 @@ function WorksDirectory() {
       name: work.name,
       description: work.description || '',
       frequencyDays: work.frequencyDays || 30,
-      category: work.category || ''
+      category: work.category || '',
+      priority: work.priority || 'B'
     });
     setEditId(work.id);
     setShowForm(true);
@@ -100,7 +102,8 @@ function WorksDirectory() {
       name: work.name + ' (копия)',
       description: work.description || '',
       frequencyDays: work.frequencyDays || 30,
-      category: work.category || ''
+      category: work.category || '',
+      priority: work.priority || 'B'
     });
     setEditId(null);
     setShowForm(true);
@@ -171,6 +174,18 @@ function WorksDirectory() {
                   options={FREQUENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
                 />
               </div>
+              <div className="form-group">
+                <label>Приоритет</label>
+                <CustomSelect
+                  value={formData.priority}
+                  onChange={(v) => setFormData({ ...formData, priority: v })}
+                  options={[
+                    { value: 'A', label: 'A — Высокий' },
+                    { value: 'B', label: 'B — Средний' },
+                    { value: 'C', label: 'C — Низкий' }
+                  ]}
+                />
+              </div>
               <div className="form-group flex-1">
                 <label>Описание</label>
                 <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Описание работы" />
@@ -205,19 +220,21 @@ function WorksDirectory() {
                 <th>Название</th>
                 <th>Категория</th>
                 <th>Периодичность</th>
+                <th>Приоритет</th>
                 <th>Описание</th>
                 <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan="5" className="no-results-cell">Работы не найдены</td></tr>
+                <tr><td colSpan="6" className="no-results-cell">Работы не найдены</td></tr>
               ) : (
                 filtered.map(work => (
                   <tr key={work.id}>
                     <td className="td-bold">{work.name}</td>
                     <td>{work.category || '—'}</td>
                     <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
+                    <td><span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span></td>
                     <td className="td-muted">{work.description || '—'}</td>
                     <td>
                       <ActionsMenu items={[
