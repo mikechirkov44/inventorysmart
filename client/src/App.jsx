@@ -195,7 +195,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
         {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
-        <li className="nav-notifications"><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}{unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</NavLink></li>
+        <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span>}</NavLink></li>
         <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
         <li><a href="/downloads/InventorySmart.apk" download><AndroidIcon size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
       </ul>
