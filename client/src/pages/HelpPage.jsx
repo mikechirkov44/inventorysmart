@@ -31,7 +31,7 @@ function HelpPage() {
         <h1><HelpCircle size={24} />Справка</h1>
       </div>
 
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div>
         {/* Section 1: Overview */}
         <div className="settings-card" style={{ marginBottom: 20 }}>
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

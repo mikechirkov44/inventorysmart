@@ -557,6 +557,14 @@ async function migrate() {
       `);
     });
 
+    await withSavepoint(client, 'work_orders_created_at', async () => {
+      await client.query(`
+        UPDATE work_orders
+        SET created_at = COALESCE(completed_at, updated_at, NOW())
+        WHERE created_at IS NULL
+      `);
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

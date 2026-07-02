@@ -12,6 +12,7 @@ import { SkeletonTable } from '../components/Skeleton';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import ActionsMenu from '../components/ActionsMenu';
+import { formatDate } from '../utils/date';
 
 function WorkOrders() {
   /** Состояние журнала работ, оборудования, запчастей, фильтров */
@@ -189,9 +190,12 @@ function WorkOrders() {
   /** Определение просроченности работы */
   const isWoOverdue = (wo) => {
     if (!wo.dueDate || wo.status !== 'completed' || wo.acceptedBy) return false;
-    const completedAt = wo.completedAt ? new Date(wo.completedAt) : new Date(wo.createdAt);
-    return completedAt > new Date(wo.dueDate);
+    const completedAt = wo.completedAt || wo.createdAt;
+    if (!completedAt) return false;
+    return new Date(completedAt) > new Date(wo.dueDate);
   };
+
+  const workOrderDate = (wo) => formatDate(wo.completedAt || wo.createdAt);
 
   /** Принятие выполненной работы руководителем */
   const handleAccept = async (wo) => {
@@ -328,7 +332,7 @@ function WorkOrders() {
               ) : (
                 filteredWorkOrders.map(wo => (
                   <tr key={wo.id} className={`wo-row-${wo.status}`}>
-                    <td>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td>{workOrderDate(wo)}</td>
                     <td>
                       <Link to={`/equipment/${wo.equipmentId}`} className="table-link">
                         {getEquipmentName(wo.equipmentId)}
@@ -345,10 +349,10 @@ function WorkOrders() {
                       )}
                     </td>
                     <td className="td-muted">{wo.causeName || '—'}</td>
-                    <td>{wo.dueDate ? new Date(wo.dueDate).toLocaleDateString('ru-RU') : '—'}</td>
+                    <td>{formatDate(wo.dueDate)}</td>
                     <td>
                       {wo.acceptedByName ? (
-                        <span className="status-badge status-working" title={wo.acceptedAt ? `Принято: ${new Date(wo.acceptedAt).toLocaleDateString('ru-RU')}` : ''}>
+                        <span className="status-badge status-working" title={wo.acceptedAt ? `Принято: ${formatDate(wo.acceptedAt)}` : ''}>
                           {wo.acceptedByName}
                         </span>
                       ) : wo.status === 'completed' ? (
@@ -387,7 +391,7 @@ function WorkOrders() {
               </div>
               <div className="mobile-data-card-row">
                 <span className="mobile-data-card-label">Дата</span>
-                <span>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</span>
+                <span>{workOrderDate(wo)}</span>
               </div>
               <div className="mobile-data-card-row">
                 <span className="mobile-data-card-label">Статус</span>
@@ -511,7 +515,7 @@ function WorkOrders() {
             <h3>Подтверждение работы</h3>
             <p><strong>Работа:</strong> {acceptModalWo.taskName}</p>
             {acceptModalWo.dueDate && (
-              <p><strong>Срок устранения:</strong> {new Date(acceptModalWo.dueDate).toLocaleDateString('ru-RU')}</p>
+              <p><strong>Срок устранения:</strong> {formatDate(acceptModalWo.dueDate)}</p>
             )}
             <p style={{ color: '#991b1b', fontWeight: 600 }}>
               Работа выполнена с нарушением срока. Необходимо указать причину просрочки.

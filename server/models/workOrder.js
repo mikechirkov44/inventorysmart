@@ -7,6 +7,22 @@
 
 const { query } = require('../db');
 
+function serializeTimestamp(value) {
+  if (value == null || value === '') return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function serializeDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+  }
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : str;
+}
+
 /**
  * Преобразует строку из БД в объект наряда-заказа.
  * @param {Object|null} row - Строка из таблицы work_orders
@@ -28,17 +44,17 @@ function mapRow(row) {
     notes: row.notes,
     photos,
     sparePartsUsed,
-    completedAt: row.completed_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    completedAt: serializeTimestamp(row.completed_at),
+    createdAt: serializeTimestamp(row.created_at),
+    updatedAt: serializeTimestamp(row.updated_at),
     causeId: row.cause_id,
     causeName: row.cause_name,
     overdueReasonId: row.overdue_reason_id,
     overdueReasonName: row.overdue_reason_name,
     acceptedBy: row.accepted_by,
     acceptedByName: row.accepted_by_name,
-    acceptedAt: row.accepted_at,
-    dueDate: row.due_date,
+    acceptedAt: serializeTimestamp(row.accepted_at),
+    dueDate: serializeDate(row.due_date),
     completedOnTime: row.completed_on_time,
     priority: row.priority
   };
@@ -135,7 +151,7 @@ module.exports = {
         data.notes || '',
         JSON.stringify(data.photos || []),
         JSON.stringify(data.sparePartsUsed || []),
-        status === 'completed' ? new Date().toISOString() : null,
+        status === 'completed' ? (data.completedAt || new Date().toISOString()) : null,
         companyId,
         data.causeId || null,
         data.dueDate || null

@@ -617,7 +617,15 @@ function SchedulePage() {
                             </div>
                           </div>
                         </td>
-                        {chartData.days.map(day => <td key={day.toISOString().slice(0, 10)} className="gantt-cell"></td>)}
+                        {chartData.days.map(day => {
+                          const isToday = sameDay(day, today);
+                          return (
+                            <td
+                              key={day.toISOString().slice(0, 10)}
+                              className={`gantt-cell${isToday ? ' today-col' : ''}`}
+                            />
+                          );
+                        })}
                       </tr>,
                       isExpanded && group.works.map(row => (
                         <tr key={`work-${row.id}`} className="gantt-work-row">

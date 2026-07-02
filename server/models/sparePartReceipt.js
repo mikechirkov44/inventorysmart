@@ -8,6 +8,16 @@
 
 const { query } = require('../db');
 
+function serializeDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+  }
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : str;
+}
+
 /**
  * Преобразует строку из БД в объект поступления.
  * @param {Object|null} row - Строка из таблицы spare_part_receipts
@@ -18,7 +28,7 @@ function mapRow(row) {
   return {
     id: row.id,
     documentNumber: row.document_number,
-    date: row.date,
+    date: serializeDate(row.date),
     supplier: row.supplier,
     notes: row.notes,
     createdAt: row.created_at,

@@ -4013,12 +4013,28 @@ input, textarea, select { font-family: inherit; }
   border-bottom: 1px solid var(--gray-200);
   min-width: 22px;
   height: 24px;
+  position: relative;
 }
 
 .gantt-days-row th.today {
-  background: var(--primary);
-  color: white;
+  background: var(--primary-light);
+  color: var(--primary);
   font-weight: 700;
+  position: relative;
+}
+
+.gantt-days-row th.today::after,
+.gantt-cell.today-col::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--primary);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .gantt-label-col {
@@ -4167,7 +4183,8 @@ input, textarea, select { font-family: inherit; }
 }
 
 .gantt-cell.today-col {
-  box-shadow: inset 0 0 0 2px var(--primary);
+  position: relative;
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
 }
 
 .gantt-cell.completed:hover,

@@ -21,6 +21,7 @@ import {
 } from '../components/MobileDataCard';
 import CustomDatePicker from '../components/CustomDatePicker';
 import ActionsMenu from '../components/ActionsMenu';
+import { formatDate } from '../utils/date';
 
 /** Компонент управления приходными документами ЗИП */
 function SparePartsReceipts() {
@@ -342,7 +343,7 @@ function SparePartsReceipts() {
                           {r.documentNumber}
                         </button>
                       </td>
-                      <td>{r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '—'}</td>
+                      <td>{formatDate(r.date)}</td>
                       <td>{r.supplier || '—'}</td>
                       <td>{(r.items || []).length} ({totalQty} шт.)</td>
                       <td>{totalSum > 0 ? formatPrice(totalSum) : '—'}</td>
@@ -405,7 +406,7 @@ function SparePartsReceipts() {
                   {r.documentNumber}
                 </button>
               </MobileDataCardTitle>
-              <MobileDataCardRow label="Дата">{r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="Дата">{formatDate(r.date)}</MobileDataCardRow>
               <MobileDataCardRow label="Поставщик">{r.supplier || '—'}</MobileDataCardRow>
               <MobileDataCardRow label="Позиций">{(r.items || []).length} ({totalQty} шт.)</MobileDataCardRow>
               <MobileDataCardRow label="Сумма">{totalSum > 0 ? formatPrice(totalSum) : '—'}</MobileDataCardRow>
