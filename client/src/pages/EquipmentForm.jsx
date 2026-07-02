@@ -10,6 +10,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
 import { Upload, FolderTree } from 'lucide-react';
+import UploadImage from '../components/UploadImage';
 import { resolveUploadField } from '../utils/uploads';
 
 /** Варианты периодичности плановых работ */
@@ -261,7 +262,7 @@ function EquipmentForm() {
                 <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
               </label>
               {photoPreview && (
-                <img src={photoPreview} alt="Preview" className="photo-preview" />
+                <UploadImage src={photoPreview} alt="Preview" className="photo-preview" />
               )}
             </div>
 

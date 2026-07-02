@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../models/user');
-const { verifyUploadSignature } = require('../utils/uploadAccess');
+const { verifyUploadSignature, normalizeUploadFilename } = require('../utils/uploadAccess');
 const { UPLOADS_DIR } = require('../utils/upload');
 
 const router = express.Router();
@@ -28,7 +28,7 @@ function isAuthorized(req, filename) {
 }
 
 router.get('/:filename', (req, res) => {
-  const filename = path.basename(req.params.filename);
+  const filename = normalizeUploadFilename(req.params.filename);
   if (!filename || filename.includes('..')) {
     return res.status(400).json({ error: 'Invalid filename' });
   }

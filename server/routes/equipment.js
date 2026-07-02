@@ -290,10 +290,12 @@ router.post('/:id/instruction-pdf', requirePermission('instructions', 'full'), p
       return res.status(404).json({ error: 'Оборудование не найдено' });
     }
     
-    res.json({ 
-      success: true, 
+    const { buildSignedUploadUrl } = require('../utils/uploadAccess');
+
+    res.json({
+      success: true,
       filename: req.file.filename,
-      url: `/uploads/${req.file.filename}`
+      url: buildSignedUploadUrl(req.file.filename, req.user.companyId),
     });
   } catch (error) {
     console.error('Route error:', error);

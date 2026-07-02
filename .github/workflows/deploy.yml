@@ -124,6 +124,11 @@ jobs:
             docker compose down
             docker compose up -d --build
 
+            if [ -d "$APP_DIR/server/uploads" ] && [ "$(find "$APP_DIR/server/uploads" -maxdepth 1 -type f | head -1)" ]; then
+              echo "  Syncing legacy host uploads into container volume..."
+              docker compose cp "$APP_DIR/server/uploads/." server:/app/server/uploads/ || true
+            fi
+
             echo ""
             echo "[5/5] Waiting for server health check..."
             sleep 10

@@ -14,7 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
-import { resolveUploadField } from '../utils/uploads';
+import UploadImage from '../components/UploadImage';
 
 /** Список доступных часовых поясов */
 const TIMEZONES = [
@@ -591,11 +591,12 @@ function SettingsPage() {
       setCompanyData({
         companyName: res.data.companyName || '',
         logo: res.data.logo || '',
+        logoUrl: res.data.logoUrl || '',
         timezone: res.data.timezone || 'Europe/Moscow',
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
       });
       if (res.data.logo) {
-        setLogoPreview(`${resolveUploadField(res.data, 'logo')}?t=${Date.now()}`);
+        setLogoPreview(null);
       }
       if (res.data.licenseKey) {
         try {
@@ -800,9 +801,14 @@ function SettingsPage() {
                 <div className="form-group">
                   <label>Логотип</label>
                   <div className="logo-upload-row">
-                    {logoPreview && (
+                    {(logoPreview || companyData.logo) && (
                       <div className="logo-preview">
-                        <img src={logoPreview} alt="Логотип" />
+                        <UploadImage
+                          src={logoPreview || undefined}
+                          item={companyData}
+                          field="logo"
+                          alt="Логотип"
+                        />
                       </div>
                     )}
                     {!isSettingsReadOnly && (

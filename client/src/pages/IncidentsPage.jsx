@@ -13,6 +13,7 @@ import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import ActionsMenu from '../components/ActionsMenu';
+import UploadImage from '../components/UploadImage';
 import { resolveUploadField } from '../utils/uploads';
 
 /** Маппинг статусов инцидентов на метки и CSS-классы */
@@ -273,8 +274,14 @@ function IncidentsPage() {
                   <strong>Фото:</strong>
                   <div className="incident-photo-grid">
                     {selectedIncident.photos.map((photo, idx) => (
-                      <a key={idx} href={incident.photoUrls?.[idx] || resolveUploadField({ photo: photo }, 'photo')} target="_blank" rel="noopener noreferrer">
-                        <img src={incident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} alt="" className="incident-thumb" />
+                      <a key={idx} href={selectedIncident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} target="_blank" rel="noopener noreferrer">
+                        <UploadImage
+                          src={selectedIncident.photoUrls?.[idx]}
+                          item={{ photo }}
+                          field="photo"
+                          alt=""
+                          className="incident-thumb"
+                        />
                       </a>
                     ))}
                   </div>

@@ -10,7 +10,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonCardGrid } from '../components/Skeleton';
 import ActionsMenu from '../components/ActionsMenu';
-import { resolveUploadField } from '../utils/uploads';
+import UploadImage from '../components/UploadImage';
 
 /** Маппинг статусов оборудования на метки и CSS-классы */
 const STATUS_MAP = {
@@ -139,7 +139,7 @@ function EquipmentList({ embedded }) {
                         <div key={item.id} className="equipment-card">
                           <div className="card-photo">
                             {item.photo ? (
-                              <img src={resolveUploadField(item, 'photo')} alt={item.name} />
+                              <UploadImage item={item} field="photo" alt={item.name} />
                             ) : (
                               <div className="no-photo">Нет фото</div>
                             )}
