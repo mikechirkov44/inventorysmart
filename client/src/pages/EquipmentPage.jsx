@@ -4,7 +4,7 @@
  * Выбор вида сохраняется в localStorage.
  */
 import { useState } from 'react';
-import { LayoutGrid, Table, FolderTree } from 'lucide-react';
+import { LayoutGrid, Table, Wrench } from 'lucide-react';
 import EquipmentList from './EquipmentList';
 import EquipmentTable from './EquipmentTable';
 
@@ -21,7 +21,7 @@ function EquipmentPage() {
   return (
     <div>
       <div className="equipment-header">
-        <h1><FolderTree size={24} />Справочник оборудования</h1>
+        <h1><Wrench size={24} />Справочник оборудования</h1>
         <div className="equipment-view-toggle">
           <button
             className={`btn btn-small ${view === 'cards' ? 'btn-primary' : ''}`}
