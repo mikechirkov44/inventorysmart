@@ -20,7 +20,7 @@ function EquipmentPage() {
 
   return (
     <div>
-      <div className="equipment-header">
+      <div className="header">
         <h1><Wrench size={24} />Справочник оборудования</h1>
         <div className="equipment-view-toggle">
           <button
