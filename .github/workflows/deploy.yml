@@ -6,9 +6,9 @@
 # Перед использованием настройте secrets в GitHub:
 #   Settings → Secrets and variables → Actions → New repository secret
 #
-#   VPS_HOST     — IP-адрес сервера
-#   VPS_USER     — SSH пользователь (root или deploy)
-#   VPS_PASSWORD — Пароль SSH
+#   VPS_HOST    — IP-адрес сервера
+#   VPS_USER    — SSH пользователь (root или deploy)
+#   VPS_SSH_KEY — Приватный SSH ключ
 # ============================================
 
 name: Deploy to Production
@@ -33,7 +33,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
           script: |
             set -e
