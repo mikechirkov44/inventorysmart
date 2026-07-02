@@ -31,6 +31,21 @@ async function query(text, params) {
 }
 
 /**
+ * Выполняет блок миграции в savepoint, чтобы ошибка не абортила всю транзакцию.
+ */
+async function withSavepoint(client, name, fn) {
+  const sp = `sp_${name}`;
+  await client.query(`SAVEPOINT ${sp}`);
+  try {
+    await fn();
+    await client.query(`RELEASE SAVEPOINT ${sp}`);
+  } catch (e) {
+    await client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+    console.log(`Migration note [${name}]:`, e.message);
+  }
+}
+
+/**
  * Выполняет миграцию схемы базы данных: создаёт таблицы, добавляет
  * недостающие столбцы и заполняет начальные данные (роли, должности,
  * суперадминистратор, компания по умолчанию)
@@ -441,18 +456,13 @@ async function migrate() {
       `);
     }
 
-    // Migrate: add equipment columns if not exists
-    try {
+    await withSavepoint(client, 'equipment_columns', async () => {
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS manufacturer VARCHAR(255) DEFAULT ''`);
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100) DEFAULT ''`);
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS year_of_manufacture INTEGER`);
-    } catch (e) {
-      console.log('Equipment columns migration note:', e.message);
-    }
+    });
 
-    // Migrate: create equipment_categories table and add category_id
-    try {
-      // Create equipment_categories without FK first (companies may not exist yet)
+    await withSavepoint(client, 'equipment_categories', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS equipment_categories (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -463,40 +473,22 @@ async function migrate() {
           updated_at TIMESTAMPTZ DEFAULT NOW()
         )
       `);
-      // Add FK constraint separately
-      try {
-        await client.query(`ALTER TABLE equipment_categories ADD CONSTRAINT fk_equipment_categories_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE`);
-      } catch (fkErr) {
-        // Constraint may already exist or companies table not ready
-        console.log('FK constraint note:', fkErr.message);
-      }
       await client.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES equipment_categories(id) ON DELETE SET NULL`);
-      // Remove old category column if exists
       await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS category`);
-    } catch (e) {
-      console.log('Equipment categories migration note:', e.message);
-    }
+    });
 
-    // Add new columns for causes, overdue reasons, priority, and acceptance
-    try {
-      // Add cause_id to incidents
+    await withSavepoint(client, 'new_columns', async () => {
       await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS cause_id UUID REFERENCES causes(id) ON DELETE SET NULL`);
-
-      // Add priority to works
       await client.query(`ALTER TABLE works ADD COLUMN IF NOT EXISTS priority VARCHAR(10) DEFAULT 'B'`);
-
-      // Add new columns to work_orders
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS cause_id UUID REFERENCES causes(id) ON DELETE SET NULL`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS overdue_reason_id UUID REFERENCES overdue_reasons(id) ON DELETE SET NULL`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS accepted_by UUID REFERENCES users(id) ON DELETE SET NULL`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS due_date DATE`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS completed_on_time BOOLEAN`);
-    } catch (e) {
-      console.log('New columns migration note:', e.message);
-    }
+    });
 
-    // Migrate positions to per-company scope
+    // Migrate positions to per-company scope (critical — must succeed)
     await client.query('ALTER TABLE positions ADD COLUMN IF NOT EXISTS company_id UUID');
     await client.query('ALTER TABLE positions DROP CONSTRAINT IF EXISTS positions_name_key');
     await client.query(`
