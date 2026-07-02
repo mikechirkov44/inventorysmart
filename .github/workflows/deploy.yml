@@ -28,13 +28,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create deploy archive
+        run: |
+          tar --exclude='.git' \
+              --exclude='node_modules' \
+              --exclude='client/node_modules' \
+              --exclude='client-admin/node_modules' \
+              --exclude='client/dist' \
+              --exclude='client-admin/dist' \
+              -czf deploy.tar.gz .
+
+      - name: Upload archive to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: deploy.tar.gz
+          target: /tmp
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
           script: |
             set -e
 
@@ -43,16 +61,35 @@ jobs:
             echo "Time: $(date)"
             echo "Commit: ${{ github.sha }}"
 
-            # Переходим в директорию проекта
+            echo ""
+            echo "[1/5] Updating code..."
+            mkdir -p "$APP_DIR"
+
+            if [ -f "$APP_DIR/.env" ]; then
+              cp "$APP_DIR/.env" /tmp/inventorysmart.env.bak
+            fi
+            if [ -f "$APP_DIR/server.crt" ]; then
+              cp "$APP_DIR/server.crt" /tmp/inventorysmart.server.crt.bak
+            fi
+            if [ -f "$APP_DIR/server.key" ]; then
+              cp "$APP_DIR/server.key" /tmp/inventorysmart.server.key.bak
+            fi
+
+            tar -xzf /tmp/deploy.tar.gz -C "$APP_DIR"
+            rm -f /tmp/deploy.tar.gz
+
+            if [ -f /tmp/inventorysmart.env.bak ]; then
+              cp /tmp/inventorysmart.env.bak "$APP_DIR/.env"
+            fi
+            if [ -f /tmp/inventorysmart.server.crt.bak ]; then
+              cp /tmp/inventorysmart.server.crt.bak "$APP_DIR/server.crt"
+            fi
+            if [ -f /tmp/inventorysmart.server.key.bak ]; then
+              cp /tmp/inventorysmart.server.key.bak "$APP_DIR/server.key"
+            fi
+
             cd "$APP_DIR"
 
-            # Получаем свежий код
-            echo ""
-            echo "[1/4] Pulling latest code..."
-            git fetch origin main
-            git reset --hard origin/main
-
-            # Проверяем наличие .env
             echo ""
             echo "[2/5] Checking environment..."
             if [ ! -f .env ]; then
@@ -60,7 +97,6 @@ jobs:
               exit 1
             fi
 
-            # Собираем фронтенд (dist в .gitignore, монтируется через volume)
             echo ""
             echo "[3/5] Building frontend..."
             if ! command -v node &> /dev/null; then
@@ -71,13 +107,11 @@ jobs:
             cd client && npm install && npm run build && cd ..
             cd client-admin && npm install && npm run build && cd ..
 
-            # Перезапускаем контейнеры
             echo ""
             echo "[4/5] Building and starting containers..."
             docker compose down
             docker compose up -d --build
 
-            # Ждём готовности сервера
             echo ""
             echo "[5/5] Waiting for server health check..."
             sleep 10
