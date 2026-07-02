@@ -1,14 +1,10 @@
 /* SaaS Enhancements ===== */
 
-.page-container {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-}
-
+/* Узкий контейнер только для дашборда; таблицы — на всю ширину */
 .dashboard {
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .app-body {

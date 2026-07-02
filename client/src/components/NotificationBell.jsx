@@ -9,19 +9,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 import api from '../services/api';
 import { formatDateTime } from '../utils/date';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 /** Компонент колокольчика уведомлений в шапке приложения */
 function NotificationBell() {
+  const { unreadCount, refreshUnreadCount } = useNotifications();
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
+    if (!open) return undefined;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -31,23 +33,22 @@ function NotificationBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /** Загружает список уведомлений и количество непрочитанных */
+  /** Загружает список уведомлений */
   const fetchNotifications = async () => {
     try {
-      const [notifs, unread] = await Promise.all([
-        api.get('/notifications'),
-        api.get('/notifications/unread-count')
-      ]);
-      setNotifications(notifs.data.slice(0, 20));
-      setUnreadCount(unread.data.count);
-    } catch {}
+      const res = await api.get('/notifications');
+      setNotifications(res.data.slice(0, 20));
+      await refreshUnreadCount();
+    } catch {
+      setNotifications([]);
+    }
   };
 
   /** Помечает уведомление как прочитанное по ID */
   const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      fetchNotifications();
+      await fetchNotifications();
     } catch {}
   };
 
@@ -55,7 +56,7 @@ function NotificationBell() {
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
-      fetchNotifications();
+      await fetchNotifications();
     } catch {}
   };
 
@@ -74,9 +75,18 @@ function NotificationBell() {
 
   return (
     <div className="notification-bell" ref={ref}>
-      <button className="bell-button" onClick={() => setOpen(!open)} aria-label="Уведомления">
+      <button
+        type="button"
+        className="bell-button"
+        onClick={() => setOpen(!open)}
+        aria-label={unreadCount > 0 ? `Уведомления: ${unreadCount} непрочитанных` : 'Уведомления'}
+      >
         <Bell size={20} />
-        {unreadCount > 0 && <span className="bell-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+        {unreadCount > 0 && (
+          <span className="bell-badge" aria-hidden="true">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -84,7 +94,7 @@ function NotificationBell() {
           <div className="notif-header">
             <h4>Уведомления</h4>
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="btn btn-small">Прочитать все</button>
+              <button type="button" onClick={markAllRead} className="btn btn-small">Прочитать все</button>
             )}
           </div>
           <div className="notif-list">

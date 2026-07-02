@@ -16,6 +16,7 @@ import {
 } from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
 import { formatDateTime } from '../utils/date';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 const TYPE_LABELS = {
   incident: 'Инцидент',
@@ -54,6 +55,7 @@ function getNotificationActions(n, { markRead, markUnread, deleteNotification })
 }
 
 export default function NotificationsPage() {
+  const { refreshUnreadCount } = useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,28 +77,32 @@ export default function NotificationsPage() {
   const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      fetchNotifications();
+      await fetchNotifications();
+      await refreshUnreadCount();
     } catch {}
   };
 
   const markUnread = async (id) => {
     try {
       await api.put(`/notifications/${id}/unread`);
-      fetchNotifications();
+      await fetchNotifications();
+      await refreshUnreadCount();
     } catch {}
   };
 
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
-      fetchNotifications();
+      await fetchNotifications();
+      await refreshUnreadCount();
     } catch {}
   };
 
   const deleteNotification = async (id) => {
     try {
       await api.delete(`/notifications/${id}`);
-      fetchNotifications();
+      await fetchNotifications();
+      await refreshUnreadCount();
     } catch {}
   };
 

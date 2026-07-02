@@ -23,6 +23,7 @@ function AndroidIcon({ size = 18, ...props }) {
   );
 }
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationsProvider, useNotifications } from './contexts/NotificationsContext';
 import api, { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
@@ -160,8 +161,8 @@ function AppTopBar() {
 /** Боковая панель навигации приложения */
 function AppNav({ collapsed, onToggle }) {
   const { user, logout, canView } = useAuth();
+  const { unreadCount } = useNotifications();
   const [companyName, setCompanyName] = useState('');
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -174,18 +175,6 @@ function AppNav({ collapsed, onToggle }) {
         }
       }).catch(() => {});
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchCount = () => {
-      api.get('/notifications/unread-count').then(res => {
-        setUnreadCount(res.data.count || 0);
-      }).catch(() => {});
-    };
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
-    return () => clearInterval(interval);
   }, [user]);
 
   if (!user) return null;
@@ -329,6 +318,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <NotificationsProvider>
         <ToastProvider>
           <ConfirmProvider>
             <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -336,13 +326,14 @@ function App() {
               <div className="app-body">
                 <LicenseBanner />
                 <AppTopBar />
-                <main className="main-content page-container">
+                <main className="main-content">
                   <AppRoutes />
                 </main>
               </div>
             </div>
           </ConfirmProvider>
         </ToastProvider>
+        </NotificationsProvider>
       </AuthProvider>
     </Router>
   );
