@@ -23,7 +23,7 @@ function AndroidIcon({ size = 18, ...props }) {
   );
 }
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { companyAPI } from './services/api';
+import api, { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -145,6 +145,7 @@ function DirDropdown({ collapsed }) {
 function AppNav({ collapsed, onToggle }) {
   const { user, logout, canView } = useAuth();
   const [companyName, setCompanyName] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -154,6 +155,18 @@ function AppNav({ collapsed, onToggle }) {
         }
       }).catch(() => {});
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchCount = () => {
+      api.get('/notifications/unread-count').then(res => {
+        setUnreadCount(res.data.count || 0);
+      }).catch(() => {});
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   if (!user) return null;
@@ -182,7 +195,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
         {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
         {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
-        <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}</NavLink></li>
+        <li className="nav-notifications"><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления</span>}{unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</NavLink></li>
         <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
         <li><a href="/downloads/InventorySmart.apk" download><AndroidIcon size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
       </ul>
