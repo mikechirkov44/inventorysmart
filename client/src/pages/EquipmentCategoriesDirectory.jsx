@@ -3,11 +3,21 @@
  * Управление категориями: добавление, редактирование, удаление.
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { FolderTree, Pencil, Trash2, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Layers, Pencil, Trash2 } from 'lucide-react';
 import { equipmentCategoriesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
 
 function EquipmentCategoriesDirectory() {
@@ -78,16 +88,18 @@ function EquipmentCategoriesDirectory() {
     }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={3} />;
+
+  const isListEmpty = categories.length === 0;
+  const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Категории оборудования</h1>
+      <PageHeader icon={Layers} title="Категории оборудования">
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить категорию'}
         </button>
-      </div>
+      </PageHeader>
 
       {showForm && (
         <div className="directory-form-card">
@@ -121,7 +133,7 @@ function EquipmentCategoriesDirectory() {
         </div>
       )}
 
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -132,8 +144,18 @@ function EquipmentCategoriesDirectory() {
               </tr>
             </thead>
             <tbody>
-              {categories.length === 0 ? (
-                <tr><td colSpan="3" className="no-results-cell">Категории не найдены</td></tr>
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="3">
+                    <EmptyState
+                      icon={Layers}
+                      title="Категории ещё не добавлены"
+                      description="Создайте категории для группировки оборудования в справочнике."
+                      actionLabel="+ Добавить категорию"
+                      onAction={openAddForm}
+                    />
+                  </td>
+                </tr>
               ) : (
                 categories.map(cat => (
                   <tr key={cat.id}>
@@ -152,6 +174,21 @@ function EquipmentCategoriesDirectory() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={categories.length === 0} emptyMessage="Категории не найдены">
+        {categories.map(cat => (
+          <MobileDataCard key={cat.id}>
+            <MobileDataCardTitle>{cat.name}</MobileDataCardTitle>
+            <MobileDataCardRow label="Описание">{cat.description || '—'}</MobileDataCardRow>
+            <MobileDataCardActions>
+              <ActionsMenu items={[
+                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(cat) },
+                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(cat.id), danger: true },
+              ]} />
+            </MobileDataCardActions>
+          </MobileDataCard>
+        ))}
+      </MobileDataCards>
     </div>
   );
 }

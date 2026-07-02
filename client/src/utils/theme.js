@@ -20,16 +20,31 @@ function darkenHex(hex, amount = 0.12) {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
+function lightenHex(hex, amount = 0.35) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const f = amount;
+  const r = Math.round(rgb.r + (255 - rgb.r) * f);
+  const g = Math.round(rgb.g + (255 - rgb.g) * f);
+  const b = Math.round(rgb.b + (255 - rgb.b) * f);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 /**
  * Применяет цвет бренда к CSS-переменным.
  */
 export function applyThemeColor(color) {
   const primary = /^#[0-9a-fA-F]{6}$/.test(color) ? color : DEFAULT_PRIMARY;
   const root = document.documentElement;
+  const hover = darkenHex(primary);
+  const accent = lightenHex(primary, 0.25);
+
   root.style.setProperty('--primary', primary);
-  root.style.setProperty('--primary-hover', darkenHex(primary));
+  root.style.setProperty('--primary-hover', hover);
   root.style.setProperty('--primary-light', `${primary}1a`);
   root.style.setProperty('--primary-glow', `${primary}26`);
+  root.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${primary}, ${accent})`);
+  root.style.setProperty('--gradient-primary-hover', `linear-gradient(135deg, ${hover}, ${darkenHex(accent)})`);
 }
 
 export function resetThemeColor() {

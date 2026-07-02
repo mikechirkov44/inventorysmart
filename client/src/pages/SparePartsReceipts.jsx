@@ -9,6 +9,16 @@ import { FileText, Eye, Trash2 } from 'lucide-react';
 import { sparePartsReceiptsAPI, sparePartsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import CustomDatePicker from '../components/CustomDatePicker';
 import ActionsMenu from '../components/ActionsMenu';
 
@@ -180,16 +190,17 @@ function SparePartsReceipts() {
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(val);
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={6} />;
+
+  const isListEmpty = receipts.length === 0 && !search;
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FileText size={24} />Приходные документы ЗИП</h1>
+      <PageHeader icon={FileText} title="Приходные документы ЗИП">
         <button onClick={startCreate} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Новый документ'}
         </button>
-      </div>
+      </PageHeader>
 
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
@@ -292,7 +303,7 @@ function SparePartsReceipts() {
       </div>
 
       {/* Таблица приходных документов */}
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -306,7 +317,19 @@ function SparePartsReceipts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="6">
+                    <EmptyState
+                      icon={FileText}
+                      title="Приходные документы ещё не созданы"
+                      description="Создайте первый приходный документ для учёта поступления запасных частей на склад."
+                      actionLabel="+ Новый документ"
+                      onAction={startCreate}
+                    />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan="6" className="no-results-cell">Документы не найдены</td></tr>
               ) : (
                 filtered.map(r => {
@@ -370,6 +393,43 @@ function SparePartsReceipts() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Документы не найдены">
+        {filtered.map(r => {
+          const totalSum = (r.items || []).reduce((s, it) => s + (it.quantity || 0) * (it.unitPrice || 0), 0);
+          const totalQty = (r.items || []).reduce((s, it) => s + (it.quantity || 0), 0);
+          return (
+            <MobileDataCard key={r.id} className={expandedId === r.id ? 'row-expanded' : ''}>
+              <MobileDataCardTitle>
+                <button onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="btn-link">
+                  {r.documentNumber}
+                </button>
+              </MobileDataCardTitle>
+              <MobileDataCardRow label="Дата">{r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="Поставщик">{r.supplier || '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="Позиций">{(r.items || []).length} ({totalQty} шт.)</MobileDataCardRow>
+              <MobileDataCardRow label="Сумма">{totalSum > 0 ? formatPrice(totalSum) : '—'}</MobileDataCardRow>
+              {expandedId === r.id && (
+                <div className="receipt-detail">
+                  {r.notes && <p><strong>Примечание:</strong> {r.notes}</p>}
+                  {(r.items || []).map(it => (
+                    <div key={it.id} className="mobile-data-card-row">
+                      <span className="mobile-data-card-label">{it.sparePartName || '—'}</span>
+                      <span>{it.quantity} {it.sparePartUnit || 'шт'}{it.unitPrice > 0 ? ` · ${formatPrice(it.quantity * it.unitPrice)}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <MobileDataCardActions>
+                <ActionsMenu items={[
+                  { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => setExpandedId(expandedId === r.id ? null : r.id) },
+                  { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(r.id), danger: true },
+                ]} />
+              </MobileDataCardActions>
+            </MobileDataCard>
+          );
+        })}
+      </MobileDataCards>
     </div>
   );
 }

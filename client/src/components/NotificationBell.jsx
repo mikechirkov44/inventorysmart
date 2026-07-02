@@ -74,9 +74,9 @@ function NotificationBell() {
 
   return (
     <div className="notification-bell" ref={ref}>
-      <button className="bell-button" onClick={() => setOpen(!open)}>
+      <button className="bell-button" onClick={() => setOpen(!open)} aria-label="Уведомления">
         <Bell size={20} />
-        {/* Убрано по запросу пользователя */}
+        {unreadCount > 0 && <span className="bell-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
       </button>
 
       {open && (

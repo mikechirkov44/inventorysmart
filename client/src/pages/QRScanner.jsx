@@ -6,8 +6,33 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScanLine } from 'lucide-react';
+import { ScanLine, Camera, Square, Keyboard, AlertCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
+import PageHeader from '../components/PageHeader';
+
+function getQrBoxSize() {
+  if (typeof window === 'undefined') return 260;
+  return Math.min(300, Math.max(220, window.innerWidth - 96));
+}
+
+/** Декоративная иллюстрация до запуска камеры */
+function QrIdleIllustration() {
+  return (
+    <div className="qr-idle-illustration" aria-hidden>
+      <div className="qr-idle-glow" />
+      <div className="qr-idle-frame">
+        <span className="qr-corner qr-corner-tl" />
+        <span className="qr-corner qr-corner-tr" />
+        <span className="qr-corner qr-corner-bl" />
+        <span className="qr-corner qr-corner-br" />
+        <div className="qr-idle-pattern">
+          <ScanLine size={52} strokeWidth={1.5} />
+        </div>
+        <div className="qr-idle-scanline" />
+      </div>
+    </div>
+  );
+}
 
 /** Компонент QR-сканера */
 function QRScanner() {
@@ -18,12 +43,10 @@ function QRScanner() {
   const scannerRef = useRef(null);
   const busyRef = useRef(false);
 
-  /** Остановка сканера при размонтировании */
   useEffect(() => {
     return () => { tryStop(); };
   }, []);
 
-  /** Безопасная остановка камеры */
   function tryStop() {
     const s = scannerRef.current;
     if (!s) return;
@@ -31,7 +54,6 @@ function QRScanner() {
     try { s.stop().catch(() => {}); } catch (_) {}
   }
 
-  /** Запуск сканирования камеры */
   async function startScanner() {
     setError(null);
     try {
@@ -39,18 +61,19 @@ function QRScanner() {
       if (!el) return;
       el.innerHTML = '';
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         setError('Камера не поддерживается в этом браузере. Используйте ручной ввод.');
         return;
       }
 
-      const qr = new Html5Qrcode("qr-reader");
+      const qr = new Html5Qrcode('qr-reader');
       scannerRef.current = qr;
       busyRef.current = false;
 
+      const size = getQrBoxSize();
       await qr.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { facingMode: 'environment' },
+        { fps: 12, qrbox: { width: size, height: size } },
         onDecoded,
         () => {}
       );
@@ -66,25 +89,23 @@ function QRScanner() {
         msg = JSON.stringify(err);
       }
       if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
-        msg = 'Доступ к камере запрещён. Разрешите доступ к камере в настройках браузера.';
+        msg = 'Доступ к камере запрещён. Разрешите доступ в настройках браузера.';
       } else if (msg.includes('NotFoundError') || msg.includes('DevicesNotFound')) {
         msg = 'Камера не найдена. Подключите камеру и попробуйте снова.';
       } else if (msg.includes('NotReadableError') || msg.includes('TrackStartError')) {
-        msg = 'Камера используется другим приложением. Закройте другие программы, использующие камеру.';
+        msg = 'Камера занята другим приложением.';
       }
-      setError('Не удалось запустить камеру: ' + msg);
+      setError(`Не удалось запустить камеру: ${msg}`);
       setScanning(false);
     }
   }
 
-  /** Обработка распознанного QR-кода и переход на страницу */
   function onDecoded(decodedText) {
     if (busyRef.current) return;
     busyRef.current = true;
 
     const raw = decodedText || '';
     let code = raw;
-
     const m = raw.match(/\/scan\/([a-f0-9-]+)/i);
     if (m) code = m[1];
 
@@ -96,13 +117,11 @@ function QRScanner() {
     }, 100);
   }
 
-  /** Остановка сканера */
   function stopScanner() {
     tryStop();
     setScanning(false);
   }
 
-  /** Обработка ручного ввода QR-кода или ID */
   function handleManualInput(e) {
     e.preventDefault();
     const v = manualInput.trim();
@@ -110,92 +129,86 @@ function QRScanner() {
   }
 
   return (
-    <div className="qr-scanner">
-      <h1><ScanLine size={24} />Сканирование QR-кода</h1>
+    <div className="qr-scanner-page">
+      <PageHeader icon={ScanLine} title="QR-сканер" />
 
-      {!scanning && (
-        <div className="qr-animated-wrap">
-          <div className={`qr-animated ${scanning ? 'scanning' : ''}`}>
-            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="10" y="10" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
-              <rect x="20" y="20" width="30" height="30" rx="1" fill="var(--gray-800)"/>
-              <rect x="140" y="10" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
-              <rect x="150" y="20" width="30" height="30" rx="1" fill="var(--gray-800)"/>
-              <rect x="10" y="140" width="50" height="50" rx="2" stroke="var(--gray-800)" strokeWidth="6" fill="none"/>
-              <rect x="20" y="150" width="30" height="30" rx="1" fill="var(--gray-800)"/>
-              <rect x="70" y="10" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="90" y="10" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="110" y="10" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="70" y="30" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="100" y="30" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="70" y="50" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="90" y="50" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="120" y="50" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="10" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="30" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="50" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="80" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="110" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="140" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="170" y="70" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="10" y="90" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="40" y="90" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="70" y="90" width="20" height="20" rx="1" fill="var(--gray-800)"/>
-              <rect x="100" y="90" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="130" y="90" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="160" y="90" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="20" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="50" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="100" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="120" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="150" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="180" y="110" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="70" y="120" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="110" y="130" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="140" y="130" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="170" y="130" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="80" y="140" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="100" y="140" width="20" height="10" fill="var(--gray-800)"/>
-              <rect x="140" y="150" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="160" y="150" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="180" y="150" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="80" y="160" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="110" y="160" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="80" y="180" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="100" y="180" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="130" y="170" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="160" y="180" width="10" height="10" fill="var(--gray-800)"/>
-              <rect x="180" y="180" width="10" height="10" fill="var(--gray-800)"/>
-            </svg>
-            <div className="qr-scan-line"></div>
-          </div>
+      <div className="qr-scanner-card">
+        <div className={`qr-viewfinder ${scanning ? 'is-scanning' : ''}`}>
+          {!scanning && (
+            <div className="qr-viewfinder-idle">
+              <QrIdleIllustration />
+              <p className="qr-viewfinder-hint">Наведите камеру на QR-код оборудования</p>
+            </div>
+          )}
+
+          <div id="qr-reader" className={scanning ? 'qr-reader-active' : 'qr-reader-hidden'} />
+
+          {scanning && (
+            <>
+              <div className="qr-viewfinder-overlay" aria-hidden />
+              <div className="qr-viewfinder-corners" aria-hidden>
+                <span className="qr-corner qr-corner-tl" />
+                <span className="qr-corner qr-corner-tr" />
+                <span className="qr-corner qr-corner-bl" />
+                <span className="qr-corner qr-corner-br" />
+              </div>
+              <div className="qr-scanning-badge">
+                <span className="qr-scanning-dot" />
+                Сканирование…
+              </div>
+            </>
+          )}
         </div>
-      )}
 
-      <div className="scanner-container">
-        <div id="qr-reader"></div>
+        <div className="qr-scanner-actions">
+          {scanning ? (
+            <button type="button" onClick={stopScanner} className="btn btn-danger btn-full qr-action-btn">
+              <Square size={18} />
+              Остановить
+            </button>
+          ) : (
+            <button type="button" onClick={startScanner} className="btn btn-primary btn-full qr-action-btn">
+              <Camera size={18} />
+              Начать сканирование
+            </button>
+          )}
+        </div>
 
-        {scanning ? (
-          <button onClick={stopScanner} className="btn btn-danger">Остановить</button>
-        ) : (
-          <button onClick={startScanner} className="btn btn-primary">Начать сканирование</button>
+        {error && (
+          <div className="qr-error-banner" role="alert">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
         )}
-
-        {error && <div className="error">{error}</div>}
       </div>
 
-      <div className="manual-input">
-        <h3>Ручной ввод</h3>
-        <form onSubmit={handleManualInput}>
+      <div className="qr-manual-card">
+        <div className="qr-manual-header">
+          <Keyboard size={20} />
+          <div>
+            <h3>Ручной ввод</h3>
+            <p>QR-код, UUID или инвентарный номер</p>
+          </div>
+        </div>
+        <form onSubmit={handleManualInput} className="qr-manual-form">
           <input
             type="text"
             value={manualInput}
             onChange={(e) => setManualInput(e.target.value)}
-            placeholder="QR-код, ID или инв. номер оборудования"
+            placeholder="Например: EQ-00142"
+            autoComplete="off"
           />
-          <button type="submit" className="btn">Найти</button>
+          <button type="submit" className="btn btn-primary" disabled={!manualInput.trim()}>
+            Найти
+          </button>
         </form>
       </div>
+
+      <ul className="qr-tips">
+        <li>Держите телефон на расстоянии 15–25 см от кода</li>
+        <li>Убедитесь, что QR-код хорошо освещён</li>
+        <li>На этикетке оборудования может быть ссылка или UUID</li>
+      </ul>
     </div>
   );
 }

@@ -80,7 +80,13 @@ export default function DashboardPage() {
     Promise.all(tasks).finally(() => setLoading(false));
   }, [canView]);
 
-  if (loading) return <SkeletonPage />;
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <SkeletonPage />
+      </div>
+    );
+  }
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -90,7 +96,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="dashboard page-enter">
+    <div className="dashboard">
       <div className="dashboard-header">
         <div>
           <h1><LayoutDashboard size={26} />{greeting()}, {user?.fullName || user?.username}</h1>

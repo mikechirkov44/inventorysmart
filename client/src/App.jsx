@@ -29,6 +29,7 @@ import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LicenseBanner from './components/LicenseBanner';
 import MobileMoreMenu from './components/MobileMoreMenu';
+import NotificationBell from './components/NotificationBell';
 import { applyThemeColor } from './utils/theme';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -141,6 +142,18 @@ function DirDropdown({ collapsed }) {
         document.body
       )}
     </li>
+  );
+}
+
+/** Верхняя панель (десктоп): уведомления */
+function AppTopBar() {
+  const { user, canView } = useAuth();
+  if (!user) return null;
+
+  return (
+    <header className="top-header">
+      {canView('settings') && <NotificationBell />}
+    </header>
   );
 }
 
@@ -322,7 +335,8 @@ function App() {
               <AppNav collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
               <div className="app-body">
                 <LicenseBanner />
-                <main className="main-content">
+                <AppTopBar />
+                <main className="main-content page-container">
                   <AppRoutes />
                 </main>
               </div>

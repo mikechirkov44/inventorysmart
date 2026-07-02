@@ -3,10 +3,20 @@
  * @description Справочник работ: добавление, редактирование, удаление плановых работ.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Wrench, Copy, Pencil, Trash2 } from 'lucide-react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 
@@ -137,16 +147,18 @@ function WorksDirectory() {
     }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={6} />;
+
+  const isListEmpty = works.length === 0 && !search && !filterCategory;
+  const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Справочник работ</h1>
+      <PageHeader icon={Wrench} title="Справочник работ">
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить работу'}
         </button>
-      </div>
+      </PageHeader>
 
       {showForm && (
         <div className="directory-form-card">
@@ -212,7 +224,7 @@ function WorksDirectory() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {works.length}</div>
       </div>
 
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -226,7 +238,19 @@ function WorksDirectory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="6">
+                    <EmptyState
+                      icon={Wrench}
+                      title="Работы ещё не добавлены"
+                      description="Создайте плановые работы для назначения обслуживания оборудования."
+                      actionLabel="+ Добавить работу"
+                      onAction={openAddForm}
+                    />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan="6" className="no-results-cell">Работы не найдены</td></tr>
               ) : (
                 filtered.map(work => (
@@ -250,6 +274,29 @@ function WorksDirectory() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Работы не найдены">
+        {filtered.map(work => (
+          <MobileDataCard key={work.id}>
+            <MobileDataCardTitle>{work.name}</MobileDataCardTitle>
+            <MobileDataCardRow label="Категория">{work.category || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Периодичность">
+              <span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span>
+            </MobileDataCardRow>
+            <MobileDataCardRow label="Приоритет">
+              <span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span>
+            </MobileDataCardRow>
+            <MobileDataCardRow label="Описание">{work.description || '—'}</MobileDataCardRow>
+            <MobileDataCardActions>
+              <ActionsMenu items={[
+                { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(work) },
+                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(work) },
+                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(work.id), danger: true },
+              ]} />
+            </MobileDataCardActions>
+          </MobileDataCard>
+        ))}
+      </MobileDataCards>
     </div>
   );
 }

@@ -5,10 +5,20 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Package, Copy, Pencil, Trash2 } from 'lucide-react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 
@@ -165,16 +175,18 @@ function SparePartsDirectory() {
     try { await sparePartsAPI.delete(id); fetchData(); } catch { toast.error('Ошибка', 'Ошибка удаления'); }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={9} />;
+
+  const isListEmpty = items.length === 0 && !search;
+  const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Справочник ЗИП</h1>
+      <PageHeader icon={Package} title="Справочник ЗИП">
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить'}
         </button>
-      </div>
+      </PageHeader>
 
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
@@ -297,7 +309,7 @@ function SparePartsDirectory() {
       </div>
 
       {/* Таблица позиций ЗИП */}
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -314,7 +326,19 @@ function SparePartsDirectory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="9">
+                    <EmptyState
+                      icon={Package}
+                      title="Позиции ЗИП ещё не добавлены"
+                      description="Создайте первую позицию запасных частей для учёта остатков и привязки к оборудованию."
+                      actionLabel="+ Добавить"
+                      onAction={openAddForm}
+                    />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan="9" className="no-results-cell">Позиции не найдены</td></tr>
               ) : (
                 filtered.map(item => (
@@ -360,6 +384,49 @@ function SparePartsDirectory() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Позиции не найдены">
+        {filtered.map(item => (
+          <MobileDataCard key={item.id}>
+            <MobileDataCardTitle>{item.name}</MobileDataCardTitle>
+            <MobileDataCardRow label="Артикул">{item.article || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Производитель">{item.manufacturer || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Ед. изм.">{item.unit || 'шт'}</MobileDataCardRow>
+            <MobileDataCardRow label="Кол-во">
+              <span className={`sp-quantity ${(item.quantity || 0) <= 0 ? 'empty' : (item.quantity || 0) <= (item.minStock || 0) ? 'low' : ''}`}>
+                {item.quantity || 0}
+              </span>
+            </MobileDataCardRow>
+            <MobileDataCardRow label="Мин. запас">{item.minStock}</MobileDataCardRow>
+            <MobileDataCardRow label="Оборудование">
+              <div className="td-tags">
+                {(item.equipmentIds || []).map(id => eqMap[id]).filter(Boolean).map(name => (
+                  <span key={name} className="frequency-badge">{name}</span>
+                ))}
+                {(item.equipmentIds || []).length === 0 && '—'}
+              </div>
+            </MobileDataCardRow>
+            <MobileDataCardRow label="Работы">
+              <div className="td-tags">
+                {(item.workLinks || []).map(wl => {
+                  const w = works.find(x => x.id === wl.workId);
+                  return w ? (
+                    <span key={wl.workId} className="equipment-count-badge">{w.name}{wl.quantity > 0 ? ` ×${wl.quantity}` : ''}</span>
+                  ) : null;
+                })}
+                {(item.workLinks || []).length === 0 && '—'}
+              </div>
+            </MobileDataCardRow>
+            <MobileDataCardActions>
+              <ActionsMenu items={[
+                { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
+                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
+                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+              ]} />
+            </MobileDataCardActions>
+          </MobileDataCard>
+        ))}
+      </MobileDataCards>
     </div>
   );
 }

@@ -84,6 +84,19 @@ export default function AppearanceTab({ readOnly }) {
           <span className="settings-hint">{color}</span>
         </div>
       )}
+
+      <div className="appearance-preview">
+        <div className="appearance-preview-title">Предпросмотр</div>
+        <div className="appearance-preview-row">
+          <span className="appearance-preview-btn">Кнопка</span>
+          <span className="appearance-preview-badge">Бейдж</span>
+          <span className="appearance-preview-nav">● Пункт меню</span>
+          <div className="appearance-preview-kpi">
+            <div className="appearance-preview-kpi-value">24</div>
+            <div className="appearance-preview-kpi-label">KPI</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

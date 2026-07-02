@@ -82,8 +82,22 @@ export function SkeletonPage() {
   );
 }
 
+/** Скелетон мобильных карточек */
+export function SkeletonMobileCards({ count = 4 }) {
+  return (
+    <div className="mobile-data-cards skeleton-mobile-cards">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="mobile-data-card">
+          <div className="skeleton skeleton-line" style={{ width: '60%', marginBottom: 12 }} />
+          <div className="skeleton skeleton-line" style={{ width: '90%', height: 12 }} />
+          <div className="skeleton skeleton-line" style={{ width: '70%', height: 12, marginTop: 8 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
- * Скелетон сетки карточек.
  * @param {Object} props
  * @param {number} [props.count=6] - Количество карточек-скелетонов
  */

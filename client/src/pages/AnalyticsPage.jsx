@@ -9,6 +9,11 @@ import { BarChart3, Wrench } from 'lucide-react';
 import api from '../services/api';
 import { sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI } from '../services/api';
 import CustomSelect from '../components/CustomSelect';
+import PageHeader from '../components/PageHeader';
+import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
+import {
+  MobileDataCards, MobileDataCard, MobileDataCardTitle, MobileDataCardRow,
+} from '../components/MobileDataCard';
 
 /** Компонент горизонтальной диаграммы эффективности сотрудников */
 function PerformanceChart({ data }) {
@@ -119,7 +124,7 @@ function StockReport() {
     return { total, empty, low, ok };
   }, [items]);
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={6} />;
 
   return (
     <>
@@ -159,7 +164,7 @@ function StockReport() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {items.length}</div>
       </div>
 
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -201,6 +206,22 @@ function StockReport() {
           </table>
         </div>
       </div>
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Позиции не найдены">
+        {filtered.map((item) => {
+          const qty = item.quantity || 0;
+          const min = item.minStock || 0;
+          const status = qty === 0 ? 'empty' : qty <= min ? 'low' : 'ok';
+          const statusLabel = qty === 0 ? 'Нет' : qty <= min ? 'Мало' : 'В норме';
+          return (
+            <MobileDataCard key={item.id}>
+              <MobileDataCardTitle>{item.name}</MobileDataCardTitle>
+              <MobileDataCardRow label="Артикул">{item.article || '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="На складе">{qty}</MobileDataCardRow>
+              <MobileDataCardRow label="Статус">{statusLabel}</MobileDataCardRow>
+            </MobileDataCard>
+          );
+        })}
+      </MobileDataCards>
     </>
   );
 }
@@ -286,7 +307,7 @@ function EquipmentReport() {
     return { total, withIncidents, totalIncidents, avgIncidents };
   }, [equipment, incidents, incidentCountByEquipment]);
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={6} />;
 
   return (
     <>
@@ -325,7 +346,7 @@ function EquipmentReport() {
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {equipment.length}</div>
       </div>
 
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -374,6 +395,25 @@ function EquipmentReport() {
           </table>
         </div>
       </div>
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Оборудование не найдено">
+        {filtered.map((item) => {
+          const incCount = incidentCountByEquipment[item.id] || 0;
+          const statusMap = {
+            working: 'Работает',
+            under_repair: 'В ремонте',
+            needs_repair: 'Требует ремонта',
+          };
+          return (
+            <MobileDataCard key={item.id}>
+              <MobileDataCardTitle>{item.name}</MobileDataCardTitle>
+              <MobileDataCardRow label="Инв. №">{item.inventoryNumber || '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="Помещение">{roomMap[item.roomId] || '—'}</MobileDataCardRow>
+              <MobileDataCardRow label="Статус">{statusMap[item.status] || 'Работает'}</MobileDataCardRow>
+              <MobileDataCardRow label="Инциденты">{incCount}</MobileDataCardRow>
+            </MobileDataCard>
+          );
+        })}
+      </MobileDataCards>
     </>
   );
 }
@@ -392,18 +432,15 @@ function AnalyticsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonPage />;
 
   return (
     <div className="analytics-page">
-      <div className="header">
-        <h1><BarChart3 size={24} />Аналитика</h1>
-        <div className="header-actions">
-          <button onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
-          <button onClick={() => setView('equipment')} className={`btn ${view === 'equipment' ? 'btn-primary' : ''}`}>Оборудование</button>
-          <button onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
-        </div>
-      </div>
+      <PageHeader icon={BarChart3} title="Аналитика">
+        <button type="button" onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
+        <button type="button" onClick={() => setView('equipment')} className={`btn ${view === 'equipment' ? 'btn-primary' : ''}`}>Оборудование</button>
+        <button type="button" onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
+      </PageHeader>
 
       {/* Переключение между видами аналитики */}
       {view === 'stock' ? (
@@ -443,7 +480,7 @@ function AnalyticsPage() {
 
           <PerformanceChart data={analytics} />
 
-          <div className="table-container">
+          <div className="table-container desktop-table-only">
             <div className="table-scroll">
               <table className="data-table">
                 <thead>
@@ -488,6 +525,17 @@ function AnalyticsPage() {
               </table>
             </div>
           </div>
+          <MobileDataCards empty={analytics.length === 0} emptyMessage="Нет данных">
+            {analytics.map((emp) => (
+              <MobileDataCard key={emp.employeeId}>
+                <MobileDataCardTitle>{emp.employeeName}</MobileDataCardTitle>
+                <MobileDataCardRow label="Должность">{emp.jobTitle || '—'}</MobileDataCardRow>
+                <MobileDataCardRow label="Выполнено">{emp.totalCompleted} / {emp.totalPlanned}</MobileDataCardRow>
+                <MobileDataCardRow label="% выполнения">{emp.completionRate}%</MobileDataCardRow>
+                <MobileDataCardRow label="Просрочено">{emp.overdue}</MobileDataCardRow>
+              </MobileDataCard>
+            ))}
+          </MobileDataCards>
         </>
       )}
     </div>

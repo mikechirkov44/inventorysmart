@@ -12,7 +12,14 @@ import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import {
+  MobileDataCards, MobileDataCard, MobileDataCardTitle,
+  MobileDataCardRow, MobileDataCardActions,
+} from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
+import { formatDate, formatDateTime } from '../utils/date';
 import UploadImage from '../components/UploadImage';
 import { resolveUploadField } from '../utils/uploads';
 
@@ -183,16 +190,17 @@ function IncidentsPage() {
 
   if (loading) return <SkeletonTable rows={6} cols={7} />;
 
+  const openAddModal = () => setShowAddModal(true);
+
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><AlertTriangle size={24} />Инциденты (поломки)</h1>
+      <PageHeader icon={AlertTriangle} title="Инциденты (поломки)">
         {allowInspectionWithoutQr && (
-          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
+          <button onClick={openAddModal} className="btn btn-primary">
             + Добавить инцидент
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Панель фильтрации по статусу */}
       <div className="filters-panel">
@@ -207,53 +215,96 @@ function IncidentsPage() {
         </div>
       </div>
 
-      <div className="table-container">
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Дата</th>
-                <th>Оборудование</th>
-                <th>Проблема</th>
-                <th>Сотрудник</th>
-                <th>Статус</th>
-                <th>Фото</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incidents.length === 0 ? (
-                <tr><td colSpan="7" className="no-results-cell">Инцидентов нет</td></tr>
-              ) : (
-                incidents.map(inc => {
-                  const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
-                  return (
-                    <tr key={inc.id}>
-                      <td>{new Date(inc.createdAt).toLocaleDateString('ru-RU')}</td>
-                      <td>
-                        <Link to={`/equipment/${inc.equipmentId}`} className="table-link">
-                          {inc.equipmentName || '—'}
-                        </Link>
-                        <div className="td-muted">{inc.inventoryNumber}</div>
-                      </td>
-                      <td className="td-muted">{inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}</td>
-                      <td>{inc.employeeName || '—'}</td>
-                      <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                      <td>{inc.photos?.length || 0} шт.</td>
-                      <td>
-                        <ActionsMenu items={[
-                          { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
-                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
-                        ]} />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {incidents.length === 0 && !filterStatus ? (
+        <EmptyState
+          icon={AlertTriangle}
+          title="Инцидентов пока нет"
+          description="Здесь будут отображаться сообщения о поломках и неисправностях оборудования."
+          actionLabel={allowInspectionWithoutQr ? 'Добавить инцидент' : undefined}
+          onAction={allowInspectionWithoutQr ? openAddModal : undefined}
+        />
+      ) : (
+        <>
+          <div className="table-container desktop-table-only">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Оборудование</th>
+                    <th>Проблема</th>
+                    <th>Сотрудник</th>
+                    <th>Статус</th>
+                    <th>Фото</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidents.length === 0 ? (
+                    <tr><td colSpan="7" className="no-results-cell">Инцидентов не найдено</td></tr>
+                  ) : (
+                    incidents.map(inc => {
+                      const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
+                      return (
+                        <tr key={inc.id}>
+                          <td>{formatDate(inc.createdAt)}</td>
+                          <td>
+                            <Link to={`/equipment/${inc.equipmentId}`} className="table-link">
+                              {inc.equipmentName || '—'}
+                            </Link>
+                            <div className="td-muted">{inc.inventoryNumber}</div>
+                          </td>
+                          <td className="td-muted">{inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}</td>
+                          <td>{inc.employeeName || '—'}</td>
+                          <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                          <td>{inc.photos?.length || 0} шт.</td>
+                          <td>
+                            <ActionsMenu items={[
+                              { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
+                              { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
+                            ]} />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <MobileDataCards empty={incidents.length === 0} emptyMessage="Инцидентов не найдено">
+            {incidents.map(inc => {
+              const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
+              return (
+                <MobileDataCard key={inc.id}>
+                  <MobileDataCardTitle>
+                    <Link to={`/equipment/${inc.equipmentId}`} className="table-link">
+                      {inc.equipmentName || '—'}
+                    </Link>
+                  </MobileDataCardTitle>
+                  <MobileDataCardRow label="Инв. №">{inc.inventoryNumber || '—'}</MobileDataCardRow>
+                  <MobileDataCardRow label="Дата">{formatDate(inc.createdAt)}</MobileDataCardRow>
+                  <MobileDataCardRow label="Проблема">
+                    {inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}
+                  </MobileDataCardRow>
+                  <MobileDataCardRow label="Сотрудник">{inc.employeeName || '—'}</MobileDataCardRow>
+                  <MobileDataCardRow label="Статус">
+                    <span className={`status-badge ${st.className}`}>{st.label}</span>
+                  </MobileDataCardRow>
+                  <MobileDataCardRow label="Фото">{inc.photos?.length || 0} шт.</MobileDataCardRow>
+                  <MobileDataCardActions>
+                    <ActionsMenu items={[
+                      { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
+                      { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
+                    ]} />
+                  </MobileDataCardActions>
+                </MobileDataCard>
+              );
+            })}
+          </MobileDataCards>
+        </>
+      )}
 
       {/* Модальное окно деталей инцидента */}
       {selectedIncident && (
@@ -262,7 +313,7 @@ function IncidentsPage() {
             <h3>Инцидент</h3>
             <div className="incident-detail">
               <p><strong>Оборудование:</strong> {selectedIncident.equipmentName} ({selectedIncident.inventoryNumber})</p>
-              <p><strong>Дата:</strong> {new Date(selectedIncident.createdAt).toLocaleString('ru-RU')}</p>
+              <p><strong>Дата:</strong> {formatDateTime(selectedIncident.createdAt)}</p>
               <p><strong>Сотрудник:</strong> {selectedIncident.employeeName}</p>
               <p><strong>Проблема:</strong> {selectedIncident.description}</p>
               {selectedIncident.causeName && (

@@ -4,6 +4,11 @@ import { causesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import {
+  MobileDataCards, MobileDataCard, MobileDataCardTitle, MobileDataCardActions,
+} from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
 
 function CausesDirectory() {
@@ -87,49 +92,77 @@ function CausesDirectory() {
 
   if (loading) return <SkeletonTable rows={6} cols={2} />;
 
+  const openAddForm = () => { setShowForm(true); setEditing(null); setForm({ name: '' }); };
+
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><AlertCircle size={24} />Причины возникновения</h1>
-        <button onClick={() => { setShowForm(true); setEditing(null); setForm({ name: '' }); }} className="btn btn-primary">
+      <PageHeader icon={AlertCircle} title="Причины возникновения">
+        <button onClick={openAddForm} className="btn btn-primary">
           + Добавить
         </button>
-      </div>
+      </PageHeader>
 
       <div className="search-bar" style={{ marginBottom: 16 }}>
         <input type="text" placeholder="Поиск..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="table-container">
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan="2" className="no-results-cell">Записей не найдено</td></tr>
-              ) : (
-                filtered.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>
-                      <ActionsMenu items={[
-                        { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
-                        { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
-                        { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
-                      ]} />
-                    </td>
+      {items.length === 0 && !search ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Причины ещё не добавлены"
+          description="Создайте справочник причин возникновения неисправностей для использования в инцидентах и журнале работ."
+          actionLabel="Добавить причину"
+          onAction={openAddForm}
+        />
+      ) : (
+        <>
+          <div className="table-container desktop-table-only">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Название</th>
+                    <th>Действия</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr><td colSpan="2" className="no-results-cell">Записей не найдено</td></tr>
+                  ) : (
+                    filtered.map(item => (
+                      <tr key={item.id}>
+                        <td>{item.name}</td>
+                        <td>
+                          <ActionsMenu items={[
+                            { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
+                            { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
+                            { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                          ]} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <MobileDataCards empty={filtered.length === 0}>
+            {filtered.map(item => (
+              <MobileDataCard key={item.id}>
+                <MobileDataCardTitle>{item.name}</MobileDataCardTitle>
+                <MobileDataCardActions>
+                  <ActionsMenu items={[
+                    { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(item) },
+                    { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(item) },
+                    { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                  ]} />
+                </MobileDataCardActions>
+              </MobileDataCard>
+            ))}
+          </MobileDataCards>
+        </>
+      )}
 
       {showForm && (
         <div className="complete-task-modal" onClick={() => setShowForm(false)}>

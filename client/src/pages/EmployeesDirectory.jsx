@@ -5,10 +5,20 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Users, Copy, Pencil, Trash2 } from 'lucide-react';
 import { employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
 
 /** Компонент справочника сотрудников */
@@ -122,16 +132,18 @@ function EmployeesDirectory() {
     }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={5} />;
+
+  const isListEmpty = employees.length === 0 && !search;
+  const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Справочник сотрудников</h1>
+      <PageHeader icon={Users} title="Справочник сотрудников">
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить сотрудника'}
         </button>
-      </div>
+      </PageHeader>
 
       {error && <div className="error">{error}</div>}
 
@@ -184,7 +196,7 @@ function EmployeesDirectory() {
       </div>
 
       {/* Таблица сотрудников */}
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -197,7 +209,19 @@ function EmployeesDirectory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="5">
+                    <EmptyState
+                      icon={Users}
+                      title="Сотрудники ещё не добавлены"
+                      description="Добавьте первого сотрудника, чтобы назначать ответственных за помещения и работы."
+                      actionLabel="+ Добавить сотрудника"
+                      onAction={openAddForm}
+                    />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan="5" className="no-results-cell">Сотрудники не найдены</td></tr>
               ) : (
                 filtered.map(emp => (
@@ -220,6 +244,24 @@ function EmployeesDirectory() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Сотрудники не найдены">
+        {filtered.map(emp => (
+          <MobileDataCard key={emp.id}>
+            <MobileDataCardTitle>{emp.lastName} {emp.firstName} {emp.middleName}</MobileDataCardTitle>
+            <MobileDataCardRow label="Должность">{emp.jobTitle || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Телефон">{emp.phone || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Email">{emp.email || '—'}</MobileDataCardRow>
+            <MobileDataCardActions>
+              <ActionsMenu items={[
+                { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(emp) },
+                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(emp) },
+                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(emp.id), danger: true },
+              ]} />
+            </MobileDataCardActions>
+          </MobileDataCard>
+        ))}
+      </MobileDataCards>
     </div>
   );
 }

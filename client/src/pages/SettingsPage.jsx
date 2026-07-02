@@ -16,6 +16,11 @@ import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
 import UploadImage from '../components/UploadImage';
 import AppearanceTab from '../components/AppearanceTab';
+import PageHeader from '../components/PageHeader';
+import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
+import {
+  MobileDataCards, MobileDataCard, MobileDataCardTitle, MobileDataCardRow, MobileDataCardActions,
+} from '../components/MobileDataCard';
 import { formatDate } from '../utils/date';
 
 /** Список доступных часовых поясов */
@@ -756,13 +761,11 @@ function SettingsPage() {
     }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonPage />;
 
   return (
     <div className="settings-page">
-      <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, fontSize: '1.6rem', fontWeight: 700, color: 'var(--gray-900)' }}>
-        <Settings size={24} style={{ color: 'var(--primary)' }} />Настройки
-      </h1>
+      <PageHeader icon={Settings} title="Настройки" />
       {/* Навигация по вкладкам */}
       <div className="settings-tabs">
         {TABS.map(tab => (
@@ -952,9 +955,10 @@ function SettingsPage() {
               )}
 
               {usersLoading ? (
-                <div className="loading-spinner">Загрузка...</div>
+                <SkeletonTable rows={5} cols={6} />
               ) : (
-                <div className="table-container">
+                <>
+                <div className="table-container desktop-table-only">
                   <div className="table-scroll">
                     <table className="data-table">
                       <thead>
@@ -978,7 +982,7 @@ function SettingsPage() {
                               ) : <span className="status-badge status-needs-repair">Не назначена</span>}
                             </td>
                             <td>{u.employeeName || '—'}</td>
-                            <td>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+                            <td>{formatDate(u.createdAt)}</td>
                             <td>
                               <ActionsMenu items={[
                                 { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEditUser(u) },
@@ -991,6 +995,24 @@ function SettingsPage() {
                     </table>
                   </div>
                 </div>
+                <MobileDataCards empty={users.length === 0} emptyMessage="Пользователей нет">
+                  {users.map(u => (
+                    <MobileDataCard key={u.id}>
+                      <MobileDataCardTitle>{u.username}</MobileDataCardTitle>
+                      <MobileDataCardRow label="ФИО">{u.fullName || '—'}</MobileDataCardRow>
+                      <MobileDataCardRow label="Роль">{u.positionName || 'Не назначена'}</MobileDataCardRow>
+                      <MobileDataCardRow label="Сотрудник">{u.employeeName || '—'}</MobileDataCardRow>
+                      <MobileDataCardRow label="Создан">{formatDate(u.createdAt)}</MobileDataCardRow>
+                      <MobileDataCardActions>
+                        <ActionsMenu items={[
+                          { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEditUser(u) },
+                          { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDeleteUser(u.id), danger: true },
+                        ]} />
+                      </MobileDataCardActions>
+                    </MobileDataCard>
+                  ))}
+                </MobileDataCards>
+                </>
               )}
             </div>
           </div>

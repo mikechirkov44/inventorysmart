@@ -5,10 +5,20 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { FolderTree, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Building2, Copy, Pencil, Trash2 } from 'lucide-react';
 import { roomsAPI, equipmentAPI, employeesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonTable } from '../components/Skeleton';
+import {
+  MobileDataCards,
+  MobileDataCard,
+  MobileDataCardTitle,
+  MobileDataCardRow,
+  MobileDataCardActions,
+} from '../components/MobileDataCard';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
 
@@ -132,16 +142,18 @@ function RoomsDirectory() {
     catch { toast.error('Ошибка', 'Ошибка удаления'); }
   };
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonTable rows={6} cols={7} />;
+
+  const isListEmpty = rooms.length === 0 && !search && !filterBuilding;
+  const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
     <div className="directory-page">
-      <div className="header">
-        <h1><FolderTree size={24} />Справочник помещений</h1>
+      <PageHeader icon={Building2} title="Справочник помещений">
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить помещение'}
         </button>
-      </div>
+      </PageHeader>
 
       {error && <div className="error">{error}</div>}
 
@@ -200,7 +212,7 @@ function RoomsDirectory() {
       </div>
 
       {/* Таблица помещений */}
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -215,7 +227,19 @@ function RoomsDirectory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isListEmpty ? (
+                <tr>
+                  <td colSpan="7">
+                    <EmptyState
+                      icon={Building2}
+                      title="Помещения ещё не добавлены"
+                      description="Создайте первое помещение для привязки оборудования и назначения ответственных."
+                      actionLabel="+ Добавить помещение"
+                      onAction={openAddForm}
+                    />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan="7" className="no-results-cell">Помещения не найдены</td></tr>
               ) : (
                 filtered.map(room => (
@@ -240,6 +264,28 @@ function RoomsDirectory() {
           </table>
         </div>
       </div>
+
+      <MobileDataCards empty={filtered.length === 0} emptyMessage="Помещения не найдены">
+        {filtered.map(room => (
+          <MobileDataCard key={room.id}>
+            <MobileDataCardTitle>{room.name}</MobileDataCardTitle>
+            <MobileDataCardRow label="Здание">{room.building || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Этаж">{room.floor || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Ответственный">{empMap[room.responsibleEmployeeId] || '—'}</MobileDataCardRow>
+            <MobileDataCardRow label="Оборудование">
+              <span className="equipment-count-badge">{equipmentCountByRoomId[room.id] || 0} ед.</span>
+            </MobileDataCardRow>
+            <MobileDataCardRow label="Описание">{room.description || '—'}</MobileDataCardRow>
+            <MobileDataCardActions>
+              <ActionsMenu items={[
+                { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(room) },
+                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEdit(room) },
+                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(room.id), danger: true },
+              ]} />
+            </MobileDataCardActions>
+          </MobileDataCard>
+        ))}
+      </MobileDataCards>
     </div>
   );
 }
