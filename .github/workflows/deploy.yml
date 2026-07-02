@@ -39,13 +39,15 @@ jobs:
               -czf deploy.tar.gz .
 
       - name: Upload archive to server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: deploy.tar.gz
-          target: /tmp
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.tar.gz "${VPS_USER}@${VPS_HOST}:/tmp/deploy.tar.gz"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
