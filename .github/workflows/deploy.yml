@@ -125,7 +125,7 @@ jobs:
 
             HEALTH_OK=false
             for i in 1 2 3 4 5 6 7 8; do
-              if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+              if curl -sf http://localhost/api/health > /dev/null 2>&1; then
                 HEALTH_OK=true
                 break
               fi
@@ -136,7 +136,7 @@ jobs:
             if [ "$HEALTH_OK" = true ]; then
               echo ""
               echo "=== Deploy successful ==="
-              curl -s http://localhost:3001/api/health
+              curl -s http://localhost/api/health
             else
               echo ""
               echo "=== Deploy FAILED ==="
