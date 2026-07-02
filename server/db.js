@@ -545,6 +545,18 @@ async function migrate() {
       await client.query('DELETE FROM positions WHERE id = ANY($1::uuid[])', [legacyIds]);
     }
 
+    await withSavepoint(client, 'notifications_created_at', async () => {
+      await client.query(`
+        ALTER TABLE notifications
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()
+      `);
+      await client.query(`
+        UPDATE notifications
+        SET created_at = COALESCE(read_at, NOW())
+        WHERE created_at IS NULL
+      `);
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

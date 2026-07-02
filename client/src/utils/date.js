@@ -35,3 +35,21 @@ export function isDateExpired(value) {
   date.setHours(0, 0, 0, 0);
   return date < today;
 }
+
+/** Разбор даты-времени (ISO, timestamp). */
+export function parseDateTime(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+
+  const str = String(value).trim();
+  if (!str) return null;
+
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Форматирует дату и время для UI. */
+export function formatDateTime(value, fallback = '—') {
+  const date = parseDateTime(value);
+  return date ? date.toLocaleString('ru-RU') : fallback;
+}

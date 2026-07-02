@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 import api from '../services/api';
+import { formatDateTime } from '../utils/date';
 
 /** Компонент колокольчика уведомлений в шапке приложения */
 function NotificationBell() {
@@ -96,7 +97,7 @@ function NotificationBell() {
                   <div className="notif-body">
                     <div className="notif-title">{n.title}</div>
                     <div className="notif-message">{n.message}</div>
-                    <div className="notif-time">{new Date(n.createdAt).toLocaleString('ru-RU')}</div>
+                    <div className="notif-time">{formatDateTime(n.createdAt ?? n.created_at)}</div>
                   </div>
                 </div>
               ))

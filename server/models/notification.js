@@ -7,6 +7,12 @@
 
 const { query } = require('../db');
 
+function serializeTimestamp(value) {
+  if (value == null || value === '') return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 /**
  * Преобразует строку из БД в объект уведомления.
  * @param {Object|null} row - Строка из таблицы notifications
@@ -24,8 +30,8 @@ function mapRow(row) {
     workId: row.work_id,
     incidentId: row.incident_id,
     read: row.read,
-    readAt: row.read_at,
-    createdAt: row.created_at
+    readAt: serializeTimestamp(row.read_at),
+    createdAt: serializeTimestamp(row.created_at ?? row.createdAt),
   };
 }
 
@@ -88,7 +94,7 @@ module.exports = {
    */
   create: async (data) => {
     const existing = await query(
-      'SELECT id FROM notifications WHERE user_id = $1 AND type = $2 AND equipment_id = $3 AND work_id = $4 AND read = false',
+      'SELECT * FROM notifications WHERE user_id = $1 AND type = $2 AND equipment_id = $3 AND work_id = $4 AND read = false',
       [data.userId, data.type || 'info', data.equipmentId || null, data.workId || null]
     );
     if (existing.rows[0]) return mapRow(existing.rows[0]);

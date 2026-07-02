@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, AlertCircle, Clock, CheckCircle, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import ActionsMenu from '../components/ActionsMenu';
+import { formatDateTime } from '../utils/date';
 
 const TYPE_LABELS = {
   incident: 'Инцидент',
@@ -127,7 +128,7 @@ export default function NotificationsPage() {
                         <div className="notif-message-cell">{n.message}</div>
                       </td>
                       <td className="notif-date-cell">
-                        {new Date(n.createdAt).toLocaleString('ru-RU')}
+                        {formatDateTime(n.createdAt ?? n.created_at)}
                       </td>
                       <td>
                         <ActionsMenu items={[
