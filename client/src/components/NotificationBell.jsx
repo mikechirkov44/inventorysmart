@@ -66,6 +66,7 @@ function NotificationBell() {
       case 'overdue_work': return <AlertCircle size={size} className="notif-type-icon overdue" />;
       case 'upcoming_work': return <Clock size={size} className="notif-type-icon upcoming" />;
       case 'incident_resolved': return <CheckCircle size={size} className="notif-type-icon resolved" />;
+      case 'work_acceptance': return <CheckCircle size={size} className="notif-type-icon upcoming" />;
       default: return <Info size={size} className="notif-type-icon info" />;
     }
   };

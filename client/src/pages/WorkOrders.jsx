@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, CheckCircle, Trash2 } from 'lucide-react';
-import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI, causesAPI } from '../services/api';
+import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI, causesAPI, overdueReasonsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
@@ -20,6 +20,7 @@ function WorkOrders() {
   const [allSpareParts, setAllSpareParts] = useState([]);
   const [allWorks, setAllWorks] = useState([]);
   const [allCauses, setAllCauses] = useState([]);
+  const [allOverdueReasons, setAllOverdueReasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -34,7 +35,11 @@ function WorkOrders() {
   const [newCauseId, setNewCauseId] = useState('');
   const [newDueDate, setNewDueDate] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
+  const [acceptModalWo, setAcceptModalWo] = useState(null);
+  const [acceptOverdueReasonId, setAcceptOverdueReasonId] = useState('');
+  const [acceptSubmitting, setAcceptSubmitting] = useState(false);
   const addModalRef = useRef(null);
+  const acceptModalRef = useRef(null);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -58,18 +63,20 @@ function WorkOrders() {
   /** Параллельная загрузка нарядов, оборудования, запчастей и работ */
   const fetchData = async () => {
     try {
-      const [workOrdersRes, equipmentRes, spRes, worksRes, causesRes] = await Promise.all([
+      const [workOrdersRes, equipmentRes, spRes, worksRes, causesRes, overdueRes] = await Promise.all([
         workOrderAPI.getAll(),
         equipmentAPI.getAll(),
         sparePartsAPI.getAll(),
         worksAPI.getAll(),
-        causesAPI.getAll()
+        causesAPI.getAll(),
+        overdueReasonsAPI.getAll()
       ]);
       setWorkOrders(workOrdersRes.data);
       setEquipment(equipmentRes.data);
       setAllSpareParts(spRes.data);
       setAllWorks(worksRes.data);
       setAllCauses(causesRes.data);
+      setAllOverdueReasons(overdueRes.data);
       setLoading(false);
     } catch (err) {
       setError('Ошибка загрузки данных');
@@ -179,16 +186,46 @@ function WorkOrders() {
     }
   };
 
+  /** Определение просроченности работы */
+  const isWoOverdue = (wo) => {
+    if (!wo.dueDate || wo.status !== 'completed' || wo.acceptedBy) return false;
+    const completedAt = wo.completedAt ? new Date(wo.completedAt) : new Date(wo.createdAt);
+    return completedAt > new Date(wo.dueDate);
+  };
+
   /** Принятие выполненной работы руководителем */
-  const handleAccept = async (id) => {
+  const handleAccept = async (wo) => {
+    if (isWoOverdue(wo)) {
+      setAcceptModalWo(wo);
+      setAcceptOverdueReasonId('');
+      return;
+    }
     const ok = await confirm({ title: 'Принять работу?', message: 'Подтвердить принятие выполненной работы руководителем.', type: 'warning', confirmText: 'Принять' });
     if (!ok) return;
     try {
-      await workOrderAPI.accept(id);
+      await workOrderAPI.accept(wo.id);
       toast.success('Работа принята руководителем');
       fetchData();
     } catch (err) {
       toast.error('Ошибка', 'Не удалось принять работу');
+    }
+  };
+
+  /** Подтверждение принятия из модалки (с причиной просрочки если нужно) */
+  const confirmAccept = async () => {
+    if (!acceptModalWo) return;
+    setAcceptSubmitting(true);
+    try {
+      await workOrderAPI.accept(acceptModalWo.id, acceptOverdueReasonId || undefined);
+      toast.success('Работа принята руководителем');
+      setAcceptModalWo(null);
+      setAcceptOverdueReasonId('');
+      fetchData();
+    } catch (err) {
+      const msg = err?.response?.data?.error || 'Не удалось принять работу';
+      toast.error('Ошибка', msg);
+    } finally {
+      setAcceptSubmitting(false);
     }
   };
 
@@ -303,6 +340,9 @@ function WorkOrders() {
                       <span className={`status-badge ${wo.status === 'completed' ? 'status-working' : 'status-needs-repair'}`}>
                         {wo.status === 'completed' ? 'Выполнена' : 'В ожидании'}
                       </span>
+                      {isWoOverdue(wo) && !wo.acceptedBy && (
+                        <span className="status-badge status-needs-repair" style={{ marginLeft: 4 }}>Просрочено</span>
+                      )}
                     </td>
                     <td className="td-muted">{wo.causeName || '—'}</td>
                     <td>{wo.dueDate ? new Date(wo.dueDate).toLocaleDateString('ru-RU') : '—'}</td>
@@ -318,7 +358,7 @@ function WorkOrders() {
                     <td>
                       <ActionsMenu items={[
                         ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
-                        ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo.id) }] : []),
+                        ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo) }] : []),
                         { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
                       ]} />
                     </td>
@@ -422,6 +462,37 @@ function WorkOrders() {
             <div className="modal-actions">
               <button onClick={confirmComplete} className="btn btn-primary">Подтвердить выполнение</button>
               <button onClick={cancelComplete} className="btn">Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка принятия работы руководителем (с причиной просрочки) */}
+      {acceptModalWo && (
+        <div ref={acceptModalRef} className="complete-task-modal" onClick={(e) => { if (e.target === acceptModalRef.current) setAcceptModalWo(null); }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Подтверждение работы</h3>
+            <p><strong>Работа:</strong> {acceptModalWo.taskName}</p>
+            {acceptModalWo.dueDate && (
+              <p><strong>Срок устранения:</strong> {new Date(acceptModalWo.dueDate).toLocaleDateString('ru-RU')}</p>
+            )}
+            <p style={{ color: '#991b1b', fontWeight: 600 }}>
+              Работа выполнена с нарушением срока. Необходимо указать причину просрочки.
+            </p>
+            <div className="form-group">
+              <label>Причина просрочки *</label>
+              <CustomSelect
+                value={acceptOverdueReasonId}
+                onChange={setAcceptOverdueReasonId}
+                placeholder="Выберите причину просрочки"
+                options={allOverdueReasons.map(r => ({ value: r.id, label: r.name }))}
+              />
+            </div>
+            <div className="modal-actions">
+              <button onClick={confirmAccept} className="btn btn-primary" disabled={!acceptOverdueReasonId || acceptSubmitting}>
+                {acceptSubmitting ? 'Сохранение...' : 'Принять работу'}
+              </button>
+              <button onClick={() => setAcceptModalWo(null)} className="btn">Отмена</button>
             </div>
           </div>
         </div>

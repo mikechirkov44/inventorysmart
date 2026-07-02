@@ -9,6 +9,8 @@ const express = require('express');
 const router = express.Router();
 const WorkOrder = require('../models/workOrder');
 const SparePart = require('../models/sparePart');
+const Notification = require('../models/notification');
+const User = require('../models/user');
 const { imageUpload } = require('../utils/upload');
 
 /**
@@ -131,6 +133,31 @@ router.put('/:id', imageUpload.array('photos', 10), async (req, res) => {
       return res.json({ workOrder, sparePartsDeducted: deducted });
     }
 
+    if (wasPending && isNowCompleted) {
+      try {
+        const allUsers = await User.findAllByCompany(req.user.companyId);
+        const managers = allUsers.filter(u => {
+          if (!u.positionPermissions) return false;
+          const perm = u.positionPermissions.workOrders;
+          return perm === 'full';
+        });
+        for (const manager of managers) {
+          if (manager.id !== req.user.id) {
+            await Notification.create({
+              userId: manager.id,
+              type: 'work_acceptance',
+              title: 'Требуется подтверждение работы',
+              message: `${workOrder.taskName} — ${workOrder.status === 'completed' ? 'выполнена' : 'ожидает подтверждения'}`,
+              equipmentId: workOrder.equipmentId,
+              workId: workOrder.taskId
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error('Error sending acceptance notification:', notifErr);
+      }
+    }
+
     res.json(workOrder);
   } catch (error) {
     console.error('Route error:', error);
@@ -166,7 +193,8 @@ router.delete('/:id', async (req, res) => {
  */
 router.post('/:id/accept', async (req, res) => {
   try {
-    const workOrder = await WorkOrder.accept(req.params.id, req.user.companyId, req.user.id);
+    const { overdueReasonId } = req.body || {};
+    const workOrder = await WorkOrder.accept(req.params.id, req.user.companyId, req.user.id, overdueReasonId || null);
     if (!workOrder) {
       return res.status(404).json({ error: 'Work order not found' });
     }

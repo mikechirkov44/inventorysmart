@@ -72,7 +72,7 @@ export const workOrderAPI = {
   create: (data) => api.post('/work-orders', data),
   update: (id, data) => api.put(`/work-orders/${id}`, data),
   delete: (id) => api.delete(`/work-orders/${id}`),
-  accept: (id) => api.post(`/work-orders/${id}/accept`),
+  accept: (id, overdueReasonId) => api.post(`/work-orders/${id}/accept`, overdueReasonId ? { overdueReasonId } : {}),
 };
 
 /** API для справочника работ */

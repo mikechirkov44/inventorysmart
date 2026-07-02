@@ -218,16 +218,28 @@ module.exports = {
    * @param {string} userId - ID пользователя (руководителя)
    * @returns {Promise<Object|null>} Обновлённый наряд-заказ или null
    */
-  accept: async (id, companyId, userId) => {
+  accept: async (id, companyId, userId, overdueReasonId) => {
+    const wo = await module.exports.findById(id, companyId);
+    if (!wo) return null;
+
+    const completedOnTime = wo.dueDate ? new Date(wo.completedAt || wo.createdAt) <= new Date(wo.dueDate) : true;
+    const isOverdue = !completedOnTime;
+
+    if (isOverdue && !overdueReasonId) {
+      const err = new Error('Причина просрочки обязательна для работ, выполненных с нарушением срока');
+      err.status = 400;
+      throw err;
+    }
+
     const { rows } = await query(
-      `UPDATE work_orders SET accepted_by = $1, accepted_at = NOW(), updated_at = NOW()
-       WHERE id = $2 AND company_id = $3 AND status = 'completed'
+      `UPDATE work_orders SET accepted_by = $1, accepted_at = NOW(), updated_at = NOW(),
+              overdue_reason_id = $2, completed_on_time = $3
+       WHERE id = $4 AND company_id = $5 AND status = 'completed'
        RETURNING *`,
-      [userId, id, companyId]
+      [userId, overdueReasonId || null, completedOnTime, id, companyId]
     );
     if (rows.length === 0) return null;
 
-    // Get full data with joins
     const { rows: fullRows } = await query(
       `SELECT wo.*, c.name as cause_name, or2.name as overdue_reason_name,
               u.full_name as accepted_by_name, w.priority

@@ -14,6 +14,7 @@ const TYPE_LABELS = {
   overdue_work: 'Просрочено',
   upcoming_work: 'Скоро',
   incident_resolved: 'Решено',
+  work_acceptance: 'Подтверждение',
   info: 'Информация'
 };
 
@@ -22,6 +23,7 @@ const TYPE_ICONS = {
   overdue_work: AlertCircle,
   upcoming_work: Clock,
   incident_resolved: CheckCircle,
+  work_acceptance: CheckCircle,
   info: Info
 };
 
@@ -30,6 +32,7 @@ const TYPE_COLORS = {
   overdue_work: 'var(--danger)',
   upcoming_work: 'var(--warning)',
   incident_resolved: 'var(--success)',
+  work_acceptance: 'var(--primary)',
   info: 'var(--primary)'
 };
 
