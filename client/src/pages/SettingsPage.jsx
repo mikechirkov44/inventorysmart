@@ -16,6 +16,7 @@ import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
 import UploadImage from '../components/UploadImage';
 import AppearanceTab from '../components/AppearanceTab';
+import { formatDate } from '../utils/date';
 
 /** Список доступных часовых поясов */
 const TIMEZONES = [
@@ -599,14 +600,10 @@ function SettingsPage() {
       if (res.data.logo) {
         setLogoPreview(null);
       }
-      if (res.data.licenseKey) {
-        try {
-          const json = atob(res.data.licenseKey);
-          const decoded = JSON.parse(json);
-          if (decoded.plan && decoded.expiresAt) {
-            setLicense({ plan: decoded.plan, expiresAt: decoded.expiresAt });
-          }
-        } catch {}
+      if (res.data.license?.status === 'active' && res.data.license.plan && res.data.license.expiresAt) {
+        setLicense({ plan: res.data.license.plan, expiresAt: res.data.license.expiresAt });
+      } else {
+        setLicense(null);
       }
       setLoading(false);
     } catch {
@@ -833,7 +830,7 @@ function SettingsPage() {
                 {license && license.plan && license.plan.toUpperCase() !== 'DEMO' && (
                   <div className="plan-info">
                     <span className="plan-badge">{license.plan}</span>
-                    <span className="plan-text">Тариф активен до {new Date(license.expiresAt).toLocaleDateString('ru-RU')}</span>
+                    <span className="plan-text">Тариф активен до {formatDate(license.expiresAt)}</span>
                   </div>
                 )}
                 <div className="plan-actions">

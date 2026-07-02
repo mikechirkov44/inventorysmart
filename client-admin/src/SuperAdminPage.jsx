@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { superadminAPI } from './api';
+import { formatDate, isDateExpired } from './utils/date';
 import { createPortal } from 'react-dom';
 import {
   Building2, Users, Key, Plus, Copy, CheckCircle, Pencil, Trash2,
@@ -308,8 +309,8 @@ function CompaniesTab() {
                 <td>{c.userCount}</td>
                 <td>
                   {c.license ? (
-                    <span className={`sa-badge ${new Date(c.license.expiresAt) < new Date() ? 'sa-badge-danger' : 'sa-badge-success'}`}>
-                      {c.license.plan} до {new Date(c.license.expiresAt).toLocaleDateString('ru-RU')}
+                    <span className={`sa-badge ${isDateExpired(c.license.expiresAt) ? 'sa-badge-danger' : 'sa-badge-success'}`}>
+                      {c.license.plan} до {formatDate(c.license.expiresAt)}
                     </span>
                   ) : (
                     <span className="sa-badge sa-badge-gray">Нет лицензии</span>
@@ -827,10 +828,10 @@ function LicensesTab() {
               <tr key={c.id}>
                 <td className="td-bold">{c.companyName || 'Без названия'}</td>
                 <td>{c.license.plan}</td>
-                <td>{new Date(c.license.expiresAt).toLocaleDateString('ru-RU')}</td>
+                <td>{formatDate(c.license.expiresAt)}</td>
                 <td>
-                  <span className={`sa-badge ${new Date(c.license.expiresAt) < new Date() ? 'sa-badge-danger' : 'sa-badge-success'}`}>
-                    {new Date(c.license.expiresAt) < new Date() ? 'Истекла' : 'Активна'}
+                  <span className={`sa-badge ${isDateExpired(c.license.expiresAt) ? 'sa-badge-danger' : 'sa-badge-success'}`}>
+                    {isDateExpired(c.license.expiresAt) ? 'Истекла' : 'Активна'}
                   </span>
                 </td>
                 <td>
@@ -838,8 +839,8 @@ function LicensesTab() {
                     type="button"
                     className="btn btn-small btn-danger"
                     onClick={() => setConfirmDeactivate({ companyId: c.companyId, companyName: c.companyName })}
-                    disabled={new Date(c.license.expiresAt) < new Date()}
-                    title={new Date(c.license.expiresAt) < new Date() ? 'Лицензия уже истекла' : 'Деактивировать лицензию'}
+                    disabled={isDateExpired(c.license.expiresAt)}
+                    title={isDateExpired(c.license.expiresAt) ? 'Лицензия уже истекла' : 'Деактивировать лицензию'}
                   >
                     Деактивировать
                   </button>

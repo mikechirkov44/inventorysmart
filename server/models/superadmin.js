@@ -6,7 +6,7 @@
  */
 
 const { query } = require('../db');
-const { signLicense } = require('../utils/license');
+const { signLicense, verifyLicense } = require('../utils/license');
 const bcrypt = require('bcryptjs');
 
 module.exports = {
@@ -46,11 +46,10 @@ module.exports = {
     return rows.map(r => {
       let licenseInfo = null;
       if (r.license_key) {
-        try {
-          const json = Buffer.from(r.license_key, 'base64').toString('utf-8');
-          const decoded = JSON.parse(json);
+        const decoded = verifyLicense(r.license_key);
+        if (decoded) {
           licenseInfo = { plan: decoded.plan, expiresAt: decoded.expiresAt };
-        } catch {}
+        }
       }
       return {
         id: r.id,
