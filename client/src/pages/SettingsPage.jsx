@@ -15,6 +15,7 @@ import ActionsMenu from '../components/ActionsMenu';
 import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
 import UploadImage from '../components/UploadImage';
+import AppearanceTab from '../components/AppearanceTab';
 
 /** Список доступных часовых поясов */
 const TIMEZONES = [
@@ -1010,10 +1011,7 @@ function SettingsPage() {
 
         {/* Вкладка «Оформление» */}
         {activeTab === 'appearance' && (
-          <div className="settings-section">
-            <h2 className="settings-section-title">Оформление</h2>
-            <p className="settings-placeholder">Настройка оформления будет доступна в следующем обновлении.</p>
-          </div>
+          <AppearanceTab readOnly={isSettingsReadOnly} />
         )}
       </div>
     </div>

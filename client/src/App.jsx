@@ -8,7 +8,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download, LayoutDashboard } from 'lucide-react';
 
 function AndroidIcon({ size = 18, ...props }) {
   return (
@@ -27,7 +27,11 @@ import api, { companyAPI } from './services/api';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
+import LicenseBanner from './components/LicenseBanner';
+import MobileMoreMenu from './components/MobileMoreMenu';
+import { applyThemeColor } from './utils/theme';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage'));
 const EquipmentDetail = lazy(() => import('./pages/EquipmentDetail'));
 const EquipmentForm = lazy(() => import('./pages/EquipmentForm'));
@@ -52,6 +56,7 @@ const SetupPage = lazy(() => import('./pages/SetupPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const HelpPage = lazy(() => import('./pages/HelpPage'));
 import './App.css';
+import './styles/saas.css';
 
 /** Выпадающее меню раздела «Справочники» в боковой навигации */
 function DirDropdown({ collapsed }) {
@@ -107,7 +112,7 @@ function DirDropdown({ collapsed }) {
   const hasDirAccess = canView('equipment') || canView('employees') || canView('works') || canView('rooms') || canView('spareParts') || canView('causes') || canView('overdueReasons');
   if (!hasDirAccess) return null;
 
-  const isActive = ['/', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts', '/common-faults', '/causes', '/overdue-reasons'].some(p => location.pathname === p);
+  const isActive = ['/equipment', '/equipment-table', '/employees', '/works', '/rooms', '/spare-parts', '/common-faults', '/causes', '/overdue-reasons'].some(p => location.pathname === p);
 
   const menuStyle = menuPos.isMobile
     ? { position: 'fixed', bottom: 68, left: 8, right: 8, top: 'auto', margin: 0 }
@@ -122,7 +127,7 @@ function DirDropdown({ collapsed }) {
       </button>
       {open && createPortal(
         <ul id="nav-dropdown-portal" className="nav-dropdown-menu" style={menuStyle}>
-          {canView('equipment') && <li><NavLink to="/" end onClick={() => setOpen(false)}>Оборудование</NavLink></li>}
+          {canView('equipment') && <li><NavLink to="/equipment" onClick={() => setOpen(false)}>Оборудование</NavLink></li>}
           {(canView('employees') || canView('works') || canView('rooms') || canView('spareParts')) && <li className="nav-dropdown-divider" />}
           {canView('employees') && <li><NavLink to="/employees" onClick={() => setOpen(false)}>Сотрудники</NavLink></li>}
           {canView('works') && <li><NavLink to="/works" onClick={() => setOpen(false)}>Работы</NavLink></li>}
@@ -150,6 +155,9 @@ function AppNav({ collapsed, onToggle }) {
       companyAPI.get().then(res => {
         if (res.data && res.data.companyName) {
           setCompanyName(res.data.companyName);
+        }
+        if (res.data?.themeColor) {
+          applyThemeColor(res.data.themeColor);
         }
       }).catch(() => {});
     }
@@ -184,6 +192,7 @@ function AppNav({ collapsed, onToggle }) {
         </div>
       )}
       <ul className="nav-links">
+        <li><NavLink to="/" end><LayoutDashboard size={18} />{!collapsed && <span>Главная</span>}</NavLink></li>
         <DirDropdown collapsed={collapsed} />
         {canView('workOrders') && <li><NavLink to="/work-orders"><ClipboardList size={18} />{!collapsed && <span>Журнал</span>}</NavLink></li>}
         {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} />{!collapsed && <span>Документы</span>}</NavLink></li>}
@@ -191,11 +200,12 @@ function AppNav({ collapsed, onToggle }) {
         {canView('schedule') && <li><NavLink to="/schedule"><CalendarDays size={18} />{!collapsed && <span>План-график</span>}</NavLink></li>}
         {canView('incidents') && <li><NavLink to="/incidents"><AlertTriangle size={18} />{!collapsed && <span>Инциденты</span>}</NavLink></li>}
         {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
-        {canView('import') && <li><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
-        {canView('settings') && <li><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
-        <li><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span>}</NavLink></li>
-        <li><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
-        <li><a href="/downloads/InventorySmart.apk" download><AndroidIcon size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
+        {canView('import') && <li className="nav-item-desktop-only"><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
+        {canView('settings') && <li className="nav-item-desktop-only"><NavLink to="/settings"><Settings size={18} />{!collapsed && <span>Настройки</span>}</NavLink></li>}
+        <li className="nav-item-desktop-only"><NavLink to="/notifications"><Bell size={18} />{!collapsed && <span>Уведомления {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}</span>}</NavLink></li>
+        <li className="nav-item-desktop-only"><NavLink to="/help"><HelpCircle size={18} />{!collapsed && <span>Справка</span>}</NavLink></li>
+        <li className="nav-item-desktop-only"><a href="/downloads/InventorySmart.apk" download><AndroidIcon size={18} />{!collapsed && <span>Мобильное приложение</span>}</a></li>
+        <li className="mobile-more-nav-item"><MobileMoreMenu unreadCount={unreadCount} /></li>
       </ul>
       <div className="nav-footer">
         {!collapsed && (
@@ -237,11 +247,13 @@ function LicenseBlockScreen() {
   );
 }
 
+import { SkeletonPage } from './components/Skeleton';
+
 /** Обёртка страницы с анимацией входа при смене маршрута и ленивой загрузкой */
 function PageWrapper({ children }) {
   const location = useLocation();
   return (
-    <Suspense fallback={<div className="loading-spinner">Загрузка...</div>}>
+    <Suspense fallback={<SkeletonPage />}>
       <div key={location.pathname} className="page-enter">
         {children}
       </div>
@@ -253,7 +265,7 @@ function PageWrapper({ children }) {
 function AppRoutes() {
   const { user, loading, canView, license } = useAuth();
 
-  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  if (loading) return <SkeletonPage />;
 
   if (user && license && license.status === 'blocked') {
     return <LicenseBlockScreen />;
@@ -264,8 +276,8 @@ function AppRoutes() {
       <Route path="/setup" element={<PageWrapper><SetupPage /></PageWrapper>} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <PageWrapper><LoginPage /></PageWrapper>} />
 
-      {/* User routes */}
-      <Route path="/" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><PageWrapper><DashboardPage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/equipment" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentDetail /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
@@ -308,9 +320,12 @@ function App() {
           <ConfirmProvider>
             <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
               <AppNav collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
-              <main className="main-content">
-                <AppRoutes />
-              </main>
+              <div className="app-body">
+                <LicenseBanner />
+                <main className="main-content">
+                  <AppRoutes />
+                </main>
+              </div>
             </div>
           </ConfirmProvider>
         </ToastProvider>

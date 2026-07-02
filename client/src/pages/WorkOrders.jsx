@@ -306,7 +306,7 @@ function WorkOrders() {
         </div>
       </div>
 
-      <div className="table-container">
+      <div className="table-container desktop-table-only">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -368,6 +368,43 @@ function WorkOrders() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mobile-data-cards">
+        {filteredWorkOrders.length === 0 ? (
+          <div className="no-results">Записей не найдено</div>
+        ) : (
+          filteredWorkOrders.map((wo) => (
+            <div key={wo.id} className={`mobile-data-card wo-row-${wo.status}`}>
+              <div className="mobile-data-card-title">
+                <Link to={`/equipment/${wo.equipmentId}`} className="table-link">
+                  {getEquipmentName(wo.equipmentId)}
+                </Link>
+              </div>
+              <div className="mobile-data-card-row">
+                <span className="mobile-data-card-label">Работа</span>
+                <span>{wo.taskName}</span>
+              </div>
+              <div className="mobile-data-card-row">
+                <span className="mobile-data-card-label">Дата</span>
+                <span>{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</span>
+              </div>
+              <div className="mobile-data-card-row">
+                <span className="mobile-data-card-label">Статус</span>
+                <span className={`status-badge ${wo.status === 'completed' ? 'status-working' : 'status-needs-repair'}`}>
+                  {wo.status === 'completed' ? 'Выполнена' : 'В ожидании'}
+                </span>
+              </div>
+              <div className="mobile-data-card-actions">
+                <ActionsMenu items={[
+                  ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
+                  ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo) }] : []),
+                  { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
+                ]} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Модальное окно создания записи журнала работ вручную */}

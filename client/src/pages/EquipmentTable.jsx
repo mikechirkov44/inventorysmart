@@ -147,7 +147,7 @@ function EquipmentTable({ embedded }) {
         <div className="header">
           <h1><FolderTree size={24} />Оборудование (таблица)</h1>
           <div className="header-actions">
-            <Link to="/" className="btn">Карточки</Link>
+            <Link to="/equipment" className="btn">Карточки</Link>
             <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
           </div>
         </div>
@@ -200,7 +200,7 @@ function EquipmentTable({ embedded }) {
         >
           <Settings size={18} />
         </button>
-        <div className="table-scroll">
+        <div className="table-scroll desktop-table-only">
           <table className="data-table">
             <thead>
               <tr>
@@ -297,6 +297,41 @@ function EquipmentTable({ embedded }) {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="mobile-data-cards">
+          {filtered.length === 0 ? (
+            <div className="no-results">Оборудование не найдено</div>
+          ) : (
+            filtered.map((item) => {
+              const st = STATUS_MAP[item.status] || STATUS_MAP.working;
+              return (
+                <div key={item.id} className="mobile-data-card">
+                  <div className="mobile-data-card-title">
+                    <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
+                  </div>
+                  <div className="mobile-data-card-row">
+                    <span className="mobile-data-card-label">Инв. №</span>
+                    <span>{item.inventoryNumber}</span>
+                  </div>
+                  <div className="mobile-data-card-row">
+                    <span className="mobile-data-card-label">Статус</span>
+                    <span className={`status-badge ${st.className}`}>{st.label}</span>
+                  </div>
+                  <div className="mobile-data-card-row">
+                    <span className="mobile-data-card-label">Помещение</span>
+                    <span>{roomMap[item.roomId] || '—'}</span>
+                  </div>
+                  <div className="mobile-data-card-actions">
+                    <ActionsMenu items={[
+                      { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => navigate(`/equipment/${item.id}/edit`) },
+                      { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                    ]} />
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

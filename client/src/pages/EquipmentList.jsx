@@ -4,13 +4,14 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderTree, Eye, Pencil, Trash2 } from 'lucide-react';
+import { FolderTree, Eye, Pencil, Trash2, Wrench } from 'lucide-react';
 import { equipmentAPI, roomsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonCardGrid } from '../components/Skeleton';
 import ActionsMenu from '../components/ActionsMenu';
 import UploadImage from '../components/UploadImage';
+import EmptyState from '../components/EmptyState';
 
 /** Маппинг статусов оборудования на метки и CSS-классы */
 const STATUS_MAP = {
@@ -91,6 +92,18 @@ function EquipmentList({ embedded }) {
 
   if (loading) return <SkeletonCardGrid count={6} />;
   if (error) return null;
+
+  if (equipment.length === 0) {
+    return (
+      <EmptyState
+        icon={Wrench}
+        title="Оборудование ещё не добавлено"
+        description="Начните с добавления первой единицы оборудования или импортируйте данные из Excel."
+        actionLabel="Добавить оборудование"
+        actionTo="/equipment/new"
+      />
+    );
+  }
 
   return (
     <div className="equipment-list">

@@ -88,6 +88,24 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
 });
 
 /**
+ * @route PATCH /company/theme
+ * @description Обновление цвета бренда компании
+ */
+router.patch('/theme', authenticate, requirePermission('settings', 'edit'), async (req, res) => {
+  try {
+    const { themeColor } = req.body;
+    if (!themeColor || !/^#[0-9a-fA-F]{6}$/.test(themeColor)) {
+      return res.status(400).json({ error: 'Укажите цвет в формате #RRGGBB' });
+    }
+    const company = await Company.update({ companyId: req.user.companyId, themeColor });
+    res.json(company);
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * @route POST /company/activate-license
  * @description Активация лицензионного ключа для компании
  * @requires authenticate

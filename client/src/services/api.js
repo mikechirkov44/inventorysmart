@@ -209,6 +209,7 @@ export const companyAPI = {
   update: (formData) => api.put('/company', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  updateTheme: (data) => api.patch('/company/theme', data),
 };
 
 /** API для активации лицензии */

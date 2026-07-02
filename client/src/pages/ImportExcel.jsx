@@ -112,7 +112,7 @@ function ImportExcel() {
     <div className="import-excel">
       <div className="header">
         <h1><Upload size={24} />Импорт из Excel</h1>
-        <Link to="/" className="btn">← Назад</Link>
+        <Link to="/equipment" className="btn">← Назад</Link>
       </div>
 
       <div className="import-content">
@@ -179,7 +179,7 @@ function ImportExcel() {
         {success && (
           <div className="success">
             {success}
-            <p>Перейти к <Link to="/">списку оборудования</Link></p>
+            <p>Перейти к <Link to="/equipment">списку оборудования</Link></p>
           </div>
         )}
       </div>

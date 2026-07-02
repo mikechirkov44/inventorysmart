@@ -28,6 +28,7 @@ function mapRow(row) {
     licenseKey: row.license_key || '',
     apiEnabled: row.api_enabled,
     apiKey: row.api_key || '',
+    themeColor: row.theme_color || '#4f46e5',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -176,6 +177,7 @@ module.exports = {
     if (data.licenseKey !== undefined) mapped.license_key = data.licenseKey;
     if (data.apiEnabled !== undefined) mapped.api_enabled = data.apiEnabled;
     if (data.apiKey !== undefined) mapped.api_key = data.apiKey;
+    if (data.themeColor !== undefined) mapped.theme_color = data.themeColor;
     mapped.updated_at = new Date();
 
     const keys = Object.keys(mapped);

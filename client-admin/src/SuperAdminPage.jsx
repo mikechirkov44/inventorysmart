@@ -693,6 +693,7 @@ function LicensesTab() {
   const [generatedKey, setGeneratedKey] = useState('');
   const [copied, setCopied] = useState(false);
   const [search, setSearch] = useState('');
+  const [confirmDeactivate, setConfirmDeactivate] = useState(null);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -728,10 +729,7 @@ function LicensesTab() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDeactivate = async (companyId, companyName) => {
-    if (!confirm(`Деактивировать лицензию для компании "${companyName}"?\n\nКомпания перейдёт в демо-режим.`)) {
-      return;
-    }
+  const handleDeactivate = async (companyId) => {
     try {
       await superadminAPI.deactivateLicense(companyId);
       showToast('Лицензия деактивирована');
@@ -742,6 +740,8 @@ function LicensesTab() {
       ));
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка деактивации');
+    } finally {
+      setConfirmDeactivate(null);
     }
   };
 
@@ -837,7 +837,7 @@ function LicensesTab() {
                   <button
                     type="button"
                     className="btn btn-small btn-danger"
-                    onClick={() => handleDeactivate(c.companyId, c.companyName)}
+                    onClick={() => setConfirmDeactivate({ companyId: c.companyId, companyName: c.companyName })}
                     disabled={new Date(c.license.expiresAt) < new Date()}
                     title={new Date(c.license.expiresAt) < new Date() ? 'Лицензия уже истекла' : 'Деактивировать лицензию'}
                   >
@@ -849,6 +849,16 @@ function LicensesTab() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDeactivate}
+        title="Деактивировать лицензию?"
+        message={`Деактивировать лицензию для компании «${confirmDeactivate?.companyName || ''}»? Компания перейдёт в демо-режим.`}
+        onConfirm={() => handleDeactivate(confirmDeactivate.companyId)}
+        onCancel={() => setConfirmDeactivate(null)}
+        confirmText="Деактивировать"
+        confirmDanger
+      />
     </div>
   );
 }

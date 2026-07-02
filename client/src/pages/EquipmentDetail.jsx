@@ -204,7 +204,7 @@ function EquipmentDetail() {
       ]} />
         <div className="detail-header">
         <div className="detail-header-main">
-          <Link to="/" className="back-link">← Назад к списку</Link>
+          <Link to="/equipment" className="back-link">← Назад к списку</Link>
         </div>
       </div>
 

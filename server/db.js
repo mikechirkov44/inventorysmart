@@ -488,6 +488,10 @@ async function migrate() {
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS completed_on_time BOOLEAN`);
     });
 
+    await withSavepoint(client, 'theme_color', async () => {
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS theme_color VARCHAR(20) DEFAULT '#4f46e5'`);
+    });
+
     // Migrate positions to per-company scope (critical — must succeed)
     await client.query('ALTER TABLE positions ADD COLUMN IF NOT EXISTS company_id UUID');
     await client.query('ALTER TABLE positions DROP CONSTRAINT IF EXISTS positions_name_key');
