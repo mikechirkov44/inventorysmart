@@ -1191,24 +1191,21 @@ input, textarea, select { font-family: inherit; }
 }
 
 .detail-columns {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 24px;
+  display: flex;
   align-items: stretch;
-}
-
-.detail-main {
-  align-self: start;
+  gap: 24px;
 }
 
 .detail-sidebar {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 360px;
+  flex-shrink: 0;
 }
 
 .detail-sidebar > .equipment-instructions {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1281,11 +1278,19 @@ input, textarea, select { font-family: inherit; }
 }
 
 .detail-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   background: white;
   border-radius: var(--radius);
   padding: 24px;
   box-shadow: var(--shadow);
   border: 1px solid var(--gray-200);
+}
+
+.detail-info {
+  flex: 1;
 }
 
 .detail-photo {
@@ -2826,10 +2831,17 @@ input, textarea, select { font-family: inherit; }
 @media (max-width: 1024px) {
   .detail-header,
   .detail-layout,
-  .detail-columns,
   .detail-content,
   .form-content {
     grid-template-columns: 1fr;
+  }
+
+  .detail-columns {
+    flex-direction: column;
+  }
+
+  .detail-sidebar {
+    width: 100%;
   }
 
   .import-content {
@@ -3284,9 +3296,16 @@ input, textarea, select { font-family: inherit; }
 
   /* --- Detail Page --- */
   .detail-header,
-  .detail-columns,
   .detail-content {
     grid-template-columns: 1fr;
+  }
+
+  .detail-columns {
+    flex-direction: column;
+  }
+
+  .detail-sidebar {
+    width: 100%;
   }
 
   .detail-history-section {

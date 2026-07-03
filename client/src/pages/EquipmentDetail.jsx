@@ -2,7 +2,7 @@
  * @module EquipmentDetail
  * @description Карточка оборудования: основная информация, QR-код, плановые работы, ЗИП, история ремонтов.
  */
-import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI, commonFaultsAPI } from '../services/api';
 const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
@@ -60,8 +60,6 @@ function EquipmentDetail() {
   const [faultForm, setFaultForm] = useState({ name: '' });
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [operatingHours, setOperatingHours] = useState(null);
-  const mainColumnRef = useRef(null);
-  const sidebarRef = useRef(null);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -69,45 +67,6 @@ function EquipmentDetail() {
   useEffect(() => {
     fetchData();
   }, [id]);
-
-  /** Синхронизация высоты правой колонки с левой карточкой */
-  useEffect(() => {
-    if (showPassport || loading) return undefined;
-
-    const syncColumnHeights = () => {
-      if (!mainColumnRef.current || !sidebarRef.current) return;
-      sidebarRef.current.style.minHeight = `${mainColumnRef.current.offsetHeight}px`;
-    };
-
-    syncColumnHeights();
-
-    const observer = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(syncColumnHeights)
-      : null;
-
-    if (observer && mainColumnRef.current) {
-      observer.observe(mainColumnRef.current);
-    }
-
-    window.addEventListener('resize', syncColumnHeights);
-
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', syncColumnHeights);
-      if (sidebarRef.current) {
-        sidebarRef.current.style.minHeight = '';
-      }
-    };
-  }, [
-    showPassport,
-    loading,
-    equipment,
-    spareParts,
-    commonFaults,
-    assignedWorks,
-    qrData,
-    operatingHours,
-  ]);
 
   /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов, моточасов, типовых неисправностей */
   const fetchData = async () => {
@@ -266,7 +225,7 @@ function EquipmentDetail() {
       ) : (<>
         <div className="detail-layout">
           <div className="detail-columns">
-          <div className="detail-main" ref={mainColumnRef}>
+          <div className="detail-main">
             <div className="detail-photo">
               {equipment.photo ? (
                 <UploadImage item={equipment} field="photo" alt={equipment.name} />
@@ -347,7 +306,7 @@ function EquipmentDetail() {
             </div>
           </div>
 
-          <div className="detail-sidebar" ref={sidebarRef}>
+          <div className="detail-sidebar">
             <div className="qr-section">
               <h3>QR-код</h3>
               {qrData && (
