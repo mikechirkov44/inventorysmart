@@ -168,6 +168,7 @@ export const analyticsAPI = {
 /** API для план-графика работ */
 export const scheduleAPI = {
   getSchedule: (params) => api.get('/schedule', { params }),
+  getTodayTasks: () => api.get('/schedule/today'),
 };
 
 /** API для типовых неисправностей */

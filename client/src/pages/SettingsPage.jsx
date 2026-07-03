@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, Server, CheckCircle, XCircle, Shield, Settings, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Upload, Server, CheckCircle, XCircle, Shield, Settings, Copy, Pencil, Trash2, Key } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
@@ -74,6 +74,21 @@ const TABS = [
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
+
+const LICENSE_STATUS_LABELS = {
+  active: 'Активна',
+  demo: 'Демо-режим',
+  expired: 'Истекла',
+  invalid: 'Недействительна',
+  blocked: 'Заблокирована',
+};
+
+function getLicenseBadgeClass(status) {
+  if (status === 'active') return 'license-active';
+  if (status === 'demo') return 'license-demo';
+  if (status === 'blocked') return 'license-blocked';
+  return 'license-expired';
+}
 
 /** Генерация случайного API ключа */
 function generateApiKey() {
@@ -605,11 +620,7 @@ function SettingsPage() {
       if (res.data.logo) {
         setLogoPreview(null);
       }
-      if (res.data.license?.status === 'active' && res.data.license.plan && res.data.license.expiresAt) {
-        setLicense({ plan: res.data.license.plan, expiresAt: res.data.license.expiresAt });
-      } else {
-        setLicense(null);
-      }
+      setLicense(res.data.license || null);
       setLoading(false);
     } catch {
       toast.error('Ошибка загрузки данных');
@@ -693,9 +704,14 @@ function SettingsPage() {
     setActivating(true);
     try {
       const res = await licenseAPI.activate(licenseKeyInput.trim());
-      setLicense({ plan: res.data.plan, expiresAt: res.data.expiresAt });
       setLicenseKeyInput('');
       toast.success('Лицензия активирована');
+      setLicense({
+        status: 'active',
+        plan: res.data.plan,
+        expiresAt: res.data.expiresAt,
+      });
+      fetchCompany();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Ошибка активации');
     } finally {
@@ -829,13 +845,53 @@ function SettingsPage() {
                 </div>
               </div>
 
-              <div className="settings-card settings-card-highlight">
-                {license && license.plan && license.plan.toUpperCase() !== 'DEMO' && (
-                  <div className="plan-info">
-                    <span className="plan-badge">{license.plan}</span>
-                    <span className="plan-text">Тариф активен до {formatDate(license.expiresAt)}</span>
+              <div className="settings-card company-license-card">
+                <h3 className="settings-card-title">Лицензия</h3>
+                {license ? (
+                  <div className="company-license-info">
+                    <span className={`license-badge ${getLicenseBadgeClass(license.status)}`}>
+                      {LICENSE_STATUS_LABELS[license.status] || license.status}
+                    </span>
+                    {license.status === 'active' && (
+                      <div className="company-license-details">
+                        <div className="company-license-row">
+                          <span className="company-license-label">Тариф</span>
+                          <span className="company-license-value">{license.plan}</span>
+                        </div>
+                        <div className="company-license-row">
+                          <span className="company-license-label">Действует до</span>
+                          <span className="company-license-value">{formatDate(license.expiresAt)}</span>
+                        </div>
+                      </div>
+                    )}
+                    {license.status === 'demo' && (
+                      <div className="company-license-details">
+                        <div className="company-license-row">
+                          <span className="company-license-label">Осталось</span>
+                          <span className="company-license-value">{license.daysLeft} раб. дн.</span>
+                        </div>
+                        {license.demoEnd && (
+                          <div className="company-license-row">
+                            <span className="company-license-label">Демо до</span>
+                            <span className="company-license-value">{formatDate(license.demoEnd)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {(license.status === 'expired' || license.status === 'invalid' || license.status === 'blocked') && license.message && (
+                      <p className="company-license-message">{license.message}</p>
+                    )}
                   </div>
+                ) : (
+                  <p className="company-license-message">Нет данных о лицензии</p>
                 )}
+              </div>
+
+              <div className="settings-card">
+                <h3 className="settings-card-title">
+                  <Key size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+                  Активация лицензии
+                </h3>
                 <div className="plan-actions">
                   <input
                     type="text"

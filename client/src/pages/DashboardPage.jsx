@@ -10,10 +10,17 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  equipmentAPI, workOrderAPI, incidentsAPI, sparePartsAPI, analyticsAPI,
+  equipmentAPI, workOrderAPI, incidentsAPI, sparePartsAPI, analyticsAPI, scheduleAPI,
 } from '../services/api';
 import { SkeletonPage } from '../components/Skeleton';
 import OnboardingChecklist from '../components/OnboardingChecklist';
+import { formatDate } from '../utils/date';
+
+const TODAY_STATUS_LABELS = {
+  today: 'На сегодня',
+  overdue: 'Просрочена',
+  never: 'Не выполнялась',
+};
 
 function KpiCard({ icon: Icon, label, value, sub, to, color = 'primary' }) {
   const content = (
@@ -40,6 +47,7 @@ export default function DashboardPage() {
     completionRate: null,
     overdue: null,
   });
+  const [todayTasks, setTodayTasks] = useState([]);
 
   useEffect(() => {
     const tasks = [];
@@ -75,6 +83,13 @@ export default function DashboardPage() {
           overdue: r.data.totalOverdue,
         }));
       }));
+    }
+    if (canView('schedule')) {
+      tasks.push(
+        scheduleAPI.getTodayTasks()
+          .then((r) => setTodayTasks(r.data.tasks || []))
+          .catch(() => setTodayTasks([])),
+      );
     }
 
     Promise.all(tasks).finally(() => setLoading(false));
@@ -150,6 +165,49 @@ export default function DashboardPage() {
           />
         )}
       </div>
+
+      {canView('schedule') && (
+        <div className="dashboard-section dashboard-today-section">
+          <div className="dashboard-section-header">
+            <h2 className="dashboard-section-title">
+              <Clock size={18} />
+              Работы на сегодня
+              <span className="dashboard-today-count">{todayTasks.length}</span>
+            </h2>
+            <Link to="/schedule" className="dashboard-section-link">План-график</Link>
+          </div>
+          {todayTasks.length === 0 ? (
+            <div className="dashboard-today-empty">На сегодня запланированных работ нет</div>
+          ) : (
+            <ul className="dashboard-today-list">
+              {todayTasks.map((task) => (
+                <li key={task.id} className="dashboard-today-item">
+                  <div className="dashboard-today-main">
+                    <Link to={`/equipment/${task.equipmentId}`} className="dashboard-today-equipment">
+                      {task.equipmentName}
+                    </Link>
+                    {task.inventoryNumber && (
+                      <span className="dashboard-today-inventory">{task.inventoryNumber}</span>
+                    )}
+                    <span className="dashboard-today-work">{task.workName}</span>
+                  </div>
+                  <div className="dashboard-today-meta">
+                    {task.roomName && <span className="dashboard-today-room">{task.roomName}</span>}
+                    <span className={`dashboard-today-status dashboard-today-status-${task.status}`}>
+                      {task.status === 'overdue' && task.daysOverdue > 0
+                        ? `Просрочена ${task.daysOverdue} дн.`
+                        : TODAY_STATUS_LABELS[task.status] || task.status}
+                    </span>
+                    {task.nextDue && (
+                      <span className="dashboard-today-due">Срок: {formatDate(task.nextDue)}</span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="dashboard-section">
         <h2 className="dashboard-section-title">Быстрые действия</h2>

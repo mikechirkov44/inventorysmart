@@ -183,4 +183,91 @@ async function getUpcomingTasks(daysAhead = 7, companyId) {
   return upcoming.sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
 }
 
-module.exports = { getWorkMap, getEquipmentSchedule, getCalendarEvents, getUpcomingTasks };
+/**
+ * Возвращает работы, которые нужно выполнить сегодня (просроченные и срок на сегодня).
+ * @param {string} companyId - ID компании
+ * @returns {Promise<Array>} Список задач на сегодня
+ */
+async function getTodayTasks(companyId) {
+  const allEquipment = await Equipment.findAll(companyId);
+  const workMap = await getWorkMap(companyId);
+  const allWorkOrders = await WorkOrder.findAll(companyId);
+  const allRooms = await Room.findAll(companyId);
+  const allEmployees = await Employee.findAll(companyId);
+
+  const roomMap = {};
+  allRooms.forEach((r) => { roomMap[r.id] = r; });
+  const empMap = {};
+  allEmployees.forEach((e) => { empMap[e.id] = e; });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tasks = [];
+
+  allEquipment.forEach((equip) => {
+    const room = equip.roomId ? roomMap[equip.roomId] : null;
+    const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
+
+    let workIds = equip.workIds || [];
+    if (!Array.isArray(workIds)) workIds = [];
+
+    const equipOrders = allWorkOrders.filter((wo) => wo.equipmentId === equip.id);
+
+    workIds.forEach((wid) => {
+      const work = workMap[wid];
+      if (!work) return;
+
+      const completedOrders = equipOrders
+        .filter((wo) => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+      const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+
+      let nextDue = null;
+      if (lastCompleted) {
+        nextDue = new Date(lastCompleted);
+        nextDue.setDate(nextDue.getDate() + (work.frequencyDays || 30));
+        nextDue.setHours(0, 0, 0, 0);
+      }
+
+      const isOverdue = nextDue ? today >= nextDue : true;
+      if (!isOverdue) return;
+
+      const isDueToday = !nextDue || today.getTime() === nextDue.getTime();
+      const daysOverdue = nextDue && today > nextDue
+        ? Math.floor((today - nextDue) / 86400000)
+        : 0;
+
+      let status = 'today';
+      if (!lastCompleted) status = 'never';
+      else if (!isDueToday) status = 'overdue';
+
+      tasks.push({
+        id: `${equip.id}-${wid}`,
+        equipmentId: equip.id,
+        equipmentName: equip.name,
+        inventoryNumber: equip.inventoryNumber,
+        roomName: room ? room.name : null,
+        employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
+        workId: work.id,
+        workName: work.name,
+        frequencyDays: work.frequencyDays,
+        lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
+        nextDue: nextDue ? nextDue.toISOString() : null,
+        isDueToday,
+        daysOverdue,
+        status,
+      });
+    });
+  });
+
+  return tasks.sort((a, b) => {
+    if (b.daysOverdue !== a.daysOverdue) return b.daysOverdue - a.daysOverdue;
+    const nameCmp = a.equipmentName.localeCompare(b.equipmentName, 'ru');
+    if (nameCmp !== 0) return nameCmp;
+    return a.workName.localeCompare(b.workName, 'ru');
+  });
+}
+
+module.exports = { getWorkMap, getEquipmentSchedule, getCalendarEvents, getUpcomingTasks, getTodayTasks };

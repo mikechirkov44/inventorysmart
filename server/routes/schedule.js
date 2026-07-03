@@ -13,6 +13,21 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 const { requirePermission } = require('../middleware/auth');
+const { getTodayTasks } = require('../utils/schedule');
+
+/**
+ * @route GET /schedule/today
+ * @description Работы на сегодня (просроченные и срок на текущий день)
+ */
+router.get('/today', requirePermission('schedule', 'view'), async (req, res) => {
+  try {
+    const tasks = await getTodayTasks(req.user.companyId);
+    res.json({ tasks, total: tasks.length });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
 
 /**
  * @route GET /schedule
