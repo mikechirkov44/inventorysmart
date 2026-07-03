@@ -2833,7 +2833,11 @@ input, textarea, select { font-family: inherit; }
 }
 
 .equipment-link {
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
   margin-top: 24px;
 }
 
