@@ -14,6 +14,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
 import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
+import { formatDate } from '../utils/date';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -271,7 +272,7 @@ function EquipmentDetail() {
               </div>
               <div className="info-row">
                 <span className="label">Дата ввода:</span>
-                <span className="value">{equipment.commissioningDate ? new Date(equipment.commissioningDate).toLocaleDateString('ru-RU') : '—'}</span>
+                <span className="value">{formatDate(equipment.commissioningDate)}</span>
               </div>
               {operatingHours && (
                 <div className="info-row">
@@ -384,20 +385,6 @@ function EquipmentDetail() {
               )}
             </div>
 
-            <div className="history-section">
-              <h3>История работ ({workOrders.length})</h3>
-              <ul className="history-list">
-                {workOrders.slice(0, 5).map(wo => (
-                  <li key={wo.id} className={`history-item ${wo.status}`}>
-                    <span className="history-date">{new Date(wo.createdAt).toLocaleDateString('ru-RU')}</span>
-                    <span className="history-task">{wo.taskName}</span>
-                    <span className="history-master">{wo.masterName}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Instructions Section */}
             <EquipmentInstructions
               equipmentId={id}
               instructionPdf={equipment.instructionPdf}
@@ -412,6 +399,25 @@ function EquipmentDetail() {
               }}
             />
           </div>
+        </div>
+
+        <div className="detail-history-section history-section">
+          <h3>История работ ({workOrders.length})</h3>
+          {workOrders.length > 0 ? (
+            <div className="history-scroll">
+              <ul className="history-list">
+                {workOrders.map(wo => (
+                  <li key={wo.id} className={`history-item ${wo.status}`}>
+                    <span className="history-date">{formatDate(wo.completedAt || wo.createdAt)}</span>
+                    <span className="history-task">{wo.taskName}</span>
+                    <span className="history-master">{wo.masterName || '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="history-empty">Записей пока нет</p>
+          )}
         </div>
       </>)}
 
