@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, Wrench, ClipboardList, AlertTriangle, Package,
-  ScanLine, Plus, BarChart3, TrendingUp, Clock,
+  ScanLine, Plus, BarChart3, TrendingUp, Clock, Zap, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -21,6 +21,11 @@ const TODAY_STATUS_LABELS = {
   overdue: 'Просрочена',
   never: 'Не выполнялась',
 };
+
+function getTaskScanPath(task) {
+  const code = task.qrCode || task.inventoryNumber || task.equipmentId;
+  return `/scan/${encodeURIComponent(code)}?work=${task.workId}`;
+}
 
 function KpiCard({ icon: Icon, label, value, sub, to, color = 'primary' }) {
   const content = (
@@ -189,7 +194,13 @@ export default function DashboardPage() {
                     {task.inventoryNumber && (
                       <span className="dashboard-today-inventory">{task.inventoryNumber}</span>
                     )}
-                    <span className="dashboard-today-work">{task.workName}</span>
+                    {canView('scanner') ? (
+                      <Link to={getTaskScanPath(task)} className="dashboard-today-work dashboard-today-work-link">
+                        {task.workName}
+                      </Link>
+                    ) : (
+                      <span className="dashboard-today-work">{task.workName}</span>
+                    )}
                   </div>
                   <div className="dashboard-today-meta">
                     {task.roomName && <span className="dashboard-today-room">{task.roomName}</span>}
@@ -201,6 +212,12 @@ export default function DashboardPage() {
                     {task.nextDue && (
                       <span className="dashboard-today-due">Срок: {formatDate(task.nextDue)}</span>
                     )}
+                    {canView('scanner') && (
+                      <Link to={getTaskScanPath(task)} className="btn btn-primary btn-small dashboard-today-execute">
+                        Выполнить
+                        <ChevronRight size={14} />
+                      </Link>
+                    )}
                   </div>
                 </li>
               ))}
@@ -209,8 +226,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="dashboard-section">
-        <h2 className="dashboard-section-title">Быстрые действия</h2>
+      <div className="dashboard-section dashboard-quick-section">
+        <div className="dashboard-section-header">
+          <h2 className="dashboard-section-title">
+            <Zap size={18} />
+            Быстрые действия
+          </h2>
+        </div>
         <div className="quick-actions">
           {canView('scanner') && (
             <Link to="/scan" className="quick-action-btn">

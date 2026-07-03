@@ -314,6 +314,26 @@
   color: var(--warning);
 }
 
+.dashboard-today-work-link {
+  text-decoration: none;
+  color: var(--gray-600);
+}
+
+.dashboard-today-work-link:hover {
+  color: var(--primary);
+}
+
+.dashboard-today-execute {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.dashboard-quick-section {
+  margin-bottom: 0;
+}
+
 .quick-actions {
   display: flex;
   flex-wrap: wrap;

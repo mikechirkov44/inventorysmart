@@ -4,8 +4,8 @@
  * позволяет отмечать выполненные работы и списывать ЗИП.
  */
 
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
 import CustomSelect from '../components/CustomSelect';
@@ -33,6 +33,9 @@ function getFrequencyLabel(days) {
 /** Компонент страницы результата сканирования QR-кода */
 function ScanResult() {
   const { qrCode } = useParams();
+  const [searchParams] = useSearchParams();
+  const focusWorkId = searchParams.get('work');
+  const taskRefs = useRef({});
   const [data, setData] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,14 @@ function ScanResult() {
   /** Загрузка данных оборудования и сотрудников при сканировании */
   useEffect(() => { fetchData(); }, [qrCode]);
 
+  useEffect(() => {
+    if (!focusWorkId || loading) return;
+    const el = taskRefs.current[focusWorkId];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [focusWorkId, loading, data]);
+
   /** Загрузка информации об оборудовании по QR-коду */
   const fetchData = async () => {
     try {
@@ -60,6 +71,24 @@ function ScanResult() {
 
       const resp = scanRes.data.responsibleEmployee;
       if (resp) setExecutorId(resp.id);
+
+      if (focusWorkId) {
+        const task = (scanRes.data.dueTasks || []).find((t) => t.workId === focusWorkId);
+        if (task) {
+          setCheckedTasks({ [focusWorkId]: true });
+          if (task.spareParts?.length > 0) {
+            setTaskSpareParts({
+              [focusWorkId]: task.spareParts.map((sp) => ({
+                sparePartId: sp.sparePartId,
+                name: sp.name,
+                unit: sp.unit,
+                quantity: sp.defaultQuantity || 0,
+                inStock: sp.inStock,
+              })),
+            });
+          }
+        }
+      }
 
       setLoading(false);
     } catch {
@@ -166,7 +195,9 @@ function ScanResult() {
   return (
     <div className="scan-result">
       <div className="scan-header">
-        <Link to="/scan" className="back-link">← Назад к сканеру</Link>
+        <Link to={focusWorkId ? '/' : '/scan'} className="back-link">
+          {focusWorkId ? '← На главную' : '← Назад к сканеру'}
+        </Link>
         <h1>Работы на сегодня</h1>
       </div>
 
@@ -205,7 +236,12 @@ function ScanResult() {
 
           <div className="today-task-list">
             {dueTasks.map(task => (
-              <div key={task.workId} className={`today-task-card ${checkedTasks[task.workId] ? 'checked' : ''}`}>
+              <div
+                key={task.workId}
+                id={`task-${task.workId}`}
+                ref={(el) => { taskRefs.current[task.workId] = el; }}
+                className={`today-task-card ${checkedTasks[task.workId] ? 'checked' : ''} ${focusWorkId === task.workId ? 'focused' : ''}`}
+              >
                 <label className="today-task-check">
                   <input
                     type="checkbox"

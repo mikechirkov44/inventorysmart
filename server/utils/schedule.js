@@ -246,6 +246,7 @@ async function getTodayTasks(companyId) {
       tasks.push({
         id: `${equip.id}-${wid}`,
         equipmentId: equip.id,
+        qrCode: equip.qrCode,
         equipmentName: equip.name,
         inventoryNumber: equip.inventoryNumber,
         roomName: room ? room.name : null,
