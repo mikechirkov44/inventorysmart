@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
@@ -8,6 +8,9 @@ const MONTHS = [
 ];
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const CALENDAR_WIDTH = 280;
+const CALENDAR_HEIGHT = 320;
+const VIEWPORT_PADDING = 8;
 
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
@@ -45,20 +48,34 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    const winW = window.innerWidth;
     const winH = window.innerHeight;
-    const dropdownHeight = 320;
-    let top = rect.bottom + 4;
-    if (top + dropdownHeight > winH - 8) {
-      top = Math.max(8, rect.top - dropdownHeight - 4);
+    const dropdownWidth = Math.max(rect.width, CALENDAR_WIDTH);
+
+    let left = rect.left;
+    if (left + dropdownWidth > winW - VIEWPORT_PADDING) {
+      left = winW - dropdownWidth - VIEWPORT_PADDING;
     }
-    setPos({ top, left: rect.left, width: rect.width });
+    if (left < VIEWPORT_PADDING) {
+      left = VIEWPORT_PADDING;
+    }
+
+    let top = rect.bottom + 4;
+    if (top + CALENDAR_HEIGHT > winH - VIEWPORT_PADDING) {
+      top = Math.max(VIEWPORT_PADDING, rect.top - CALENDAR_HEIGHT - 4);
+    }
+
+    setPos({ top, left, width: dropdownWidth });
   };
+
+  useLayoutEffect(() => {
+    if (open) updatePosition();
+  }, [open]);
 
   useEffect(() => {
     if (open) {
-      updatePosition();
       const onScroll = () => setOpen(false);
-      const onResize = () => setOpen(false);
+      const onResize = () => updatePosition();
       window.addEventListener('scroll', onScroll, true);
       window.addEventListener('resize', onResize);
       return () => {
