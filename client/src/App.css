@@ -1009,6 +1009,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 /* ===== EQUIPMENT LIST (CARDS) ===== */
@@ -2010,6 +2011,13 @@ input, textarea, select { font-family: inherit; }
 .equipment-view-toggle {
   display: flex;
   gap: 4px;
+  align-items: center;
+}
+
+.equipment-view-toggle .btn {
+  width: 33px;
+  min-width: 33px;
+  padding: 0;
 }
 
 .group-controls {
@@ -2904,6 +2912,13 @@ input, textarea, select { font-family: inherit; }
     min-width: 0;
     font-size: 12px;
     padding: 8px 12px;
+  }
+
+  .header-actions .equipment-view-toggle .btn {
+    flex: 0 0 33px;
+    width: 33px;
+    min-width: 33px;
+    padding: 0;
   }
 
   /* --- Cards / Grid --- */

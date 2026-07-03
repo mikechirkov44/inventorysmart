@@ -40,7 +40,7 @@ function EquipmentPage() {
               <Table size={16} />
             </button>
           </div>
-          <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
+          <Link to="/equipment/new" className="btn btn-small btn-primary">+ Добавить</Link>
         </div>
       </div>
       {view === 'cards' ? <EquipmentList embedded /> : <EquipmentTable embedded />}
