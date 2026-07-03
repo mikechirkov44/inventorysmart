@@ -4,6 +4,7 @@
  * Выбор вида сохраняется в localStorage.
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { LayoutGrid, Table, Wrench } from 'lucide-react';
 import EquipmentList from './EquipmentList';
 import EquipmentTable from './EquipmentTable';
@@ -22,21 +23,24 @@ function EquipmentPage() {
     <div>
       <div className="header">
         <h1><Wrench size={24} />Справочник оборудования</h1>
-        <div className="equipment-view-toggle">
-          <button
-            className={`btn btn-small ${view === 'cards' ? 'btn-primary' : ''}`}
-            onClick={() => switchView('cards')}
-            title="Карточки"
-          >
-            <LayoutGrid size={16} />
-          </button>
-          <button
-            className={`btn btn-small ${view === 'table' ? 'btn-primary' : ''}`}
-            onClick={() => switchView('table')}
-            title="Таблица"
-          >
-            <Table size={16} />
-          </button>
+        <div className="header-actions">
+          <div className="equipment-view-toggle">
+            <button
+              className={`btn btn-small ${view === 'cards' ? 'btn-primary' : ''}`}
+              onClick={() => switchView('cards')}
+              title="Карточки"
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              className={`btn btn-small ${view === 'table' ? 'btn-primary' : ''}`}
+              onClick={() => switchView('table')}
+              title="Таблица"
+            >
+              <Table size={16} />
+            </button>
+          </div>
+          <Link to="/equipment/new" className="btn btn-primary">+ Добавить</Link>
         </div>
       </div>
       {view === 'cards' ? <EquipmentList embedded /> : <EquipmentTable embedded />}
