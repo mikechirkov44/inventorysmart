@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FolderTree, Pencil, Trash2, Settings } from 'lucide-react';
-import { equipmentAPI, roomsAPI, worksAPI } from '../services/api';
+import { equipmentAPI, roomsAPI, worksAPI, equipmentCategoriesAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
@@ -40,6 +40,7 @@ function EquipmentTable({ embedded }) {
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [works, setWorks] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
@@ -64,10 +65,21 @@ function EquipmentTable({ embedded }) {
   const confirm = useConfirm();
   const navigate = useNavigate();
 
-  /** Загрузка оборудования, помещений и работ */
+  /** Загрузка оборудования, помещений, работ и категорий */
   useEffect(() => {
-    Promise.all([equipmentAPI.getAll(), roomsAPI.getAll(), worksAPI.getAll()])
-      .then(([e, r, w]) => { setEquipment(e.data); setRooms(r.data); setWorks(w.data); setLoading(false); })
+    Promise.all([
+      equipmentAPI.getAll(),
+      roomsAPI.getAll(),
+      worksAPI.getAll(),
+      equipmentCategoriesAPI.getAll(),
+    ])
+      .then(([e, r, w, c]) => {
+        setEquipment(e.data);
+        setRooms(r.data);
+        setWorks(w.data);
+        setCategories(c.data);
+        setLoading(false);
+      })
       .catch(() => { setError('Ошибка загрузки'); setLoading(false); });
   }, []);
 
@@ -84,10 +96,6 @@ function EquipmentTable({ embedded }) {
     return m;
   }, [works]);
 
-  const categories = useMemo(() => {
-    return [...new Set(equipment.map(e => e.categoryName).filter(Boolean))].sort();
-  }, [equipment]);
-
   /** Фильтрация и сортировка оборудования */
   const filtered = useMemo(() => {
     let result = [...equipment];
@@ -100,7 +108,7 @@ function EquipmentTable({ embedded }) {
         (e.description && e.description.toLowerCase().includes(s))
       );
     }
-    if (filterCategory) result = result.filter(e => e.categoryName === filterCategory);
+    if (filterCategory) result = result.filter(e => e.categoryId === filterCategory);
     if (filterRoom) result = result.filter(e => e.roomId === filterRoom);
     if (filterStatus) result = result.filter(e => e.status === filterStatus);
 
@@ -171,7 +179,7 @@ function EquipmentTable({ embedded }) {
             value={filterCategory}
             onChange={setFilterCategory}
             placeholder="Все категории"
-            options={categories.map(c => ({ value: c, label: c }))}
+            options={categories.map(c => ({ value: c.id, label: c.name }))}
           />
           <CustomSelect
             value={filterRoom}

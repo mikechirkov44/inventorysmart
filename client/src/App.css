@@ -4036,15 +4036,13 @@ input, textarea, select { font-family: inherit; }
 }
 
 .gantt-days-row th.today {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: rgba(239, 68, 68, 0.16);
+  color: #dc2626;
   font-weight: 700;
-  border-left: 2px solid var(--primary);
 }
 
 .gantt-cell.today-col {
-  background: color-mix(in srgb, var(--primary) 6%, transparent);
-  border-left: 2px solid var(--primary);
+  box-shadow: inset 0 0 0 9999px rgba(239, 68, 68, 0.14);
 }
 
 .gantt-label-col {
@@ -4229,8 +4227,8 @@ input, textarea, select { font-family: inherit; }
 }
 
 .legend-dot.today {
-  background: white;
-  box-shadow: inset 0 0 0 2px var(--primary);
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.45);
 }
 
 /* ===== ANALYTICS ===== */
