@@ -12,7 +12,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus } from 'lucide-react';
+import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus, ChevronDown } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
 import { formatDate } from '../utils/date';
 
@@ -58,6 +58,7 @@ function EquipmentDetail() {
   const [showCommonFaultForm, setShowCommonFaultForm] = useState(false);
   const [editingFault, setEditingFault] = useState(null);
   const [faultForm, setFaultForm] = useState({ name: '' });
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [operatingHours, setOperatingHours] = useState(null);
   const toast = useToast();
   const confirm = useConfirm();
@@ -222,7 +223,7 @@ function EquipmentDetail() {
           />
         </Suspense>
       ) : (<>
-        <div className="detail-content">
+        <div className="detail-layout">
           <div className="detail-main">
             <div className="detail-photo">
               {equipment.photo ? (
@@ -399,25 +400,35 @@ function EquipmentDetail() {
               }}
             />
           </div>
-        </div>
 
-        <div className="detail-history-section history-section">
-          <h3>История работ ({workOrders.length})</h3>
-          {workOrders.length > 0 ? (
-            <div className="history-scroll">
-              <ul className="history-list">
-                {workOrders.map(wo => (
-                  <li key={wo.id} className={`history-item ${wo.status}`}>
-                    <span className="history-date">{formatDate(wo.completedAt || wo.createdAt)}</span>
-                    <span className="history-task">{wo.taskName}</span>
-                    <span className="history-master">{wo.masterName || '—'}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="history-empty">Записей пока нет</p>
-          )}
+          <div className={`detail-history-section history-section ${historyExpanded ? 'expanded' : 'collapsed'}`}>
+            <button
+              type="button"
+              className="detail-section-toggle"
+              onClick={() => setHistoryExpanded((v) => !v)}
+              aria-expanded={historyExpanded}
+            >
+              <ChevronDown size={18} className={`detail-section-chevron ${historyExpanded ? 'expanded' : ''}`} />
+              <h3>История работ ({workOrders.length})</h3>
+            </button>
+            {historyExpanded && (
+              workOrders.length > 0 ? (
+                <div className="history-scroll">
+                  <ul className="history-list">
+                    {workOrders.map(wo => (
+                      <li key={wo.id} className={`history-item ${wo.status}`}>
+                        <span className="history-date">{formatDate(wo.completedAt || wo.createdAt)}</span>
+                        <span className="history-task">{wo.taskName}</span>
+                        <span className="history-master">{wo.masterName || '—'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="history-empty">Записей пока нет</p>
+              )
+            )}
+          </div>
         </div>
       </>)}
 

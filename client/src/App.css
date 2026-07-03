@@ -1184,15 +1184,58 @@ input, textarea, select { font-family: inherit; }
   border-radius: var(--radius-sm);
 }
 
-.detail-content {
+.detail-layout {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 24px;
   align-items: start;
 }
 
+.detail-main,
+.detail-sidebar {
+  align-self: start;
+}
+
 .detail-history-section {
-  margin-top: 24px;
+  grid-column: 1 / -1;
+}
+
+.detail-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.detail-history-section.collapsed .detail-section-toggle {
+  margin-bottom: 0;
+}
+
+.detail-section-toggle:hover h3 {
+  color: var(--primary);
+}
+
+.detail-section-chevron {
+  flex-shrink: 0;
+  color: var(--gray-500);
+  transition: transform 0.2s ease;
+}
+
+.detail-section-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.detail-section-toggle h3 {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .detail-history-section h3 {
@@ -2766,6 +2809,7 @@ input, textarea, select { font-family: inherit; }
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .detail-header,
+  .detail-layout,
   .detail-content,
   .form-content {
     grid-template-columns: 1fr;
@@ -3223,8 +3267,13 @@ input, textarea, select { font-family: inherit; }
 
   /* --- Detail Page --- */
   .detail-header,
+  .detail-layout,
   .detail-content {
     grid-template-columns: 1fr;
+  }
+
+  .detail-history-section {
+    grid-column: 1;
   }
 
   .detail-info h1 {
