@@ -1188,12 +1188,30 @@ input, textarea, select { font-family: inherit; }
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
-.detail-main,
-.detail-sidebar {
+.detail-main {
   align-self: start;
+}
+
+.detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  align-self: stretch;
+}
+
+.detail-sidebar > .equipment-instructions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+}
+
+.detail-sidebar > .equipment-instructions .instruction-content {
+  flex: 1;
 }
 
 .detail-history-section {
@@ -1356,12 +1374,6 @@ input, textarea, select { font-family: inherit; }
 .info-row .value {
   flex: 1;
   font-size: 14px;
-}
-
-.detail-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .qr-section,
@@ -7211,6 +7223,7 @@ textarea:focus {
   border-radius: var(--radius);
   background: #fff;
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .instructions-header {
