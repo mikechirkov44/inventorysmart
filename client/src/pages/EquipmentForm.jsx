@@ -12,6 +12,7 @@ import CustomSelect from '../components/CustomSelect';
 import { Upload, FolderTree } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
 import { resolveUploadField } from '../utils/uploads';
+import { toDateInputValue } from '../utils/date';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -82,20 +83,20 @@ function EquipmentForm() {
         name: response.data.name || '',
         inventoryNumber: response.data.inventoryNumber || '',
         description: response.data.description || '',
-        roomId: response.data.roomId || '',
-        categoryId: response.data.categoryId || '',
+        roomId: response.data.roomId != null ? String(response.data.roomId) : '',
+        categoryId: response.data.categoryId != null ? String(response.data.categoryId) : '',
         status: response.data.status || 'working',
         manufacturer: response.data.manufacturer || '',
         serialNumber: response.data.serialNumber || '',
-        yearOfManufacture: response.data.yearOfManufacture || '',
-        commissioningDate: response.data.commissioningDate ? response.data.commissioningDate.split('T')[0] : '',
-        workIds: Array.isArray(response.data.workIds) ? response.data.workIds : []
+        yearOfManufacture: response.data.yearOfManufacture ?? '',
+        commissioningDate: toDateInputValue(response.data.commissioningDate),
+        workIds: Array.isArray(response.data.workIds) ? response.data.workIds : [],
       });
       if (response.data.photo) {
         setPhotoPreview(resolveUploadField(response.data, 'photo'));
       }
     } catch (err) {
-      toast.error('Ошибка', 'Ошибка загрузки данных');
+      toast.error('Ошибка', err.response?.data?.error || 'Ошибка загрузки данных');
     }
   };
 

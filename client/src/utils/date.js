@@ -25,6 +25,16 @@ export function formatDate(value, fallback = '—') {
   return date ? date.toLocaleDateString('ru-RU') : fallback;
 }
 
+/** Значение для input type="date" (YYYY-MM-DD). */
+export function toDateInputValue(value) {
+  const date = parseDate(value);
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /** true, если дата в прошлом или не распознана. */
 export function isDateExpired(value) {
   const date = parseDate(value);

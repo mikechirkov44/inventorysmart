@@ -14,6 +14,16 @@ const EQUIPMENT_UPDATE_FIELDS = [
   'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'workIds',
 ];
 
+function serializeDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+  }
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : str;
+}
+
 /**
  * Преобразует строку из БД в объект оборудования.
  * @param {Object|null} row - Строка из таблицы equipment
@@ -35,7 +45,7 @@ function mapRow(row) {
     manufacturer: row.manufacturer,
     serialNumber: row.serial_number,
     yearOfManufacture: row.year_of_manufacture,
-    commissioningDate: row.commissioning_date,
+    commissioningDate: serializeDate(row.commissioning_date),
     instructionPdf: row.instruction_pdf,
     instructionMd: row.instruction_md,
     companyId: row.company_id,
