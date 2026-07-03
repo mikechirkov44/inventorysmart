@@ -224,6 +224,7 @@ function EquipmentDetail() {
         </Suspense>
       ) : (<>
         <div className="detail-layout">
+          <div className="detail-columns">
           <div className="detail-main">
             <div className="detail-photo">
               {equipment.photo ? (
@@ -399,6 +400,7 @@ function EquipmentDetail() {
                 }
               }}
             />
+          </div>
           </div>
 
           <div className={`detail-history-section history-section ${historyExpanded ? 'expanded' : 'collapsed'}`}>

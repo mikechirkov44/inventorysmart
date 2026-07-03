@@ -1185,6 +1185,12 @@ input, textarea, select { font-family: inherit; }
 }
 
 .detail-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detail-columns {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 24px;
@@ -1196,26 +1202,28 @@ input, textarea, select { font-family: inherit; }
 }
 
 .detail-sidebar {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
   gap: 16px;
-  min-height: 100%;
   align-self: stretch;
+  min-height: 100%;
 }
 
 .detail-sidebar > .equipment-instructions {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 160px;
+  min-height: 100%;
+  height: 100%;
 }
 
 .detail-sidebar > .equipment-instructions .instruction-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-history-section {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .detail-section-toggle {
@@ -2822,6 +2830,7 @@ input, textarea, select { font-family: inherit; }
 @media (max-width: 1024px) {
   .detail-header,
   .detail-layout,
+  .detail-columns,
   .detail-content,
   .form-content {
     grid-template-columns: 1fr;
@@ -3279,13 +3288,13 @@ input, textarea, select { font-family: inherit; }
 
   /* --- Detail Page --- */
   .detail-header,
-  .detail-layout,
+  .detail-columns,
   .detail-content {
     grid-template-columns: 1fr;
   }
 
   .detail-history-section {
-    grid-column: 1;
+    width: 100%;
   }
 
   .detail-info h1 {
