@@ -118,15 +118,18 @@ function WorkOrders() {
 
   /** Начало процесса завершения наряда: формирование списка ЗИП */
   const startComplete = (wo) => {
-    setCompletingId(wo.id);
     const available = getSparePartsForWork(wo.equipmentId, wo.taskId);
-    setSparePartsSelection(available.map(sp => ({
+    const selection = available.map(sp => ({
       sparePartId: sp.sparePartId || sp.id,
       name: sp.name,
       unit: sp.unit || 'шт',
       quantity: sp.defaultQuantity || 0,
       maxQty: sp.inStock || sp.quantity || 0
-    })));
+    }));
+    window.requestAnimationFrame(() => {
+      setCompletingId(wo.id);
+      setSparePartsSelection(selection);
+    });
   };
 
   /** Обновление количества списываемой запчасти */
@@ -477,7 +480,10 @@ function WorkOrders() {
 
       {/* Модалка списания ЗИП при выполнении работы */}
       {completingId && (
-        <div className="complete-task-modal" onClick={() => cancelComplete()}>
+        <div
+          className="complete-task-modal"
+          onClick={(e) => { if (e.target === e.currentTarget) cancelComplete(); }}
+        >
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Списание ЗИП</h3>
             {sparePartsSelection.length > 0 ? (

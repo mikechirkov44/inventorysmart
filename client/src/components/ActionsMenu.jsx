@@ -73,7 +73,11 @@ export default function ActionsMenu({ items }) {
             <button
               key={idx}
               className={`actions-menu-item ${item.danger ? 'danger' : ''}`}
-              onClick={() => handleItemClick(item.onClick)}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleItemClick(item.onClick);
+              }}
             >
               {item.icon && <span className="actions-menu-icon">{item.icon}</span>}
               <span>{item.label}</span>

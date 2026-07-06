@@ -80,28 +80,55 @@ module.exports = {
   },
 
   /**
-   * Создаёт уведомление. Если аналогичное непрочитанное уже существует — возвращает его.
+   * Создаёт уведомление или обновляет существующее за сегодня по той же задаче.
    * @async
    * @param {Object} data - Данные уведомления
-   * @param {number} data.userId - ID получателя
-   * @param {string} [data.type] - Тип (info/warning/error)
-   * @param {string} [data.title] - Заголовок
-   * @param {string} [data.message] - Текст сообщения
-   * @param {number} [data.equipmentId] - ID оборудования
-   * @param {number} [data.workId] - ID работы
-   * @param {number} [data.incidentId] - ID инцидента
-   * @returns {Promise<Object>} Уведомление (новое или существующее)
+   * @returns {Promise<Object>} Уведомление (новое или обновлённое)
    */
   create: async (data) => {
-    const existing = await query(
-      'SELECT * FROM notifications WHERE user_id = $1 AND type = $2 AND equipment_id = $3 AND work_id = $4 AND read = false',
-      [data.userId, data.type || 'info', data.equipmentId || null, data.workId || null]
+    const params = [
+      data.userId,
+      data.type || 'info',
+      data.equipmentId || null,
+      data.workId || null,
+    ];
+
+    const { rows: existingRows } = await query(
+      `SELECT * FROM notifications
+       WHERE user_id = $1 AND type = $2
+         AND equipment_id IS NOT DISTINCT FROM $3
+         AND work_id IS NOT DISTINCT FROM $4
+         AND (
+           read = false
+           OR created_at >= CURRENT_DATE
+         )
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      params,
     );
-    if (existing.rows[0]) return mapRow(existing.rows[0]);
+
+    if (existingRows[0]) {
+      const { rows } = await query(
+        `UPDATE notifications
+         SET title = $1, message = $2
+         WHERE id = $3
+         RETURNING *`,
+        [data.title || '', data.message || '', existingRows[0].id],
+      );
+      return mapRow(rows[0]);
+    }
 
     const { rows } = await query(
       'INSERT INTO notifications (user_id, type, title, message, equipment_id, work_id, incident_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [data.userId, data.type || 'info', data.title || '', data.message || '', data.equipmentId || null, data.workId || null, data.incidentId || null]
+      [
+        data.userId,
+        data.type || 'info',
+        data.title || '',
+        data.message || '',
+        data.equipmentId || null,
+        data.workId || null,
+        data.incidentId || null,
+      ],
     );
     return mapRow(rows[0]);
   },

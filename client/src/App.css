@@ -4382,6 +4382,16 @@ input, textarea, select { font-family: inherit; }
 /* ===== ANALYTICS ===== */
 .analytics-page { width: 100%; }
 
+.analytics-period-toolbar {
+  margin-bottom: 16px;
+}
+
+.analytics-period-label {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
 /* Performance Chart */
 .perf-chart {
   background: white;

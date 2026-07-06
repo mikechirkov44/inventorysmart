@@ -4,16 +4,43 @@
  * диаграмму эффективности и отчёт по остаткам ЗИП.
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { BarChart3, Wrench } from 'lucide-react';
-import api from '../services/api';
-import { sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI } from '../services/api';
+import { analyticsAPI, sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI } from '../services/api';
 import CustomSelect from '../components/CustomSelect';
+import CustomDatePicker from '../components/CustomDatePicker';
+import { formatDate, toDateInputValue } from '../utils/date';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
   MobileDataCards, MobileDataCard, MobileDataCardTitle, MobileDataCardRow,
 } from '../components/MobileDataCard';
+
+const ANALYTICS_QUICK_PERIODS = [
+  { label: 'Текущий месяц', monthsOffset: 0 },
+  { label: 'Прошлый месяц', monthsOffset: -1 },
+  { label: '7 дней', days: 7 },
+];
+
+function getMonthRange(monthsOffset = 0) {
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth() + monthsOffset, 1);
+  const to = new Date(today.getFullYear(), today.getMonth() + monthsOffset + 1, 0);
+  return {
+    from: toDateInputValue(from),
+    to: toDateInputValue(to),
+  };
+}
+
+function getLastDaysRange(days) {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  return {
+    from: toDateInputValue(from),
+    to: toDateInputValue(to),
+  };
+}
 
 /** Компонент горизонтальной диаграммы эффективности сотрудников */
 function PerformanceChart({ data }) {
@@ -420,19 +447,47 @@ function EquipmentReport() {
 
 /** Основной компонент страницы аналитики */
 function AnalyticsPage() {
+  const initialRange = useMemo(() => getMonthRange(0), []);
   const [analytics, setAnalytics] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [period, setPeriod] = useState(initialRange);
+  const [dateFrom, setDateFrom] = useState(initialRange.from);
+  const [dateTo, setDateTo] = useState(initialRange.to);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('employees');
 
-  /** Загрузка данных аналитики и сводки при монтировании */
-  useEffect(() => {
-    Promise.all([api.get('/analytics'), api.get('/analytics/summary')])
-      .then(([a, s]) => { setAnalytics(a.data); setSummary(s.data); setLoading(false); })
+  const loadAnalytics = useCallback(() => {
+    if (!dateFrom || !dateTo) return;
+    setLoading(true);
+    const params = { from: dateFrom, to: dateTo };
+    Promise.all([
+      analyticsAPI.getAnalytics(params),
+      analyticsAPI.getSummary(params),
+    ])
+      .then(([analyticsResponse, summaryResponse]) => {
+        setAnalytics(analyticsResponse.data.employees || []);
+        setPeriod(analyticsResponse.data.period || summaryResponse.data.period || params);
+        setSummary(summaryResponse.data);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, []);
+  }, [dateFrom, dateTo]);
 
-  if (loading) return <SkeletonPage />;
+  useEffect(() => {
+    if (view === 'employees') {
+      loadAnalytics();
+    }
+  }, [view, loadAnalytics]);
+
+  const applyQuickPeriod = (preset) => {
+    const range = preset.days
+      ? getLastDaysRange(preset.days)
+      : getMonthRange(preset.monthsOffset);
+    setDateFrom(range.from);
+    setDateTo(range.to);
+  };
+
+  if (loading && view === 'employees') return <SkeletonPage />;
 
   return (
     <div className="analytics-page">
@@ -449,6 +504,34 @@ function AnalyticsPage() {
         <EquipmentReport />
       ) : (
         <>
+          <div className="analytics-period-toolbar">
+            <div className="filter-row compact">
+              <div className="filter-group">
+                <CustomDatePicker value={dateFrom} onChange={setDateFrom} placeholder="От" />
+              </div>
+              <div className="filter-group">
+                <CustomDatePicker value={dateTo} onChange={setDateTo} placeholder="До" />
+              </div>
+              <div className="quick-periods">
+                {ANALYTICS_QUICK_PERIODS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    className="btn btn-small btn-secondary"
+                    onClick={() => applyQuickPeriod(preset)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {period && (
+              <p className="analytics-period-label">
+                Отчёт за {formatDate(period.from)} — {formatDate(period.to)}
+              </p>
+            )}
+          </div>
+
           {summary && (
             <div className="analytics-summary">
               <div className="summary-card">
@@ -516,7 +599,7 @@ function AnalyticsPage() {
                           </div>
                         </td>
                         <td><span className="overdue-badge ok">{emp.onTime}</span></td>
-                        <td><span className="overdue-badge overdue">{emp.overdue}</span></td>
+                        <td><span className="overdue-badge overdue">{emp.completedLate}</span></td>
                         <td><span className="overdue-badge new">{emp.neverCompleted}</span></td>
                       </tr>
                     ))

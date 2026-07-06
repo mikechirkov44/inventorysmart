@@ -74,9 +74,37 @@ function resolveScheduleStatus({ isOverdue, isDueToday, daysUntil, lastCompleted
   return 'planned';
 }
 
+/**
+ * На сколько дней последнее выполнение опоздало относительно срока своего цикла.
+ * @returns {number|null}
+ */
+function getLastCompletionDaysLate({
+  lastCompleted,
+  previousCompleted = null,
+  startDate = null,
+  frequencyDays = 30,
+}) {
+  if (!lastCompleted) return null;
+  const { nextDue } = calculateWorkDue({
+    frequencyDays,
+    lastCompleted: previousCompleted,
+    startDate,
+    today: lastCompleted,
+  });
+  return Math.round((startOfDay(lastCompleted) - startOfDay(nextDue)) / 86400000);
+}
+
+/** Текст просрочки для уведомлений. */
+function formatOverdueLabel(daysOverdue) {
+  if (daysOverdue <= 0) return 'срок сегодня';
+  return `просрочено на ${daysOverdue} дн.`;
+}
+
 module.exports = {
   startOfDay,
   calculateWorkDue,
   getWorkStartDate,
   resolveScheduleStatus,
+  getLastCompletionDaysLate,
+  formatOverdueLabel,
 };

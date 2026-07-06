@@ -12,7 +12,7 @@ const Employee = require('../models/employee');
 const User = require('../models/user');
 const Notification = require('../models/notification');
 const Company = require('../models/company');
-const { calculateWorkDue, getWorkStartDate } = require('../utils/workDue');
+const { calculateWorkDue, getWorkStartDate, formatOverdueLabel } = require('../utils/workDue');
 
 /**
  * Проверяет и создаёт уведомления о предстоящих и просроченных работах
@@ -86,19 +86,7 @@ async function generateForCompany(companyId) {
       const nextDue = dueInfo.nextDue;
       const isOverdue = dueInfo.isOverdue;
 
-      if (isOverdue && lastCompleted) {
-        const daysOverdue = dueInfo.daysOverdue;
-        overdueTasks.push({
-          equipmentId: equip.id,
-          equipmentName: equip.name,
-          inventoryNumber: equip.inventoryNumber || '—',
-          workId: work.id,
-          workName: work.name,
-          employeeId: employee ? employee.id : null,
-          daysOverdue,
-          nextDue
-        });
-      } else if (isOverdue && !lastCompleted) {
+      if (isOverdue) {
         overdueTasks.push({
           equipmentId: equip.id,
           equipmentName: equip.name,
@@ -107,7 +95,7 @@ async function generateForCompany(companyId) {
           workName: work.name,
           employeeId: employee ? employee.id : null,
           daysOverdue: dueInfo.daysOverdue,
-          nextDue
+          nextDue,
         });
       } else if (!isOverdue && (lastCompleted || dueInfo.daysUntil <= 7)) {
         const daysUntil = dueInfo.daysUntil;
@@ -137,7 +125,7 @@ async function generateForCompany(companyId) {
         userId: user.id,
         type: 'overdue_work',
         title: `Просрочена работа: ${task.workName}`,
-        message: `${task.equipmentName} (${task.inventoryNumber}) — просрочено на ${task.daysOverdue} дн.`,
+        message: `${task.equipmentName} (${task.inventoryNumber}) — ${formatOverdueLabel(task.daysOverdue)}`,
 
         equipmentId: task.equipmentId,
         workId: task.workId

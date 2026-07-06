@@ -161,8 +161,8 @@ export const sparePartsReceiptsAPI = {
 
 /** API для аналитических данных */
 export const analyticsAPI = {
-  getAnalytics: () => api.get('/analytics'),
-  getSummary: () => api.get('/analytics/summary'),
+  getAnalytics: (params) => api.get('/analytics', { params }),
+  getSummary: (params) => api.get('/analytics/summary', { params }),
 };
 
 /** API для план-графика работ */
