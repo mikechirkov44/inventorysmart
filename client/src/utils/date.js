@@ -25,6 +25,11 @@ export function formatDate(value, fallback = '—') {
   return date ? date.toLocaleDateString('ru-RU') : fallback;
 }
 
+/** Сегодняшняя дата для input type="date" (YYYY-MM-DD). */
+export function todayInputValue() {
+  return toDateInputValue(new Date());
+}
+
 /** Значение для input type="date" (YYYY-MM-DD). */
 export function toDateInputValue(value) {
   const date = parseDate(value);

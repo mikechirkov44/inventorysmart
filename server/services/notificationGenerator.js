@@ -12,6 +12,7 @@ const Employee = require('../models/employee');
 const User = require('../models/user');
 const Notification = require('../models/notification');
 const Company = require('../models/company');
+const { calculateWorkDue, getWorkStartDate } = require('../utils/workDue');
 
 /**
  * Проверяет и создаёт уведомления о предстоящих и просроченных работах
@@ -75,20 +76,18 @@ async function generateForCompany(companyId) {
         .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+      const dueInfo = calculateWorkDue({
+        frequencyDays: work.frequencyDays || 30,
+        lastCompleted,
+        startDate: getWorkStartDate(equip, wid),
+        today,
+      });
 
-      let plannedDate = null;
-      let nextDue = null;
-      if (lastCompleted) {
-        plannedDate = new Date(lastCompleted);
-        plannedDate.setDate(plannedDate.getDate() + (work.frequencyDays || 30));
-        plannedDate.setHours(0, 0, 0, 0);
-        nextDue = new Date(plannedDate);
-      }
-
-      const isOverdue = nextDue ? today >= nextDue : true;
+      const nextDue = dueInfo.nextDue;
+      const isOverdue = dueInfo.isOverdue;
 
       if (isOverdue && lastCompleted) {
-        const daysOverdue = Math.floor((today - nextDue) / 86400000);
+        const daysOverdue = dueInfo.daysOverdue;
         overdueTasks.push({
           equipmentId: equip.id,
           equipmentName: equip.name,
@@ -99,20 +98,29 @@ async function generateForCompany(companyId) {
           daysOverdue,
           nextDue
         });
-      } else if (!isOverdue && lastCompleted) {
-        const daysUntil = Math.ceil((nextDue - today) / 86400000);
-        if (daysUntil <= 7) {
-          upcomingTasks.push({
-            equipmentId: equip.id,
-            equipmentName: equip.name,
-            inventoryNumber: equip.inventoryNumber || '—',
-            workId: work.id,
-            workName: work.name,
-            employeeId: employee ? employee.id : null,
-            daysUntil,
-            nextDue
-          });
-        }
+      } else if (isOverdue && !lastCompleted) {
+        overdueTasks.push({
+          equipmentId: equip.id,
+          equipmentName: equip.name,
+          inventoryNumber: equip.inventoryNumber || '—',
+          workId: work.id,
+          workName: work.name,
+          employeeId: employee ? employee.id : null,
+          daysOverdue: dueInfo.daysOverdue,
+          nextDue
+        });
+      } else if (!isOverdue && (lastCompleted || dueInfo.daysUntil <= 7)) {
+        const daysUntil = dueInfo.daysUntil;
+        upcomingTasks.push({
+          equipmentId: equip.id,
+          equipmentName: equip.name,
+          inventoryNumber: equip.inventoryNumber || '—',
+          workId: work.id,
+          workName: work.name,
+          employeeId: employee ? employee.id : null,
+          daysUntil,
+          nextDue
+        });
       }
     });
   });

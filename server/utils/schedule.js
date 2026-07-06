@@ -8,6 +8,7 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
+const { calculateWorkDue, getWorkStartDate, resolveScheduleStatus } = require('./workDue');
 
 /**
  * Загружает все виды работ и возвращает их в виде объекта,
@@ -40,33 +41,30 @@ async function getEquipmentSchedule(equipment, workMap, companyId) {
 
   const tasks = [];
 
-  workIds.forEach(wid => {
+  workIds.forEach((wid) => {
     const work = workMap[wid];
     if (!work) return;
 
     const completedOrders = workOrders
-      .filter(wo => wo.task_id === wid && wo.status === 'completed' && wo.completed_at)
-      .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+      .filter((wo) => wo.taskId === wid && wo.status === 'completed' && wo.completedAt)
+      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
-    const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completed_at) : null;
-
-    let nextDue = null;
-    if (lastCompleted) {
-      nextDue = new Date(lastCompleted);
-      nextDue.setDate(nextDue.getDate() + (work.frequency_days || 30));
-      nextDue.setHours(0, 0, 0, 0);
-    }
-
-    const isOverdue = nextDue ? today >= nextDue : true;
+    const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+    const { nextDue, isOverdue } = calculateWorkDue({
+      frequencyDays: work.frequencyDays || 30,
+      lastCompleted,
+      startDate: getWorkStartDate(equipment, wid),
+      today,
+    });
 
     tasks.push({
       workId: work.id,
       workName: work.name,
       description: work.description,
-      frequencyDays: work.frequency_days,
+      frequencyDays: work.frequencyDays,
       category: work.category,
       lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
-      nextDue: nextDue ? nextDue.toISOString() : null,
+      nextDue: nextDue.toISOString(),
       isOverdue,
     });
   });
@@ -100,8 +98,8 @@ async function getCalendarEvents(year, month, companyId) {
 
   for (const equip of allEquipment) {
     const tasks = await getEquipmentSchedule(equip, workMap, companyId);
-    const room = equip.room_id ? roomMap[equip.room_id] : null;
-    const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
+    const room = equip.roomId ? roomMap[equip.roomId] : null;
+    const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 
     tasks.forEach(task => {
       if (!task.nextDue) return;
@@ -115,14 +113,14 @@ async function getCalendarEvents(year, month, companyId) {
       events[key].push({
         equipmentId: equip.id,
         equipmentName: equip.name,
-        inventoryNumber: equip.inventory_number,
+        inventoryNumber: equip.inventoryNumber,
         workId: task.workId,
         workName: task.workName,
         frequencyDays: task.frequencyDays,
         isOverdue: task.isOverdue,
         lastCompleted: task.lastCompleted,
         roomName: room ? room.name : null,
-        employeeName: employee ? `${employee.last_name} ${employee.first_name}` : null,
+        employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
       });
     });
   }
@@ -160,8 +158,8 @@ async function getUpcomingTasks(daysAhead = 7, companyId) {
 
   for (const equip of allEquipment) {
     const tasks = await getEquipmentSchedule(equip, workMap, companyId);
-    const room = equip.room_id ? roomMap[equip.room_id] : null;
-    const employee = room && room.responsible_employee_id ? empMap[room.responsible_employee_id] : null;
+    const room = equip.roomId ? roomMap[equip.roomId] : null;
+    const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 
     tasks.forEach(task => {
       if (!task.nextDue) return;
@@ -170,11 +168,11 @@ async function getUpcomingTasks(daysAhead = 7, companyId) {
         upcoming.push({
           equipmentId: equip.id,
           equipmentName: equip.name,
-          inventoryNumber: equip.inventory_number,
+          inventoryNumber: equip.inventoryNumber,
           ...task,
           roomName: room ? room.name : null,
           employeeId: employee ? employee.id : null,
-          employeeName: employee ? `${employee.last_name} ${employee.first_name}` : null,
+          employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
         });
       }
     });
@@ -223,25 +221,21 @@ async function getTodayTasks(companyId) {
         .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+      const dueInfo = calculateWorkDue({
+        frequencyDays: work.frequencyDays || 30,
+        lastCompleted,
+        startDate: getWorkStartDate(equip, wid),
+        today,
+      });
 
-      let nextDue = null;
-      if (lastCompleted) {
-        nextDue = new Date(lastCompleted);
-        nextDue.setDate(nextDue.getDate() + (work.frequencyDays || 30));
-        nextDue.setHours(0, 0, 0, 0);
-      }
+      if (!dueInfo.isOverdue) return;
 
-      const isOverdue = nextDue ? today >= nextDue : true;
-      if (!isOverdue) return;
-
-      const isDueToday = !nextDue || today.getTime() === nextDue.getTime();
-      const daysOverdue = nextDue && today > nextDue
-        ? Math.floor((today - nextDue) / 86400000)
-        : 0;
-
-      let status = 'today';
-      if (!lastCompleted) status = 'never';
-      else if (!isDueToday) status = 'overdue';
+      const status = resolveScheduleStatus({
+        isOverdue: dueInfo.isOverdue,
+        isDueToday: dueInfo.isDueToday,
+        daysUntil: dueInfo.daysUntil,
+        lastCompleted,
+      });
 
       tasks.push({
         id: `${equip.id}-${wid}`,
@@ -255,9 +249,9 @@ async function getTodayTasks(companyId) {
         workName: work.name,
         frequencyDays: work.frequencyDays,
         lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
-        nextDue: nextDue ? nextDue.toISOString() : null,
-        isDueToday,
-        daysOverdue,
+        nextDue: dueInfo.nextDue.toISOString(),
+        isDueToday: dueInfo.isDueToday,
+        daysOverdue: dueInfo.daysOverdue,
         status,
       });
     });

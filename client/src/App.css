@@ -2704,6 +2704,30 @@ input, textarea, select { font-family: inherit; }
   margin-top: 6px;
 }
 
+.equipment-work-link-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-100);
+  margin-bottom: 6px;
+}
+
+.equipment-work-link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.equipment-work-link-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
 .filter-search-sm {
   width: 100%;
   padding: 7px 10px;

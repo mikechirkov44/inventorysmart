@@ -14,6 +14,7 @@ const Room = require('../models/room');
 const Employee = require('../models/employee');
 const { requirePermission } = require('../middleware/auth');
 const { getTodayTasks } = require('../utils/schedule');
+const { calculateWorkDue, getWorkStartDate, resolveScheduleStatus } = require('../utils/workDue');
 
 /**
  * @route GET /schedule/today
@@ -79,28 +80,19 @@ router.get('/', requirePermission('schedule', 'view'), async (req, res) => {
           .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
         const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+        const dueInfo = calculateWorkDue({
+          frequencyDays: work.frequencyDays || 30,
+          lastCompleted,
+          startDate: getWorkStartDate(equip, wid),
+          today,
+        });
 
-        let plannedDate = null;
-        let nextDue = null;
-        if (lastCompleted) {
-          plannedDate = new Date(lastCompleted);
-          plannedDate.setDate(plannedDate.getDate() + (work.frequencyDays || 30));
-          plannedDate.setHours(0, 0, 0, 0);
-          nextDue = new Date(plannedDate);
-        }
-
-        const isOverdue = nextDue ? today >= nextDue : true;
-        const isPast = nextDue ? nextDue < today : false;
-
-        let status = 'planned';
-        if (isOverdue && lastCompleted) status = 'overdue';
-        else if (isOverdue && !lastCompleted) status = 'never';
-        else status = 'planned';
-
-        if (!isOverdue && lastCompleted) {
-          const daysUntil = Math.ceil((nextDue - today) / 86400000);
-          if (daysUntil <= 7) status = 'upcoming';
-        }
+        const status = resolveScheduleStatus({
+          isOverdue: dueInfo.isOverdue,
+          isDueToday: dueInfo.isDueToday,
+          daysUntil: dueInfo.daysUntil,
+          lastCompleted,
+        });
 
         rows.push({
           id: `${equip.id}-${wid}`,
@@ -114,7 +106,7 @@ router.get('/', requirePermission('schedule', 'view'), async (req, res) => {
           workName: work.name,
           frequencyDays: work.frequencyDays,
           lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
-          plannedDate: plannedDate ? plannedDate.toISOString() : null,
+          plannedDate: dueInfo.plannedDate.toISOString(),
           status,
         });
       });

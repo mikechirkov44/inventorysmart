@@ -11,8 +11,9 @@ import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
 import { Upload, FolderTree } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
+import EquipmentWorkModal from '../components/EquipmentWorkModal';
 import { resolveUploadField } from '../utils/uploads';
-import { toDateInputValue } from '../utils/date';
+import { toDateInputValue, todayInputValue, formatDate } from '../utils/date';
 
 /** Варианты периодичности плановых работ */
 const FREQUENCY_OPTIONS = [
@@ -54,12 +55,13 @@ function EquipmentForm() {
     serialNumber: '',
     yearOfManufacture: '',
     commissioningDate: '',
-    workIds: []
+    workLinks: []
   });
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [workModal, setWorkModal] = useState(null);
 
   const [rooms, setRooms] = useState([]);
   const [works, setWorks] = useState([]);
@@ -90,7 +92,15 @@ function EquipmentForm() {
         serialNumber: response.data.serialNumber || '',
         yearOfManufacture: response.data.yearOfManufacture ?? '',
         commissioningDate: toDateInputValue(response.data.commissioningDate),
-        workIds: Array.isArray(response.data.workIds) ? response.data.workIds : [],
+        workLinks: Array.isArray(response.data.workLinks)
+          ? response.data.workLinks.map((link) => ({
+            workId: link.workId,
+            startDate: toDateInputValue(link.startDate) || todayInputValue(),
+          }))
+          : (Array.isArray(response.data.workIds) ? response.data.workIds : []).map((workId) => ({
+            workId,
+            startDate: todayInputValue(),
+          })),
       });
       if (response.data.photo) {
         setPhotoPreview(resolveUploadField(response.data, 'photo'));
@@ -117,15 +127,39 @@ function EquipmentForm() {
     }
   };
 
-  /** Переключение привязки плановой работы */
-  const handleWorkToggle = (workId) => {
-    setFormData(prev => {
-      const ids = prev.workIds.includes(workId)
-        ? prev.workIds.filter(wid => wid !== workId)
-        : [...prev.workIds, workId];
-      return { ...prev, workIds: ids };
+  /** Сохранение привязки работы из модального окна */
+  const handleWorkLinkSave = (link) => {
+    setFormData((prev) => {
+      const existingIndex = prev.workLinks.findIndex((item) => item.workId === link.workId);
+      if (existingIndex >= 0) {
+        const nextLinks = [...prev.workLinks];
+        nextLinks[existingIndex] = link;
+        return { ...prev, workLinks: nextLinks };
+      }
+      return { ...prev, workLinks: [...prev.workLinks, link] };
     });
+    setWorkModal(null);
   };
+
+  /** Удаление привязки работы */
+  const handleWorkLinkRemove = async (workId) => {
+    const work = works.find((item) => item.id === workId);
+    const confirmed = await confirm({
+      title: 'Удалить работу?',
+      message: `Убрать «${work?.name || 'работу'}» из планового обслуживания?`,
+      type: 'warning',
+      confirmText: 'Удалить',
+    });
+    if (!confirmed) return;
+    setFormData((prev) => ({
+      ...prev,
+      workLinks: prev.workLinks.filter((item) => item.workId !== workId),
+    }));
+  };
+
+  const availableWorks = works.filter(
+    (work) => !formData.workLinks.some((link) => link.workId === work.id),
+  );
 
   /** Отправка формы: создание или обновление оборудования */
   const handleSubmit = async (e) => {
@@ -142,7 +176,7 @@ function EquipmentForm() {
     try {
       const submitData = new FormData();
       Object.keys(formData).forEach(key => {
-        if (key === 'workIds') {
+        if (key === 'workLinks') {
           submitData.append(key, JSON.stringify(formData[key]));
         } else {
           submitData.append(key, formData[key]);
@@ -270,23 +304,52 @@ function EquipmentForm() {
             <div className="form-group">
               <label>Плановые работы</label>
               <div className="works-checkbox-list">
-                {works.length === 0 && (
-                  <p className="no-works-hint">Нет работ в справочнике. Добавьте их в разделе «Работы».</p>
+                {formData.workLinks.length === 0 && (
+                  <p className="no-works-hint">Работы не назначены. Добавьте из справочника.</p>
                 )}
-                {works.map(work => (
-                  <label key={work.id} className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      checked={formData.workIds.includes(work.id)}
-                      onChange={() => handleWorkToggle(work.id)}
-                    />
-                    <span className="checkbox-label">
-                      {work.name}
-                      <span className="checkbox-hint">{getFrequencyLabel(work.frequencyDays)}</span>
-                    </span>
-                  </label>
-                ))}
+                {formData.workLinks.map((link) => {
+                  const work = works.find((item) => item.id === link.workId);
+                  return (
+                    <div key={link.workId} className="equipment-work-link-item">
+                      <div className="equipment-work-link-info">
+                        <span className="checkbox-label">{work?.name || '—'}</span>
+                        <span className="checkbox-hint">
+                          {work ? getFrequencyLabel(work.frequencyDays) : ''}
+                          {' · '}старт {formatDate(link.startDate)}
+                        </span>
+                      </div>
+                      <div className="equipment-work-link-actions">
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => setWorkModal({ mode: 'edit', link })}
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => handleWorkLinkRemove(link.workId)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: 8 }}
+                onClick={() => setWorkModal({ mode: 'add' })}
+                disabled={availableWorks.length === 0}
+              >
+                + Добавить работу
+              </button>
+              {works.length === 0 && (
+                <p className="no-works-hint">Нет работ в справочнике. Добавьте их в разделе «Работы».</p>
+              )}
             </div>
           </div>
         </div>
@@ -298,6 +361,17 @@ function EquipmentForm() {
           <Link to={isEditing ? `/equipment/${id}` : '/'} className="btn">Отмена</Link>
         </div>
       </form>
+
+      {workModal && (
+        <EquipmentWorkModal
+          mode={workModal.mode}
+          link={workModal.link}
+          works={works}
+          assignedIds={formData.workLinks.map((link) => link.workId)}
+          onSave={handleWorkLinkSave}
+          onClose={() => setWorkModal(null)}
+        />
+      )}
     </div>
   );
 }

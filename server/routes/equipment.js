@@ -63,6 +63,9 @@ router.post('/', requirePermission('equipment', 'edit'), imageUpload.single('pho
     if (typeof equipmentData.workIds === 'string') {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
     }
+    if (typeof equipmentData.workLinks === 'string') {
+      equipmentData.workLinks = JSON.parse(equipmentData.workLinks);
+    }
     
     const equipment = await Equipment.create(equipmentData, req.user.companyId);
     res.status(201).json(equipment);
@@ -241,6 +244,9 @@ router.put('/:id', requirePermission('equipment', 'edit'), imageUpload.single('p
     
     if (typeof equipmentData.workIds === 'string') {
       equipmentData.workIds = JSON.parse(equipmentData.workIds);
+    }
+    if (typeof equipmentData.workLinks === 'string') {
+      equipmentData.workLinks = JSON.parse(equipmentData.workLinks);
     }
     
     const equipment = await Equipment.update(req.params.id, equipmentData, req.user.companyId);

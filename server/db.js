@@ -486,6 +486,8 @@ async function migrate() {
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS due_date DATE`);
       await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS completed_on_time BOOLEAN`);
+      await client.query(`ALTER TABLE equipment_works ADD COLUMN IF NOT EXISTS start_date DATE DEFAULT CURRENT_DATE`);
+      await client.query(`UPDATE equipment_works SET start_date = CURRENT_DATE WHERE start_date IS NULL`);
     });
 
     await withSavepoint(client, 'theme_color', async () => {

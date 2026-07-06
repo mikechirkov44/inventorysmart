@@ -11,7 +11,7 @@ const { pickAllowed } = require('../utils/allowlist');
 const EQUIPMENT_UPDATE_FIELDS = [
   'name', 'inventoryNumber', 'description', 'location', 'category', 'roomId',
   'categoryId', 'manufacturer', 'serialNumber', 'yearOfManufacture',
-  'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'workIds',
+  'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'workIds', 'workLinks',
 ];
 
 function serializeDate(value) {
@@ -22,6 +22,63 @@ function serializeDate(value) {
   const str = String(value).trim();
   const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
   return match ? match[1] : str;
+}
+
+function mapWorkLinkRow(row) {
+  return {
+    workId: row.work_id,
+    startDate: serializeDate(row.start_date) || serializeDate(new Date()),
+  };
+}
+
+function attachWorkLinks(equipment, workLinks) {
+  return {
+    ...equipment,
+    workLinks,
+    workIds: workLinks.map((link) => link.workId),
+  };
+}
+
+function linksFromRows(equipmentId, rows) {
+  return rows
+    .filter((row) => row.equipment_id === equipmentId)
+    .map(mapWorkLinkRow);
+}
+
+function normalizeWorkLinks(data) {
+  if (data.workLinks !== undefined) {
+    let links = data.workLinks;
+    if (typeof links === 'string') {
+      try { links = JSON.parse(links); } catch (_) { links = []; }
+    }
+    if (!Array.isArray(links)) return [];
+    return links.map((link) => ({
+      workId: link.workId,
+      startDate: serializeDate(link.startDate) || serializeDate(new Date()),
+    }));
+  }
+
+  if (data.workIds !== undefined) {
+    let ids = data.workIds;
+    if (typeof ids === 'string') {
+      try { ids = JSON.parse(ids); } catch (_) { ids = []; }
+    }
+    if (!Array.isArray(ids)) return [];
+    const today = serializeDate(new Date());
+    return ids.map((workId) => ({ workId, startDate: today }));
+  }
+
+  return null;
+}
+
+async function syncEquipmentWorks(equipmentId, workLinks) {
+  await query('DELETE FROM equipment_works WHERE equipment_id = $1', [equipmentId]);
+  for (const link of workLinks) {
+    await query(
+      'INSERT INTO equipment_works (equipment_id, work_id, start_date) VALUES ($1, $2, $3)',
+      [equipmentId, link.workId, link.startDate],
+    );
+  }
 }
 
 /**
@@ -56,9 +113,9 @@ function mapRow(row) {
 
 module.exports = {
   /**
-   * Получает всё оборудование с привязанными ID работ и категориями.
+   * Получает всё оборудование с привязанными работами.
    * @async
-   * @returns {Promise<Array<Object>>} Список оборудования с полем workIds
+   * @returns {Promise<Array<Object>>} Список оборудования с workLinks и workIds
    */
   findAll: async (companyId) => {
     const { rows: equipment } = await query(`
@@ -68,18 +125,18 @@ module.exports = {
       WHERE e.company_id = $1 
       ORDER BY e.name
     `, [companyId]);
-    const { rows: eqWorks } = await query('SELECT * FROM equipment_works');
-    return equipment.map(eq => ({
-      ...mapRow(eq),
-      workIds: eqWorks.filter(ew => ew.equipment_id === eq.id).map(ew => ew.work_id)
-    }));
+    const { rows: eqWorks } = await query('SELECT equipment_id, work_id, start_date FROM equipment_works');
+    return equipment.map((eq) => {
+      const workLinks = linksFromRows(eq.id, eqWorks);
+      return attachWorkLinks(mapRow(eq), workLinks);
+    });
   },
 
   /**
    * Находит оборудование по ID вместе с привязанными работами.
    * @async
    * @param {number} id - Идентификатор оборудования
-   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   * @returns {Promise<Object|null>} Оборудование с workLinks или null
    */
   findById: async (id, companyId) => {
     const { rows } = await query(`
@@ -89,15 +146,19 @@ module.exports = {
       WHERE e.id = $1 AND e.company_id = $2
     `, [id, companyId]);
     if (!rows[0]) return null;
-    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [id]);
-    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+    const { rows: eqWorks } = await query(
+      'SELECT work_id, start_date FROM equipment_works WHERE equipment_id = $1',
+      [id],
+    );
+    const workLinks = eqWorks.map(mapWorkLinkRow);
+    return attachWorkLinks(mapRow(rows[0]), workLinks);
   },
 
   /**
    * Находит оборудование по QR-коду.
    * @async
    * @param {string} qrCode - QR-код оборудования
-   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   * @returns {Promise<Object|null>} Оборудование с workLinks или null
    */
   findByQrCode: async (qrCode) => {
     const { rows } = await query(`
@@ -107,15 +168,19 @@ module.exports = {
       WHERE e.qr_code = $1
     `, [qrCode]);
     if (!rows[0]) return null;
-    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
-    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+    const { rows: eqWorks } = await query(
+      'SELECT work_id, start_date FROM equipment_works WHERE equipment_id = $1',
+      [rows[0].id],
+    );
+    const workLinks = eqWorks.map(mapWorkLinkRow);
+    return attachWorkLinks(mapRow(rows[0]), workLinks);
   },
 
   /**
    * Находит оборудование по инвентарному номеру.
    * @async
    * @param {string} inventoryNumber - Инвентарный номер
-   * @returns {Promise<Object|null>} Оборудование с workIds или null
+   * @returns {Promise<Object|null>} Оборудование с workLinks или null
    */
   findByInventoryNumber: async (inventoryNumber) => {
     const { rows } = await query(`
@@ -125,29 +190,23 @@ module.exports = {
       WHERE e.inventory_number = $1
     `, [inventoryNumber]);
     if (!rows[0]) return null;
-    const { rows: eqWorks } = await query('SELECT work_id FROM equipment_works WHERE equipment_id = $1', [rows[0].id]);
-    return { ...mapRow(rows[0]), workIds: eqWorks.map(ew => ew.work_id) };
+    const { rows: eqWorks } = await query(
+      'SELECT work_id, start_date FROM equipment_works WHERE equipment_id = $1',
+      [rows[0].id],
+    );
+    const workLinks = eqWorks.map(mapWorkLinkRow);
+    return attachWorkLinks(mapRow(rows[0]), workLinks);
   },
 
   /**
    * Создаёт новое оборудование с привязкой к работам.
    * @async
    * @param {Object} data - Данные оборудования
-   * @param {string} data.name - Название
-   * @param {string} [data.inventoryNumber] - Инвентарный номер
-   * @param {string} [data.description] - Описание
-   * @param {string} [data.photo] - Фото (URL)
-   * @param {number} [data.roomId] - ID помещения
-   * @param {string} [data.categoryId] - ID категории
-   * @param {string} [data.status] - Статус (working/broken/etc)
-   * @param {Array<number>} [data.workIds] - Массив ID связанных работ
-   * @returns {Promise<Object>} Созданное оборудование с workIds
+   * @returns {Promise<Object>} Созданное оборудование
    */
   create: async (data, companyId) => {
-    let workIds = data.workIds || [];
-    if (typeof workIds === 'string') { try { workIds = JSON.parse(workIds); } catch (_) { workIds = []; } }
+    const workLinks = normalizeWorkLinks(data) || [];
 
-    // Convert yearOfManufacture: empty string -> null, string -> number or null
     const yearVal = data.yearOfManufacture;
     const yearOfManufacture = yearVal && String(yearVal).trim() !== '' ? parseInt(yearVal, 10) : null;
 
@@ -172,11 +231,9 @@ module.exports = {
     );
     const eq = rows[0];
 
-    for (const wid of workIds) {
-      await query('INSERT INTO equipment_works (equipment_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [eq.id, wid]);
-    }
+    await syncEquipmentWorks(eq.id, workLinks);
 
-    return { ...mapRow(eq), workIds };
+    return attachWorkLinks(mapRow(eq), workLinks);
   },
 
   /**
@@ -184,7 +241,6 @@ module.exports = {
    * @async
    * @param {number} id - Идентификатор оборудования
    * @param {Object} data - Данные для обновления
-   * @param {Array<number>} [data.workIds] - Новый список ID работ (полная замена)
    * @returns {Promise<Object|null>} Обновлённое оборудование или null
    */
   update: async (id, data, companyId) => {
@@ -201,7 +257,7 @@ module.exports = {
     };
     const mapped = {};
     for (const [key, val] of Object.entries(safeData)) {
-      if (key === 'workIds') continue;
+      if (key === 'workIds' || key === 'workLinks') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       if (key === 'yearOfManufacture') {
         mapped[col] = val && String(val).trim() !== '' ? parseInt(val, 10) : null;
@@ -220,13 +276,9 @@ module.exports = {
       await query(`UPDATE equipment SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND company_id = $${vals.length}`, vals);
     }
 
-    if (safeData.workIds !== undefined) {
-      let ids = safeData.workIds;
-      if (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (_) { ids = []; } }
-      await query('DELETE FROM equipment_works WHERE equipment_id = $1', [id]);
-      for (const wid of ids) {
-        await query('INSERT INTO equipment_works (equipment_id, work_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, wid]);
-      }
+    const workLinks = normalizeWorkLinks(safeData);
+    if (workLinks !== null) {
+      await syncEquipmentWorks(id, workLinks);
     }
 
     return module.exports.findById(id, companyId);

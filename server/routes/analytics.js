@@ -12,6 +12,7 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 const { requirePermission } = require('../middleware/auth');
+const { calculateWorkDue, getWorkStartDate } = require('../utils/workDue');
 
 /**
  * Рассчитывает аналитические данные по сотрудникам и оборудованию.
@@ -82,22 +83,15 @@ async function getAnalytics(companyId) {
           .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
+      const dueInfo = calculateWorkDue({
+        frequencyDays: work.frequencyDays || 30,
+        lastCompleted,
+        startDate: getWorkStartDate(equip, wid),
+        today,
+      });
 
-      let nextDue = null;
-      if (lastCompleted) {
-        nextDue = new Date(lastCompleted);
-        nextDue.setDate(nextDue.getDate() + (work.frequencyDays || 30));
-        nextDue.setHours(0, 0, 0, 0);
-      }
-
-      const isOverdue = nextDue ? today >= nextDue : true;
-
-      let plannedDate = null;
-      if (lastCompleted) {
-        plannedDate = new Date(lastCompleted);
-        plannedDate.setDate(plannedDate.getDate() + (work.frequencyDays || 30));
-        plannedDate.setHours(0, 0, 0, 0);
-      }
+      const isOverdue = dueInfo.isOverdue;
+      const plannedDate = dueInfo.plannedDate;
 
       let daysDiff = null;
       if (lastCompleted && plannedDate) {
@@ -120,7 +114,7 @@ async function getAnalytics(companyId) {
         } else {
           stats.onTime++;
         }
-      } else {
+      } else if (isOverdue) {
         stats.neverCompleted++;
       }
 
@@ -129,7 +123,7 @@ async function getAnalytics(companyId) {
         workName: work.name,
         frequencyDays: work.frequencyDays,
         lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
-        plannedDate: plannedDate ? plannedDate.toISOString() : null,
+        plannedDate: plannedDate.toISOString(),
         isOverdue,
         daysDiff,
         completedCount: completedOrders.length,

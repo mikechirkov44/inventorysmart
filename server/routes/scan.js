@@ -14,6 +14,7 @@ const Room = require('../models/room');
 const Employee = require('../models/employee');
 const SparePart = require('../models/sparePart');
 const { requirePermission } = require('../middleware/auth');
+const { calculateWorkDue, getWorkStartDate } = require('../utils/workDue');
 
 /**
  * @route GET /scan/:code
@@ -83,23 +84,12 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
         .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
       const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
-
-      let nextDue = null;
-      let isOverdue = false;
-      let isDueToday = false;
-
-      if (lastCompleted) {
-        nextDue = new Date(lastCompleted);
-        nextDue.setDate(nextDue.getDate() + (work.frequencyDays || 30));
-        nextDue.setHours(0, 0, 0, 0);
-
-        isOverdue = today >= nextDue;
-        isDueToday = today.getTime() === nextDue.getTime() ||
-          (today > nextDue && today.getTime() - nextDue.getTime() < 86400000);
-      } else {
-        isOverdue = true;
-        isDueToday = true;
-      }
+      const { nextDue, isOverdue } = calculateWorkDue({
+        frequencyDays: work.frequencyDays || 30,
+        lastCompleted,
+        startDate: getWorkStartDate(equipment, wid),
+        today,
+      });
 
       const workSpareParts = sparePartsForEquipment
         .filter(sp => (sp.workLinks || []).some(wl => wl.workId === wid))
@@ -122,7 +112,7 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
         frequencyDays: work.frequencyDays,
         category: work.category,
         lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
-        nextDue: nextDue ? nextDue.toISOString() : null,
+        nextDue: nextDue.toISOString(),
         isOverdue,
         completedCount: completedOrders.length,
         spareParts: workSpareParts,
