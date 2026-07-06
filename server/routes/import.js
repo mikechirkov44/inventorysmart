@@ -4,32 +4,60 @@
  */
 
 const express = require('express');
-const path = require('path');
 const router = express.Router();
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const Equipment = require('../models/equipment');
 const { excelUpload } = require('../utils/upload');
 const { requirePermission } = require('../middleware/auth');
 
 /**
+ * Читает первый лист Excel-файла и возвращает строки как объекты по заголовкам.
+ * @param {string} filePath
+ * @returns {Promise<Array<Record<string, string>>>}
+ */
+async function readExcelRows(filePath) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return [];
+
+  const headers = [];
+  const rows = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    const values = [];
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const value = cell.value;
+      values[colNumber - 1] = value == null ? '' : String(value);
+    });
+
+    if (rowNumber === 1) {
+      values.forEach((header) => headers.push(header));
+      return;
+    }
+
+    const record = {};
+    headers.forEach((header, index) => {
+      if (header) record[header] = values[index] ?? '';
+    });
+    rows.push(record);
+  });
+
+  return rows;
+}
+
+/**
  * @route POST /import/excel
  * @description Импорт оборудования из Excel-файла (.xlsx)
- * @param {File} req.file - Excel-файл с данными оборудования (multipart/form-data)
- * @returns {Object} Результат импорта
- * @returns {string} return.message - Сообщение о количестве импортированных записей
- * @returns {Object[]} return.equipment - Созданное оборудование
  */
 router.post('/excel', requirePermission('import', 'edit'), excelUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    
-    const workbook = XLSX.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-    
+
+    const jsonData = await readExcelRows(req.file.path);
+
     const equipmentData = jsonData.map(row => {
       const tasks = [];
       if (row['Работы'] || row['maintenanceTasks']) {
@@ -45,7 +73,7 @@ router.post('/excel', requirePermission('import', 'edit'), excelUpload.single('f
           });
         });
       }
-      
+
       return {
         name: row['Наименование'] || row['name'] || '',
         inventoryNumber: row['Инвентарный номер'] || row['inventoryNumber'] || '',
@@ -55,14 +83,14 @@ router.post('/excel', requirePermission('import', 'edit'), excelUpload.single('f
         maintenanceTasks: tasks
       };
     });
-    
+
     const created = await Equipment.createMany(equipmentData, req.user.companyId);
-    
+
     const fs = require('fs');
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    
+
     res.status(201).json({
       message: `Successfully imported ${created.length} equipment items`,
       equipment: created
@@ -76,23 +104,21 @@ router.post('/excel', requirePermission('import', 'edit'), excelUpload.single('f
 /**
  * @route GET /import/template
  * @description Скачивание шаблона Excel-файла для импорта оборудования
- * @returns {File} Excel-файл equipment_template.xlsx для скачивания
  */
-router.get('/template', requirePermission('import', 'view'), (req, res) => {
+router.get('/template', requirePermission('import', 'view'), async (req, res) => {
   try {
-    const wb = XLSX.utils.book_new();
-    const wsData = [
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Оборудование');
+    worksheet.addRows([
       ['Наименование', 'Инвентарный номер', 'Описание', 'Расположение', 'Категория', 'Работы'],
       ['Насос центробежный', 'INV-001', 'Насос для перекачки воды', 'Цех №1', 'Насосы', 'Замена масла, Проверка уплотнений, Промывка фильтров'],
       ['Компрессор воздуха', 'INV-002', 'Винтовой компрессор', 'Цех №2', 'Компрессоры', 'Замена масла, Проверка фильтров, Контроль давления']
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Оборудование');
-    
-    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    ]);
+
+    const buffer = await workbook.xlsx.writeBuffer();
     res.setHeader('Content-Disposition', 'attachment; filename=equipment_template.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('Template generation error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
