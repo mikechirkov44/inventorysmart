@@ -1,6 +1,22 @@
 const { query } = require('../db');
 
 class Cause {
+  static async findByName(companyId, name) {
+    const { rows } = await query(
+      'SELECT * FROM causes WHERE company_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2)) LIMIT 1',
+      [companyId, name],
+    );
+    return rows[0] || null;
+  }
+
+  static async findOrCreateByName(companyId, name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return null;
+    const existing = await Cause.findByName(companyId, trimmed);
+    if (existing) return existing;
+    return Cause.create({ companyId, name: trimmed });
+  }
+
   static async create({ companyId, name }) {
     const { rows } = await query(
       'INSERT INTO causes (company_id, name) VALUES ($1, $2) RETURNING *',

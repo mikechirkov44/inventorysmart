@@ -245,9 +245,9 @@ function HelpPage() {
           </Step>
 
           <Step number={4} icon={CheckCircle} title="Закрытие инцидента">
-            Укажите <strong>причину возникновения</strong> из справочника (обязательно) → нажмите <strong>«Решено»</strong>.
+            Укажите <strong>причину возникновения</strong> из справочника (если известна сразу) или заполните <strong>коренную причину</strong> на вкладке RCA — она автоматически станет причиной возникновения при сохранении и закрытии.
             <br /><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} />
-            Если других открытых инцидентов по этому оборудованию нет, статус оборудования вернётся в «Работает».
+            Нажмите <strong>«Решено»</strong>. Если других открытых инцидентов по этому оборудованию нет, статус оборудования вернётся в «Работает».
           </Step>
 
           <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--gray-900)', margin: '24px 0 12px' }}>Сценарий 2 — серьёзная поломка (с RCA)</h4>
@@ -278,20 +278,20 @@ function HelpPage() {
           </Step>
 
           <Step number={5} icon={CheckCircle} title="Завершение RCA и закрытие">
+            Заполните <strong>коренную причину</strong> на вкладке RCA — она автоматически фиксируется как <strong>причина возникновения</strong> (при отсутствии в справочнике будет создана новая запись).
             Нажмите <strong>«RCA завершён»</strong>, затем <strong>«Решено»</strong>. Система проверит:
             <ul style={{ margin: '8px 0', paddingLeft: 20, color: 'var(--gray-600)' }}>
-              <li>Указана <strong>причина возникновения</strong></li>
-              <li>Заполнена <strong>коренная причина</strong></li>
+              <li>Заполнена <strong>коренная причина</strong> (становится причиной возникновения)</li>
               <li>Есть хотя бы одно <strong>корректирующее мероприятие</strong> или связанный <strong>наряд</strong></li>
             </ul>
           </Step>
 
           <div style={{ background: 'var(--primary-light)', border: '1px solid var(--primary)', borderRadius: 8, padding: '12px 16px', marginTop: 8 }}>
-            <strong style={{ color: 'var(--primary)', fontSize: 14 }}>Разница между причинами:</strong>
+            <strong style={{ color: 'var(--primary)', fontSize: 14 }}>Как связаны причины:</strong>
             <ul style={{ margin: '8px 0 0', paddingLeft: 20, color: 'var(--gray-700)', fontSize: 14, lineHeight: 1.7 }}>
               <li><strong>Типовая неисправность</strong> — что сломалось (симптом): «Перегрев насоса»</li>
-              <li><strong>Причина возникновения</strong> — непосредственная причина из справочника: «Несвоевременное ТО»</li>
-              <li><strong>Коренная причина (RCA)</strong> — системная причина: «Нет регламента замены масла»</li>
+              <li><strong>Коренная причина (RCA)</strong> — результат расследования; автоматически становится <strong>причиной возникновения</strong> в инциденте</li>
+              <li><strong>Причина возникновения</strong> — запись в справочнике для аналитики; можно выбрать сразу или получить из RCA</li>
             </ul>
           </div>
         </div>

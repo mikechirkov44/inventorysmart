@@ -114,7 +114,7 @@ function ReportFailureModal({ equipment, onClose, onSuccess }) {
             <CustomSelect
               value={causeId}
               onChange={setCauseId}
-              placeholder="Выберите (необязательно)"
+              placeholder="Если неизвестна — укажете при RCA"
               options={causes.map((c) => ({ value: c.id, label: c.name }))}
             />
           </div>

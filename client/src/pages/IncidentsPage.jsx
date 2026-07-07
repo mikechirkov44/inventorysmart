@@ -189,6 +189,13 @@ function IncidentsPage() {
       };
       const res = await incidentsAPI.update(selectedIncident.id, payload);
       setSelectedIncident((prev) => ({ ...prev, ...res.data }));
+      if (res.data.causeId) {
+        setEditCauseId(res.data.causeId);
+        try {
+          const causesRes = await causesAPI.getAll();
+          setAllCauses(causesRes.data);
+        } catch { /* ignore */ }
+      }
       fetchIncidents();
       return true;
     } catch (err) {
@@ -525,11 +532,14 @@ function IncidentsPage() {
                         )}
                       </div>
                       <div className="form-group">
-                        <label>Причина возникновения <span className="label-hint">(обязательна при закрытии)</span></label>
+                        <label>
+                          Причина возникновения
+                          <span className="label-hint"> (если известна сразу; иначе укажите при RCA)</span>
+                        </label>
                         <CustomSelect
                           value={editCauseId}
                           onChange={setEditCauseId}
-                          placeholder="Выберите причину"
+                          placeholder="Будет установлена при RCA или выберите вручную"
                           options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
                         />
                       </div>
@@ -608,13 +618,26 @@ function IncidentsPage() {
 
                   <div className="form-group">
                     <label>Коренная причина</label>
+                    <p className="incident-rca-hint">
+                      Текст коренной причины автоматически фиксируется как <strong>причина возникновения</strong> при сохранении и закрытии инцидента.
+                    </p>
                     <textarea
                       value={rootCauseNotes}
                       onChange={(e) => setRootCauseNotes(e.target.value)}
                       rows="3"
-                      placeholder="Опишите коренную причину..."
+                      placeholder="Опишите коренную причину по итогам расследования..."
                       disabled={isResolved}
                     />
+                    {!isResolved && rootCauseNotes.trim() && !editCauseId && (
+                      <p className="incident-rca-preview">
+                        Будет зафиксирована как причина: «{rootCauseNotes.trim()}»
+                      </p>
+                    )}
+                    {!isResolved && editCauseId && rootCauseNotes.trim() && (
+                      <p className="incident-rca-preview">
+                        Причина в инциденте: {allCauses.find((c) => c.id === editCauseId)?.name || selectedIncident.causeName || '—'}
+                      </p>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -661,10 +684,18 @@ function IncidentsPage() {
                       <ul className="incident-actions-list">
                         {actions.map((action) => (
                           <li key={action.id} className="incident-action-item">
-                            <div className="incident-action-text">
-                              <strong>{action.description}</strong>
-                              {action.dueDate && <span className="td-muted"> — до {formatDate(action.dueDate)}</span>}
-                              {action.assignedEmployeeName && <span className="td-muted"> ({action.assignedEmployeeName})</span>}
+                            <div className="incident-action-main">
+                              <div className="incident-action-title">{action.description}</div>
+                              {(action.dueDate || action.assignedEmployeeName) && (
+                                <div className="incident-action-meta">
+                                  {action.dueDate && formatDate(action.dueDate) !== '—' && (
+                                    <span>Срок: {formatDate(action.dueDate)}</span>
+                                  )}
+                                  {action.assignedEmployeeName && (
+                                    <span>Ответственный: {action.assignedEmployeeName}</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             <div className="incident-action-controls">
                               <span className="action-status-pill">{ACTION_STATUS_MAP[action.status] || action.status}</span>
@@ -672,7 +703,7 @@ function IncidentsPage() {
                                 <button type="button" className="btn btn-small" onClick={() => handleActionStatus(action.id, 'done')}>Выполнено</button>
                               )}
                               {!isResolved && (
-                                <button type="button" className="btn btn-small btn-danger" onClick={() => handleDeleteAction(action.id)} aria-label="Удалить">✕</button>
+                                <button type="button" className="btn btn-small btn-danger incident-action-delete" onClick={() => handleDeleteAction(action.id)} aria-label="Удалить">✕</button>
                               )}
                             </div>
                           </li>
@@ -731,6 +762,10 @@ function IncidentsPage() {
                     <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary btn-small" disabled={saving}>
                       {saving ? 'Сохранение...' : 'Сохранить RCA'}
                     </button>
+                    {requiresRca && selectedIncident.status === 'investigating' && (
+                      <button type="button" onClick={() => updateStatus('rca_done')} className="btn btn-secondary btn-small" disabled={saving}>RCA завершён</button>
+                    )}
+                    <button type="button" onClick={() => updateStatus('resolved')} className="btn btn-primary btn-small" disabled={saving}>Решено</button>
                     <button type="button" onClick={closeDetail} className="btn btn-small">Закрыть</button>
                   </div>
                 </>

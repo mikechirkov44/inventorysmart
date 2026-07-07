@@ -9,6 +9,7 @@ const IncidentAction = require('../models/incidentAction');
 const Notification = require('../models/notification');
 const Equipment = require('../models/equipment');
 const WorkOrder = require('../models/workOrder');
+const Cause = require('../models/causes');
 const { authenticate, requirePermission } = require('../middleware/auth');
 const { incidentUpload } = require('../utils/upload');
 
@@ -26,6 +27,24 @@ function enrichIncident(inc, eqMap) {
   };
 }
 
+async function syncCauseFromRootNotes(updateData, incident, companyId) {
+  const rootCauseNotes = updateData.rootCauseNotes !== undefined
+    ? updateData.rootCauseNotes
+    : incident.rootCauseNotes;
+  const causeId = updateData.causeId !== undefined ? updateData.causeId : incident.causeId;
+  const rootText = rootCauseNotes ? String(rootCauseNotes).trim() : '';
+
+  if (!rootText || causeId) {
+    return updateData;
+  }
+
+  const cause = await Cause.findOrCreateByName(companyId, rootText);
+  if (cause) {
+    updateData.causeId = cause.id;
+  }
+  return updateData;
+}
+
 async function validateRcaRequirements(incident, updateData, companyId) {
   const nextStatus = updateData.status || incident.status;
   const requiresRca = updateData.requiresRca !== undefined ? updateData.requiresRca : incident.requiresRca;
@@ -35,7 +54,7 @@ async function validateRcaRequirements(incident, updateData, companyId) {
   const causeId = updateData.causeId !== undefined ? updateData.causeId : incident.causeId;
 
   if (nextStatus === 'resolved' && !causeId) {
-    return 'Укажите причину возникновения перед закрытием инцидента';
+    return 'Укажите причину возникновения или заполните коренную причину в RCA перед закрытием';
   }
 
   if (requiresRca && (nextStatus === 'rca_done' || nextStatus === 'resolved')) {
@@ -170,6 +189,8 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
     if (updateData.whys && typeof updateData.whys === 'string') {
       try { updateData.whys = JSON.parse(updateData.whys); } catch (_) { updateData.whys = []; }
     }
+
+    await syncCauseFromRootNotes(updateData, existing, req.user.companyId);
 
     const validationError = await validateRcaRequirements(existing, updateData, req.user.companyId);
     if (validationError) {
