@@ -91,13 +91,13 @@ function CalendarPage() {
       <div className="calendar-layout">
         <aside className="calendar-sidebar">
           <div className="calendar-widget">
-            <div className="calendar-nav">
-              <button type="button" onClick={() => shiftMonth(-1)} className="btn btn-icon" aria-label="Предыдущий месяц">
-                <ChevronLeft size={18} />
+            <div className="calendar-month-bar">
+              <button type="button" onClick={() => shiftMonth(-1)} className="calendar-month-btn" aria-label="Предыдущий месяц">
+                <ChevronLeft size={18} strokeWidth={2.25} />
               </button>
               <span className="calendar-title">{MONTHS[month]} {year}</span>
-              <button type="button" onClick={() => shiftMonth(1)} className="btn btn-icon" aria-label="Следующий месяц">
-                <ChevronRight size={18} />
+              <button type="button" onClick={() => shiftMonth(1)} className="calendar-month-btn" aria-label="Следующий месяц">
+                <ChevronRight size={18} strokeWidth={2.25} />
               </button>
             </div>
 
@@ -133,7 +133,11 @@ function CalendarPage() {
                       onClick={() => setSelectedDay(day)}
                     >
                       <span className="cell-day">{day}</span>
-                      {dayEvents.length > 0 && <span className="cell-badge">{dayEvents.length}</span>}
+                      {dayEvents.length > 0 && (
+                        <span className={`cell-event-indicator ${hasOverdue ? 'is-overdue' : ''}`}>
+                          {dayEvents.length > 9 ? '9+' : dayEvents.length}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
