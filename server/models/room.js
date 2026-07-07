@@ -60,9 +60,12 @@ module.exports = {
    * @returns {Promise<Object>} Созданное помещение
    */
   create: async (data, companyId) => {
+    const responsibleEmployeeId = data.responsibleEmployeeId && String(data.responsibleEmployeeId).trim() !== ''
+      ? data.responsibleEmployeeId
+      : null;
     const { rows } = await query(
       'INSERT INTO rooms (name, description, building, floor, responsible_employee_id, company_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [data.name || '', data.description || '', data.building || '', data.floor || '', data.responsibleEmployeeId || null, companyId]
+      [data.name || '', data.description || '', data.building || '', data.floor || '', responsibleEmployeeId, companyId]
     );
     return mapRow(rows[0]);
   },
@@ -80,7 +83,11 @@ module.exports = {
     for (const [key, val] of Object.entries(data)) {
       if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      mapped[col] = val;
+      if (key === 'responsibleEmployeeId') {
+        mapped[col] = val && String(val).trim() !== '' ? val : null;
+      } else {
+        mapped[col] = val;
+      }
     }
     mapped.updated_at = new Date();
     const keys = Object.keys(mapped);
