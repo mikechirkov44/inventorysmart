@@ -106,14 +106,26 @@ async function previewBulkAssign(companyId, workId, filters) {
     totalMatching: equipment.length,
     alreadyAssigned,
     toAssign: equipment.length - alreadyAssigned,
-    equipment: equipment.slice(0, 100),
-    truncated: equipment.length > 100,
+    equipment,
+    truncated: false,
   };
 }
 
-async function bulkAssignWork(companyId, { workId, startDate, filters, updateExisting = false }) {
+async function bulkAssignWork(companyId, {
+  workId,
+  startDate,
+  filters,
+  updateExisting = false,
+  equipmentIds = null,
+}) {
   const normalizedStartDate = serializeDate(startDate) || serializeDate(new Date());
-  const equipment = await findMatchingEquipment(companyId, filters, workId);
+  let equipment = await findMatchingEquipment(companyId, filters, workId);
+
+  if (Array.isArray(equipmentIds) && equipmentIds.length > 0) {
+    const idSet = new Set(equipmentIds);
+    equipment = equipment.filter((item) => idSet.has(item.id));
+  }
+
   const targets = updateExisting ? equipment : equipment.filter((item) => !item.hasWork);
 
   let assigned = 0;

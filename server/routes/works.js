@@ -40,12 +40,15 @@ router.post('/bulk-assign/preview', requirePermission('equipment', 'view'), asyn
  */
 router.post('/bulk-assign', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
-    const { workId, startDate, filters = {}, updateExisting = false } = req.body;
+    const { workId, startDate, filters = {}, updateExisting = false, equipmentIds } = req.body;
     if (!workId) {
       return res.status(400).json({ error: 'Укажите работу' });
     }
     if (!startDate) {
       return res.status(400).json({ error: 'Укажите дату старта' });
+    }
+    if (equipmentIds != null && !Array.isArray(equipmentIds)) {
+      return res.status(400).json({ error: 'equipmentIds должен быть массивом' });
     }
 
     const work = await Work.findById(workId, req.user.companyId);
@@ -58,6 +61,7 @@ router.post('/bulk-assign', requirePermission('equipment', 'edit'), async (req, 
       startDate,
       filters,
       updateExisting: Boolean(updateExisting),
+      equipmentIds,
     });
     res.json({ work, ...result });
   } catch (error) {

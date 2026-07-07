@@ -8593,6 +8593,42 @@ textarea:focus {
   color: var(--primary);
 }
 
+.bulk-stat-selected {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.bulk-stat-selected strong {
+  color: #4338ca;
+}
+
+.bulk-assign-equipment-table .bulk-assign-check-col {
+  width: 40px;
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 8px;
+}
+
+.bulk-assign-equipment-table .bulk-assign-check-col input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.bulk-assign-row-selected {
+  background: color-mix(in srgb, var(--primary) 4%, white);
+}
+
+.bulk-assign-row-disabled {
+  opacity: 0.55;
+}
+
+.bulk-assign-row-disabled .bulk-assign-check-col input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
 .bulk-stat-new {
   background: #f0fdf4;
   border-color: #bbf7d0;

@@ -2,7 +2,7 @@
  * @module BulkWorkAssignPage
  * @description Массовое назначение плановой работы на оборудование по фильтрам.
  */
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Wrench, Filter, ArrowLeft } from 'lucide-react';
 import { worksAPI, roomsAPI, equipmentCategoriesAPI } from '../services/api';
@@ -24,11 +24,24 @@ const STATUS_OPTIONS = [
 
 const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((item) => [item.value, item.label]));
 
+function isEquipmentSelectable(item, updateExisting) {
+  return updateExisting || !item.hasWork;
+}
+
+function getDefaultSelectedIds(equipment, updateExisting) {
+  return new Set(
+    equipment
+      .filter((item) => isEquipmentSelectable(item, updateExisting))
+      .map((item) => item.id),
+  );
+}
+
 function BulkWorkAssignPage() {
   const [searchParams] = useSearchParams();
   const toast = useToast();
   const confirm = useConfirm();
   const { canEdit } = useAuth();
+  const selectAllRef = useRef(null);
 
   const [works, setWorks] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -48,6 +61,7 @@ function BulkWorkAssignPage() {
     search: '',
   });
   const [preview, setPreview] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const canEditEquipment = canEdit('equipment');
 
@@ -100,13 +114,35 @@ function BulkWorkAssignPage() {
     return () => clearTimeout(timer);
   }, [loadPreview]);
 
+  useEffect(() => {
+    if (!preview?.equipment) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(getDefaultSelectedIds(preview.equipment, updateExisting));
+  }, [preview, updateExisting]);
+
+  const selectableItems = useMemo(
+    () => (preview?.equipment || []).filter((item) => isEquipmentSelectable(item, updateExisting)),
+    [preview, updateExisting],
+  );
+
+  const allSelectableSelected = selectableItems.length > 0
+    && selectableItems.every((item) => selectedIds.has(item.id));
+
+  const someSelectableSelected = selectableItems.some((item) => selectedIds.has(item.id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelectableSelected && !allSelectableSelected;
+    }
+  }, [someSelectableSelected, allSelectableSelected]);
+
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const assignCount = preview
-    ? (updateExisting ? preview.totalMatching : preview.toAssign)
-    : 0;
+  const assignCount = selectedIds.size;
 
   const canAssign = Boolean(
     canEditEquipment
@@ -115,13 +151,31 @@ function BulkWorkAssignPage() {
     && assignCount > 0,
   );
 
+  const toggleSelectAll = () => {
+    if (allSelectableSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(selectableItems.map((item) => item.id)));
+  };
+
+  const toggleRowSelection = (item) => {
+    if (!isEquipmentSelectable(item, updateExisting)) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) next.delete(item.id);
+      else next.add(item.id);
+      return next;
+    });
+  };
+
   const handleAssign = async () => {
     if (!workId || !startDate) {
       toast.error('Заполните обязательные поля');
       return;
     }
     if (!preview || assignCount === 0) {
-      toast.error('Нет оборудования для назначения');
+      toast.error('Выберите оборудование для назначения');
       return;
     }
 
@@ -139,6 +193,7 @@ function BulkWorkAssignPage() {
         startDate,
         filters,
         updateExisting,
+        equipmentIds: [...selectedIds],
       });
       toast.success(
         'Готово',
@@ -280,15 +335,15 @@ function BulkWorkAssignPage() {
                   {' '}
                   {preview.totalMatching === 1 ? 'объект' : preview.totalMatching < 5 ? 'объекта' : 'объектов'}
                 </span>
+                <span className="bulk-stat bulk-stat-selected">
+                  <strong>{selectedIds.size}</strong> выбрано
+                </span>
                 <span className="bulk-stat bulk-stat-new">
                   <strong>{preview.toAssign}</strong> новых
                 </span>
                 <span className="bulk-stat">
                   <strong>{preview.alreadyAssigned}</strong> уже назначено
                 </span>
-                {preview.truncated && (
-                  <span className="bulk-stat bulk-stat-muted">показаны первые 100</span>
-                )}
               </>
             ) : (
               <span className="bulk-stat bulk-stat-muted">Выберите работу для превью</span>
@@ -304,9 +359,19 @@ function BulkWorkAssignPage() {
               </div>
             ) : preview && preview.equipment.length > 0 ? (
               <div className="table-scroll">
-                <table className="data-table data-table-compact">
+                <table className="data-table data-table-compact bulk-assign-equipment-table">
                   <thead>
                     <tr>
+                      <th className="bulk-assign-check-col">
+                        <input
+                          ref={selectAllRef}
+                          type="checkbox"
+                          checked={allSelectableSelected}
+                          onChange={toggleSelectAll}
+                          disabled={selectableItems.length === 0}
+                          aria-label="Выбрать всё доступное оборудование"
+                        />
+                      </th>
                       <th>Оборудование</th>
                       <th>Инв. №</th>
                       <th>Помещение</th>
@@ -316,22 +381,42 @@ function BulkWorkAssignPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.equipment.map((item) => (
-                      <tr key={item.id}>
-                        <td className="td-bold">{item.name}</td>
-                        <td>{item.inventoryNumber || '—'}</td>
-                        <td>{item.roomName || '—'}</td>
-                        <td>{item.categoryName || '—'}</td>
-                        <td>{STATUS_LABELS[item.status] || item.status || '—'}</td>
-                        <td>
-                          {item.hasWork ? (
-                            <span className="status-badge status-working">Назначена</span>
-                          ) : (
-                            <span className="status-badge status-under-repair">Новая</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {preview.equipment.map((item) => {
+                      const selectable = isEquipmentSelectable(item, updateExisting);
+                      const isSelected = selectedIds.has(item.id);
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className={[
+                            isSelected ? 'bulk-assign-row-selected' : '',
+                            !selectable ? 'bulk-assign-row-disabled' : '',
+                          ].filter(Boolean).join(' ')}
+                        >
+                          <td className="bulk-assign-check-col">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={!selectable}
+                              onChange={() => toggleRowSelection(item)}
+                              aria-label={`Выбрать ${item.name}`}
+                            />
+                          </td>
+                          <td className="td-bold">{item.name}</td>
+                          <td>{item.inventoryNumber || '—'}</td>
+                          <td>{item.roomName || '—'}</td>
+                          <td>{item.categoryName || '—'}</td>
+                          <td>{STATUS_LABELS[item.status] || item.status || '—'}</td>
+                          <td>
+                            {item.hasWork ? (
+                              <span className="status-badge status-working">Назначена</span>
+                            ) : (
+                              <span className="status-badge status-under-repair">Новая</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
