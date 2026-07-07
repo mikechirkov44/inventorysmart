@@ -1,4 +1,4 @@
-import { HelpCircle, BookOpen, CheckCircle, AlertCircle, Info, Search, Plus, QrCode, Calendar, Settings, Users, FileText, Bell, BarChart3, ClipboardList, Upload, ArrowRight, Camera, Code, Key } from 'lucide-react';
+import { HelpCircle, BookOpen, CheckCircle, AlertCircle, Info, Search, Plus, QrCode, Calendar, Settings, Users, FileText, Bell, BarChart3, ClipboardList, Upload, ArrowRight, Camera, Code, Key, Wrench, AlertTriangle } from 'lucide-react';
 
 function HelpPage() {
   const Step = ({ number, icon: Icon, title, children }) => (
@@ -46,6 +46,7 @@ function HelpPage() {
             <span style={{ padding: '4px 12px', background: 'var(--success-light)', color: 'var(--success)', borderRadius: 20, fontSize: 13, fontWeight: 500 }}>Журнал работ</span>
             <span style={{ padding: '4px 12px', background: 'var(--warning-light)', color: 'var(--warning)', borderRadius: 20, fontSize: 13, fontWeight: 500 }}>QR-сканер</span>
             <span style={{ padding: '4px 12px', background: 'var(--gray-100)', color: 'var(--gray-700)', borderRadius: 20, fontSize: 13, fontWeight: 500 }}>Аналитика</span>
+            <span style={{ padding: '4px 12px', background: '#fef3c7', color: '#b45309', borderRadius: 20, fontSize: 13, fontWeight: 500 }}>RCA</span>
           </div>
         </div>
 
@@ -191,38 +192,137 @@ function HelpPage() {
           </Step>
         </div>
 
-        {/* Section 6: Incidents */}
+        {/* Section 6: Incidents, work orders and RCA */}
         <div className="settings-card" style={{ marginBottom: 20 }}>
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={18} />Инциденты
+            <AlertTriangle size={18} />Инциденты, наряды и RCA
           </h3>
-          <p style={{ color: 'var(--gray-700)', lineHeight: 1.6, marginBottom: 16 }}>
-            Учет поломок и неисправностей оборудования.
+          <p style={{ color: 'var(--gray-700)', lineHeight: 1.6, marginBottom: 12 }}>
+            <strong>Инцидент</strong> — фиксация поломки или неисправности. <strong>Наряд</strong> — задача на ремонт в журнале работ.
+            <strong> RCA</strong> (Root Cause Analysis) — расследование коренной причины, чтобы предотвратить повторение.
           </p>
 
-          <Step number={1} icon={QrCode} title="Создание через QR-сканер">
-            Отсканируйте QR-код оборудования и нажмите <strong>«Сообщить о поломке»</strong>. Опишите проблему и прикрепите фото.
+          <div style={{
+            background: 'var(--gray-50)',
+            border: '1px solid var(--gray-200)',
+            borderRadius: 8,
+            padding: '14px 16px',
+            marginBottom: 20,
+            fontSize: 14,
+            color: 'var(--gray-700)',
+            lineHeight: 1.7,
+          }}>
+            <strong style={{ color: 'var(--gray-900)' }}>Цепочка в системе:</strong><br />
+            Поломка → <strong>Инцидент</strong> → (при необходимости) <strong>Наряд на ремонт</strong> → (для серьёзных случаев) <strong>RCA-расследование</strong> → <strong>Закрытие</strong> с указанием причины
+          </div>
+
+          <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--gray-900)', marginBottom: 12 }}>Статусы инцидента</h4>
+          <ul style={{ margin: '0 0 20px', paddingLeft: 20, color: 'var(--gray-600)', lineHeight: 1.8, fontSize: 14 }}>
+            <li><strong>Новый</strong> — поломка зарегистрирована, ожидает реакции</li>
+            <li><strong>В работе</strong> — инцидент принят, ведётся устранение</li>
+            <li><strong>Расследование</strong> — выполняется RCA (только при включённом флаге «Требует RCA»)</li>
+            <li><strong>RCA завершён</strong> — коренная причина и мероприятия зафиксированы</li>
+            <li><strong>Решён</strong> — инцидент закрыт (обязательно указана причина возникновения)</li>
+          </ul>
+
+          <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--gray-900)', marginBottom: 12 }}>Сценарий 1 — простая поломка (без RCA)</h4>
+
+          <Step number={1} icon={QrCode} title="Фиксация поломки">
+            <strong>Через QR:</strong> отсканируйте код → «Сообщить о поломке» → укажите типовую неисправность, причину (если известна), описание и фото.
+            <br /><strong>Вручную:</strong> раздел «Инциденты» → «+ Добавить инцидент» (если в настройках включены осмотры без QR).
+            <br /><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} />
+            Оборудование автоматически переходит в статус «Требует ремонта». Администраторам приходит уведомление.
           </Step>
 
-          <Step number={2} icon={Plus} title="Ручное создание">
-            В разделе <strong>«Инциденты»</strong> нажмите <strong>«+ Добавить инцидент»</strong> (при включенной настройке «Разрешить осмотры без QR-кода»).
-            Выберите оборудование из списка, затем выберите <strong>типовую неисправность</strong> из выпадающего списка (описание заполнится автоматически) или введите описание вручную.
-            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> При наличии справочника причин можно выбрать <strong>причину возникновения</strong> из справочника.
-            <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Загрузите фото для наглядности.
+          <Step number={2} icon={CheckCircle} title="Принятие в работу">
+            Откройте инцидент → вкладка <strong>«Общее»</strong> → уточните типовую неисправность и причину → нажмите <strong>«В работу»</strong>.
           </Step>
 
-          <Step number={3} icon={CheckCircle} title="Обработка инцидента">
-            Администратор может:
+          <Step number={3} icon={Wrench} title="Создание наряда на ремонт">
+            В карточке инцидента нажмите <strong>«Создать наряд»</strong>. В журнале работ появится связанная запись с тем же оборудованием.
+            <br /><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} />
+            Выполните ремонт: отметьте наряд выполненным в журнале или через QR-сканер.
+          </Step>
+
+          <Step number={4} icon={CheckCircle} title="Закрытие инцидента">
+            Укажите <strong>причину возникновения</strong> из справочника (обязательно) → нажмите <strong>«Решено»</strong>.
+            <br /><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} />
+            Если других открытых инцидентов по этому оборудованию нет, статус оборудования вернётся в «Работает».
+          </Step>
+
+          <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--gray-900)', margin: '24px 0 12px' }}>Сценарий 2 — серьёзная поломка (с RCA)</h4>
+          <p style={{ color: 'var(--gray-600)', fontSize: 14, marginBottom: 16, lineHeight: 1.6 }}>
+            Используйте RCA для повторяющихся, критичных или дорогостоящих отказов — когда важно не только устранить симптом, но и найти коренную причину.
+          </p>
+
+          <Step number={1} icon={AlertCircle} title="Отметить необходимость RCA">
+            В карточке инцидента (вкладка «Общее») включите <strong>«Требует RCA-расследования»</strong> и сохраните.
+          </Step>
+
+          <Step number={2} icon={Search} title="Начать расследование">
+            Нажмите <strong>«Начать RCA»</strong> — статус сменится на «Расследование». Перейдите на вкладку <strong>«Расследование (RCA)»</strong>.
+          </Step>
+
+          <Step number={3} icon={FileText} title="Заполнить результаты RCA">
             <ul style={{ margin: '8px 0', paddingLeft: 20, color: 'var(--gray-600)' }}>
-              <li>Принять в работу — статус меняется на «В работе»</li>
-              <li>Отметить решение — статус «Решен»</li>
-              <li>Добавить административные заметки</li>
-              <li>Удалить устаревший инцидент</li>
+              <li>Назначьте <strong>ответственного за расследование</strong></li>
+              <li>Опишите <strong>коренную причину</strong> (не симптом, а источник проблемы)</li>
+              <li>Заполните цепочку <strong>«5 почему»</strong> — последовательные вопросы «почему это произошло?»</li>
+              <li>Добавьте <strong>корректирующие мероприятия</strong>: что сделать, кто ответственный, срок</li>
             </ul>
+          </Step>
+
+          <Step number={4} icon={Wrench} title="Наряд как корректирующее действие">
+            Альтернатива текстовому мероприятию — кнопка <strong>«Создать наряд»</strong> на вкладке «Общее».
+            Наряд связывается с инцидентом и учитывается при завершении RCA.
+          </Step>
+
+          <Step number={5} icon={CheckCircle} title="Завершение RCA и закрытие">
+            Нажмите <strong>«RCA завершён»</strong>, затем <strong>«Решено»</strong>. Система проверит:
+            <ul style={{ margin: '8px 0', paddingLeft: 20, color: 'var(--gray-600)' }}>
+              <li>Указана <strong>причина возникновения</strong></li>
+              <li>Заполнена <strong>коренная причина</strong></li>
+              <li>Есть хотя бы одно <strong>корректирующее мероприятие</strong> или связанный <strong>наряд</strong></li>
+            </ul>
+          </Step>
+
+          <div style={{ background: 'var(--primary-light)', border: '1px solid var(--primary)', borderRadius: 8, padding: '12px 16px', marginTop: 8 }}>
+            <strong style={{ color: 'var(--primary)', fontSize: 14 }}>Разница между причинами:</strong>
+            <ul style={{ margin: '8px 0 0', paddingLeft: 20, color: 'var(--gray-700)', fontSize: 14, lineHeight: 1.7 }}>
+              <li><strong>Типовая неисправность</strong> — что сломалось (симптом): «Перегрев насоса»</li>
+              <li><strong>Причина возникновения</strong> — непосредственная причина из справочника: «Несвоевременное ТО»</li>
+              <li><strong>Коренная причина (RCA)</strong> — системная причина: «Нет регламента замены масла»</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Section 7: Incidents list (short) */}
+        <div className="settings-card" style={{ marginBottom: 20 }}>
+          <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertCircle size={18} />Раздел «Инциденты»
+          </h3>
+          <p style={{ color: 'var(--gray-700)', lineHeight: 1.6, marginBottom: 16 }}>
+            Список всех зарегистрированных поломок с фильтрами по статусу и флагу RCA.
+          </p>
+
+          <Step number={1} icon={Search} title="Фильтрация">
+            Используйте фильтры: <strong>статус</strong> (новые, в работе, расследование, решённые) и <strong>«Требует RCA»</strong>.
+          </Step>
+
+          <Step number={2} icon={FileText} title="Карточка инцидента">
+            Нажмите <strong>«Подробнее»</strong> в меню действий (⋮). В карточке две вкладки:
+            <ul style={{ margin: '8px 0', paddingLeft: 20, color: 'var(--gray-600)' }}>
+              <li><strong>Общее</strong> — данные поломки, причина, заметки, создание наряда, смена статуса</li>
+              <li><strong>Расследование (RCA)</strong> — 5 почему, коренная причина, корректирующие мероприятия</li>
+            </ul>
+          </Step>
+
+          <Step number={3} icon={CheckCircle} title="Обработка">
+            Администратор может сохранять изменения, переводить по статусам, добавлять заметки и удалять устаревшие инциденты.
           </Step>
         </div>
 
-        {/* Section 7: Notifications */}
+        {/* Section 8: Notifications */}
         <div className="settings-card" style={{ marginBottom: 20 }}>
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Bell size={18} />Уведомления
@@ -268,6 +368,18 @@ function HelpPage() {
             Вкладка <strong>«Аналитика → Оборудование»</strong> содержит отчет по всему оборудованию с количеством инцидентов на каждую единицу.
             <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Фильтры: категория, статус, помещение, поиск по наименованию и инв. номеру.
             <br/><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }}/> Цветовая индикация инцидентов: <span style={{ color: 'var(--warning)' }}>1–2</span> — внимание, <span style={{ color: 'var(--danger)' }}>3+</span> — критично.
+          </Step>
+
+          <Step number={4} icon={AlertTriangle} title="Аналитика по инцидентам и RCA">
+            Вкладка <strong>«Аналитика → Инциденты»</strong> за выбранный период показывает:
+            <ul style={{ margin: '8px 0', paddingLeft: 20, color: 'var(--gray-600)' }}>
+              <li>Количество инцидентов по статусам и флагу RCA</li>
+              <li><strong>MTTR</strong> — среднее время от регистрации до закрытия</li>
+              <li><strong>Повторяемость</strong> — доля повторных поломок (то же оборудование + неисправность за 90 дней)</li>
+              <li>Топ <strong>причин возникновения</strong> и <strong>типовых неисправностей</strong></li>
+              <li>Оборудование с наибольшим числом инцидентов</li>
+              <li>Просроченные корректирующие мероприятия RCA</li>
+            </ul>
           </Step>
         </div>
 

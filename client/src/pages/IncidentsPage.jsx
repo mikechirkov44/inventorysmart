@@ -459,231 +459,288 @@ function IncidentsPage() {
       {selectedIncident && (
         <div className="complete-task-modal" onClick={closeDetail}>
           <div className="modal-content incident-modal incident-modal-wide" onClick={(e) => e.stopPropagation()}>
-            <h3>Инцидент</h3>
-
-            <div className="incident-detail-tabs">
-              <button type="button" className={`btn btn-small ${detailTab === 'info' ? 'btn-primary' : ''}`} onClick={() => setDetailTab('info')}>Общее</button>
-              <button type="button" className={`btn btn-small ${detailTab === 'rca' ? 'btn-primary' : ''}`} onClick={() => setDetailTab('rca')}>Расследование (RCA)</button>
+            <div className="incident-modal-header">
+              <h3>Инцидент</h3>
+              <span className={`status-badge ${(STATUS_MAP[selectedIncident.status] || STATUS_MAP.new).className}`}>
+                {(STATUS_MAP[selectedIncident.status] || STATUS_MAP.new).label}
+              </span>
             </div>
 
-            {detailTab === 'info' && (
-              <div className="incident-detail">
-                <p><strong>Оборудование:</strong> {selectedIncident.equipmentName} ({selectedIncident.inventoryNumber})</p>
-                <p><strong>Дата:</strong> {formatDateTime(selectedIncident.createdAt)}</p>
-                <p><strong>Сотрудник:</strong> {selectedIncident.employeeName || '—'}</p>
-                <p><strong>Проблема:</strong> {selectedIncident.description}</p>
+            <div className="incident-detail-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={detailTab === 'info'}
+                className={`incident-tab ${detailTab === 'info' ? 'active' : ''}`}
+                onClick={() => setDetailTab('info')}
+              >
+                Общее
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={detailTab === 'rca'}
+                className={`incident-tab ${detailTab === 'rca' ? 'active' : ''}`}
+                onClick={() => setDetailTab('rca')}
+              >
+                Расследование (RCA)
+              </button>
+            </div>
 
-                {!isResolved && (
-                  <>
-                    {detailFaults.length > 0 && (
-                      <div className="form-group">
-                        <label>Типовая неисправность</label>
-                        <CustomSelect
-                          value={editCommonFaultId}
-                          onChange={setEditCommonFaultId}
-                          placeholder="Не выбрано"
-                          options={detailFaults.map((f) => ({ value: f.id, label: f.name }))}
-                        />
-                      </div>
-                    )}
-                    <div className="form-group">
-                      <label>Причина возникновения {selectedIncident.status === 'resolved' ? '' : '(обязательна при закрытии)'}</label>
-                      <CustomSelect
-                        value={editCauseId}
-                        onChange={setEditCauseId}
-                        placeholder="Выберите причину"
-                        options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
-                      />
+            <div className="incident-modal-body">
+              {detailTab === 'info' && (
+                <div className="incident-detail">
+                  <dl className="incident-meta-grid">
+                    <div className="incident-meta-row">
+                      <dt>Оборудование</dt>
+                      <dd>{selectedIncident.equipmentName || '—'} ({selectedIncident.inventoryNumber || '—'})</dd>
                     </div>
-                    <label className="checkbox-label">
-                      <input type="checkbox" checked={requiresRca} onChange={(e) => setRequiresRca(e.target.checked)} />
-                      Требует RCA-расследования
-                    </label>
-                  </>
-                )}
-
-                {isResolved && (
-                  <>
-                    <p><strong>Неисправность:</strong> {selectedIncident.commonFaultName || '—'}</p>
-                    <p><strong>Причина:</strong> {selectedIncident.causeName || '—'}</p>
-                    {selectedIncident.resolvedAt && (
-                      <p><strong>Закрыт:</strong> {formatDateTime(selectedIncident.resolvedAt)}</p>
-                    )}
-                  </>
-                )}
-
-                {selectedIncident.photos?.length > 0 && (
-                  <div className="incident-photos">
-                    <strong>Фото:</strong>
-                    <div className="incident-photo-grid">
-                      {selectedIncident.photos.map((photo, idx) => (
-                        <a key={idx} href={selectedIncident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} target="_blank" rel="noopener noreferrer">
-                          <UploadImage src={selectedIncident.photoUrls?.[idx]} item={{ photo }} field="photo" alt="" className="incident-thumb" />
-                        </a>
-                      ))}
+                    <div className="incident-meta-row">
+                      <dt>Дата</dt>
+                      <dd>{selectedIncident.createdAt ? formatDateTime(selectedIncident.createdAt) : 'Не указана'}</dd>
                     </div>
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label>Заметка администратора</label>
-                  <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows="3" placeholder="Комментарий..." disabled={isResolved} />
-                </div>
-
-                {workOrders.length > 0 && (
-                  <div className="incident-linked-orders">
-                    <strong>Связанные наряды:</strong>
-                    <ul>
-                      {workOrders.map((wo) => (
-                        <li key={wo.id}>
-                          <Link to="/work-orders">{wo.taskName || 'Наряд'}</Link>
-                          {' '}
-                          <span className="td-muted">({wo.status})</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {!isResolved && (
-                  <div className="incident-status-actions">
-                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary" disabled={saving}>
-                      {saving ? 'Сохранение...' : 'Сохранить'}
-                    </button>
-                    <button type="button" onClick={handleCreateWorkOrder} className="btn btn-secondary" disabled={saving}>
-                      <Wrench size={14} style={{ marginRight: 4 }} /> Создать наряд
-                    </button>
-                    {selectedIncident.status === 'new' && (
-                      <button type="button" onClick={() => updateStatus('in_progress')} className="btn btn-secondary" disabled={saving}>В работу</button>
-                    )}
-                    {requiresRca && !['investigating', 'rca_done', 'resolved'].includes(selectedIncident.status) && (
-                      <button type="button" onClick={() => updateStatus('investigating')} className="btn btn-secondary" disabled={saving}>Начать RCA</button>
-                    )}
-                    {requiresRca && selectedIncident.status === 'investigating' && (
-                      <button type="button" onClick={() => updateStatus('rca_done')} className="btn btn-secondary" disabled={saving}>RCA завершён</button>
-                    )}
-                    {selectedIncident.status !== 'resolved' && (
-                      <button type="button" onClick={() => updateStatus('resolved')} className="btn btn-primary" disabled={saving}>Решено</button>
-                    )}
-                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
-                  </div>
-                )}
-                {isResolved && (
-                  <div className="incident-status-actions">
-                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {detailTab === 'rca' && (
-              <div className="incident-detail">
-                <div className="form-group">
-                  <label>Ответственный за расследование</label>
-                  <CustomSelect
-                    value={investigatorId}
-                    onChange={setInvestigatorId}
-                    placeholder="Не назначен"
-                    options={employeeOptions}
-                    disabled={isResolved}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Коренная причина</label>
-                  <textarea
-                    value={rootCauseNotes}
-                    onChange={(e) => setRootCauseNotes(e.target.value)}
-                    rows="3"
-                    placeholder="Опишите коренную причину..."
-                    disabled={isResolved}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>5 почему</label>
-                  {whys.map((why, idx) => (
-                    <div key={idx} className="why-row">
-                      <input
-                        type="text"
-                        value={why.question}
-                        onChange={(e) => {
-                          const next = [...whys];
-                          next[idx] = { ...next[idx], question: e.target.value };
-                          setWhys(next);
-                        }}
-                        placeholder={`Почему ${idx + 1}?`}
-                        disabled={isResolved}
-                      />
-                      <input
-                        type="text"
-                        value={why.answer}
-                        onChange={(e) => {
-                          const next = [...whys];
-                          next[idx] = { ...next[idx], answer: e.target.value };
-                          setWhys(next);
-                        }}
-                        placeholder="Ответ"
-                        disabled={isResolved}
-                      />
+                    <div className="incident-meta-row">
+                      <dt>Сотрудник</dt>
+                      <dd>{selectedIncident.employeeName?.trim() || 'Не указан'}</dd>
                     </div>
-                  ))}
-                  {!isResolved && whys.length < 5 && (
-                    <button type="button" className="btn btn-small btn-secondary" onClick={() => setWhys([...whys, { ...EMPTY_WHY }])}>
-                      <Plus size={12} /> Добавить «почему»
-                    </button>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label>Корректирующие мероприятия</label>
-                  {actions.length === 0 && <p className="td-muted">Мероприятий пока нет</p>}
-                  <ul className="incident-actions-list">
-                    {actions.map((action) => (
-                      <li key={action.id} className="incident-action-item">
-                        <div>
-                          <strong>{action.description}</strong>
-                          {action.dueDate && <span className="td-muted"> — до {formatDate(action.dueDate)}</span>}
-                          {action.assignedEmployeeName && <span className="td-muted"> ({action.assignedEmployeeName})</span>}
-                        </div>
-                        <div className="incident-action-controls">
-                          <span className="td-muted">{ACTION_STATUS_MAP[action.status] || action.status}</span>
-                          {!isResolved && action.status === 'planned' && (
-                            <button type="button" className="btn btn-small" onClick={() => handleActionStatus(action.id, 'done')}>Выполнено</button>
-                          )}
-                          {!isResolved && (
-                            <button type="button" className="btn btn-small btn-danger" onClick={() => handleDeleteAction(action.id)}>✕</button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                    <div className="incident-meta-row incident-meta-row--full">
+                      <dt>Проблема</dt>
+                      <dd>{selectedIncident.description || '—'}</dd>
+                    </div>
+                  </dl>
 
                   {!isResolved && (
-                    <div className="incident-new-action">
-                      <input type="text" value={newActionDesc} onChange={(e) => setNewActionDesc(e.target.value)} placeholder="Описание мероприятия" />
-                      <input type="date" value={newActionDue} onChange={(e) => setNewActionDue(e.target.value)} />
-                      <CustomSelect
-                        value={newActionAssignee}
-                        onChange={setNewActionAssignee}
-                        placeholder="Ответственный"
-                        options={employeeOptions}
-                      />
-                      <button type="button" className="btn btn-small btn-secondary" onClick={handleAddAction}>Добавить</button>
+                    <div className="incident-form-section">
+                      <div className="form-group">
+                        <label>Типовая неисправность</label>
+                        {detailFaults.length > 0 ? (
+                          <CustomSelect
+                            value={editCommonFaultId}
+                            onChange={setEditCommonFaultId}
+                            placeholder="Не выбрано"
+                            options={detailFaults.map((f) => ({ value: f.id, label: f.name }))}
+                          />
+                        ) : (
+                          <p className="incident-field-placeholder">Нет записей в справочнике для этого оборудования</p>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label>Причина возникновения <span className="label-hint">(обязательна при закрытии)</span></label>
+                        <CustomSelect
+                          value={editCauseId}
+                          onChange={setEditCauseId}
+                          placeholder="Выберите причину"
+                          options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
+                        />
+                      </div>
+                      <label className="incident-rca-checkbox">
+                        <input type="checkbox" checked={requiresRca} onChange={(e) => setRequiresRca(e.target.checked)} />
+                        <span>Требует RCA-расследования</span>
+                      </label>
+                    </div>
+                  )}
+
+                  {isResolved && (
+                    <dl className="incident-meta-grid incident-meta-grid--compact">
+                      <div className="incident-meta-row">
+                        <dt>Неисправность</dt>
+                        <dd>{selectedIncident.commonFaultName || '—'}</dd>
+                      </div>
+                      <div className="incident-meta-row">
+                        <dt>Причина</dt>
+                        <dd>{selectedIncident.causeName || '—'}</dd>
+                      </div>
+                      {selectedIncident.resolvedAt && (
+                        <div className="incident-meta-row">
+                          <dt>Закрыт</dt>
+                          <dd>{formatDateTime(selectedIncident.resolvedAt)}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  )}
+
+                  {selectedIncident.photos?.length > 0 && (
+                    <div className="incident-photos">
+                      <div className="incident-section-label">Фото</div>
+                      <div className="incident-photo-grid">
+                        {selectedIncident.photos.map((photo, idx) => (
+                          <a key={idx} href={selectedIncident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} target="_blank" rel="noopener noreferrer">
+                            <UploadImage src={selectedIncident.photoUrls?.[idx]} item={{ photo }} field="photo" alt="" className="incident-thumb" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-group incident-notes-group">
+                    <label>Заметка администратора</label>
+                    <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows="3" placeholder="Комментарий..." disabled={isResolved} />
+                  </div>
+
+                  {workOrders.length > 0 && (
+                    <div className="incident-linked-orders">
+                      <div className="incident-section-label">Связанные наряды</div>
+                      <ul>
+                        {workOrders.map((wo) => (
+                          <li key={wo.id}>
+                            <Link to="/work-orders">{wo.taskName || 'Наряд'}</Link>
+                            <span className="td-muted"> ({wo.status})</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
+              )}
 
-                {!isResolved && (
-                  <div className="incident-status-actions">
-                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary" disabled={saving}>
+              {detailTab === 'rca' && (
+                <div className="incident-detail">
+                  <div className="form-group">
+                    <label>Ответственный за расследование</label>
+                    <CustomSelect
+                      value={investigatorId}
+                      onChange={setInvestigatorId}
+                      placeholder="Не назначен"
+                      options={employeeOptions}
+                      disabled={isResolved}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Коренная причина</label>
+                    <textarea
+                      value={rootCauseNotes}
+                      onChange={(e) => setRootCauseNotes(e.target.value)}
+                      rows="3"
+                      placeholder="Опишите коренную причину..."
+                      disabled={isResolved}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>5 почему</label>
+                    <div className="why-list">
+                      {whys.map((why, idx) => (
+                        <div key={idx} className="why-row">
+                          <input
+                            type="text"
+                            value={why.question}
+                            onChange={(e) => {
+                              const next = [...whys];
+                              next[idx] = { ...next[idx], question: e.target.value };
+                              setWhys(next);
+                            }}
+                            placeholder={`Почему ${idx + 1}?`}
+                            disabled={isResolved}
+                          />
+                          <input
+                            type="text"
+                            value={why.answer}
+                            onChange={(e) => {
+                              const next = [...whys];
+                              next[idx] = { ...next[idx], answer: e.target.value };
+                              setWhys(next);
+                            }}
+                            placeholder="Ответ"
+                            disabled={isResolved}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {!isResolved && whys.length < 5 && (
+                      <button type="button" className="btn btn-small btn-secondary why-add-btn" onClick={() => setWhys([...whys, { ...EMPTY_WHY }])}>
+                        <Plus size={12} /> Добавить «почему»
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Корректирующие мероприятия</label>
+                    {actions.length === 0 && <p className="incident-field-placeholder">Мероприятий пока нет</p>}
+                    {actions.length > 0 && (
+                      <ul className="incident-actions-list">
+                        {actions.map((action) => (
+                          <li key={action.id} className="incident-action-item">
+                            <div className="incident-action-text">
+                              <strong>{action.description}</strong>
+                              {action.dueDate && <span className="td-muted"> — до {formatDate(action.dueDate)}</span>}
+                              {action.assignedEmployeeName && <span className="td-muted"> ({action.assignedEmployeeName})</span>}
+                            </div>
+                            <div className="incident-action-controls">
+                              <span className="action-status-pill">{ACTION_STATUS_MAP[action.status] || action.status}</span>
+                              {!isResolved && action.status === 'planned' && (
+                                <button type="button" className="btn btn-small" onClick={() => handleActionStatus(action.id, 'done')}>Выполнено</button>
+                              )}
+                              {!isResolved && (
+                                <button type="button" className="btn btn-small btn-danger" onClick={() => handleDeleteAction(action.id)} aria-label="Удалить">✕</button>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {!isResolved && (
+                      <div className="incident-new-action">
+                        <input type="text" value={newActionDesc} onChange={(e) => setNewActionDesc(e.target.value)} placeholder="Описание мероприятия" />
+                        <input type="date" value={newActionDue} onChange={(e) => setNewActionDue(e.target.value)} />
+                        <CustomSelect
+                          value={newActionAssignee}
+                          onChange={setNewActionAssignee}
+                          placeholder="Ответственный"
+                          options={employeeOptions}
+                        />
+                        <button type="button" className="btn btn-small btn-secondary" onClick={handleAddAction}>Добавить</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="incident-modal-footer">
+              {!isResolved && detailTab === 'info' && (
+                <>
+                  <div className="incident-footer-group">
+                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary btn-small" disabled={saving}>
+                      {saving ? 'Сохранение...' : 'Сохранить'}
+                    </button>
+                    <button type="button" onClick={handleCreateWorkOrder} className="btn btn-secondary btn-small" disabled={saving}>
+                      <Wrench size={14} /> Создать наряд
+                    </button>
+                  </div>
+                  <div className="incident-footer-group">
+                    {selectedIncident.status === 'new' && (
+                      <button type="button" onClick={() => updateStatus('in_progress')} className="btn btn-secondary btn-small" disabled={saving}>В работу</button>
+                    )}
+                    {requiresRca && !['investigating', 'rca_done', 'resolved'].includes(selectedIncident.status) && (
+                      <button type="button" onClick={() => updateStatus('investigating')} className="btn btn-secondary btn-small" disabled={saving}>Начать RCA</button>
+                    )}
+                    {requiresRca && selectedIncident.status === 'investigating' && (
+                      <button type="button" onClick={() => updateStatus('rca_done')} className="btn btn-secondary btn-small" disabled={saving}>RCA завершён</button>
+                    )}
+                    <button type="button" onClick={() => updateStatus('resolved')} className="btn btn-primary btn-small" disabled={saving}>Решено</button>
+                    <button type="button" onClick={closeDetail} className="btn btn-small">Закрыть</button>
+                  </div>
+                </>
+              )}
+              {!isResolved && detailTab === 'rca' && (
+                <>
+                  <div className="incident-footer-group" />
+                  <div className="incident-footer-group">
+                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary btn-small" disabled={saving}>
                       {saving ? 'Сохранение...' : 'Сохранить RCA'}
                     </button>
-                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
+                    <button type="button" onClick={closeDetail} className="btn btn-small">Закрыть</button>
                   </div>
-                )}
-              </div>
-            )}
+                </>
+              )}
+              {isResolved && (
+                <div className="incident-footer-group incident-footer-group--end">
+                  <button type="button" onClick={closeDetail} className="btn btn-small">Закрыть</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
