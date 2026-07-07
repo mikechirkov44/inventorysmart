@@ -457,7 +457,7 @@ function CountBarChart({ title, data, nameKey = 'name' }) {
   const max = Math.max(...data.map((d) => d.count), 1);
 
   return (
-    <div className="perf-chart">
+    <div className="perf-chart perf-chart--full-labels">
       <div className="perf-chart-header">
         <h3>{title}</h3>
       </div>

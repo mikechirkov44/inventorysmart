@@ -5085,6 +5085,20 @@ input, textarea, select { font-family: inherit; }
   color: var(--gray-400);
 }
 
+.perf-chart--full-labels .perf-row {
+  grid-template-columns: minmax(0, 2fr) minmax(100px, 1.5fr) auto;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.perf-chart--full-labels .perf-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .perf-row {
     grid-template-columns: 140px 1fr 60px;
@@ -5094,6 +5108,18 @@ input, textarea, select { font-family: inherit; }
   .perf-name { font-size: 12px; }
   .perf-position { display: none; }
   .perf-bar-track { height: 24px; }
+
+  .perf-chart--full-labels .perf-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label count"
+      "bar bar";
+    align-items: start;
+  }
+
+  .perf-chart--full-labels .perf-label { grid-area: label; }
+  .perf-chart--full-labels .perf-counts { grid-area: count; }
+  .perf-chart--full-labels .perf-bar-track { grid-area: bar; }
 }
 
 @media (max-width: 480px) {
