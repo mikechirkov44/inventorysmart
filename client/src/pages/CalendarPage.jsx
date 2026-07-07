@@ -6,29 +6,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Calendar, CalendarDays } from 'lucide-react';
 import api from '../services/api';
+import PageHeader from '../components/PageHeader';
+import FrequencyBadge from '../components/FrequencyBadge';
 
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-
-/** Варианты периодичности работ для отображения */
-const FREQUENCY_OPTIONS = [
-  { value: 1, label: 'Ежедневно' },
-  { value: 7, label: '1 раз в неделю' },
-  { value: 10, label: '1 раз в 10 дней' },
-  { value: 14, label: '1 раз в 2 недели' },
-  { value: 30, label: '1 раз в месяц' },
-  { value: 60, label: '1 раз в 2 месяца' },
-  { value: 90, label: '1 раз в 3 месяца' },
-  { value: 180, label: '1 раз в 6 месяцев' },
-  { value: 365, label: '1 раз в год' },
-];
-
-/** Получение текстовой подписи периодичности по количеству дней */
-function getFrequencyLabel(days) {
-  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
-  return opt ? opt.label : `каждые ${days} дн.`;
-}
 
 /** Компонент календаря плановых обходов */
 function CalendarPage() {
@@ -86,11 +70,11 @@ function CalendarPage() {
 
   return (
     <div className="calendar-page">
-      {/* Шапка страницы */}
-      <div className="header">
-        <h1>Календарь обходов</h1>
-        <Link to="/schedule" className="btn btn-primary">План-график</Link>
-      </div>
+      <PageHeader icon={Calendar} title="Календарь обходов">
+        <Link to="/schedule" className="btn btn-secondary">
+          <CalendarDays size={16} /> План-график
+        </Link>
+      </PageHeader>
 
       <div className="calendar-layout">
         <div className="calendar-left">
@@ -164,7 +148,10 @@ function CalendarPage() {
                         <Link to={`/equipment/${ev.equipmentId}`}>{ev.equipmentName}</Link>
                         <span className="panel-event-inv">{ev.inventoryNumber}</span>
                       </div>
-                      <div className="panel-event-work">{ev.workName} <span className="freq-label">{getFrequencyLabel(ev.frequencyDays)}</span></div>
+                      <div className="panel-event-work">
+                        {ev.workName}{' '}
+                        <FrequencyBadge days={ev.frequencyDays} />
+                      </div>
                       <div className="panel-event-meta">
                         {ev.roomName && <span>📍 {ev.roomName}</span>}
                         {ev.employeeName && <span>👤 {ev.employeeName}</span>}

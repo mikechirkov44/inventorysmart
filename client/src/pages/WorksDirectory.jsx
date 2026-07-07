@@ -3,10 +3,12 @@
  * @description Справочник работ: добавление, редактирование, удаление плановых работ.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { Wrench, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Wrench, Copy, Pencil, Trash2, Users } from 'lucide-react';
 import { worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import { SkeletonTable } from '../components/Skeleton';
@@ -38,6 +40,7 @@ function WorksDirectory() {
   });
   const toast = useToast();
   const confirm = useConfirm();
+  const { canEdit } = useAuth();
 
   /** Загрузка списка работ при монтировании */
   useEffect(() => { fetchWorks(); }, []);
@@ -139,6 +142,11 @@ function WorksDirectory() {
   return (
     <div className="directory-page">
       <PageHeader icon={Wrench} title="Справочник работ">
+        {canEdit('equipment') && (
+          <Link to="/works/bulk-assign" className="btn btn-secondary">
+            <Users size={16} /> Назначить на оборудование
+          </Link>
+        )}
         <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary">
           {showForm ? 'Закрыть' : '+ Добавить работу'}
         </button>

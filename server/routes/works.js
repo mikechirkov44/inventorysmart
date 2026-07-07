@@ -8,6 +8,63 @@ const express = require('express');
 const router = express.Router();
 const Work = require('../models/work');
 const { requirePermission } = require('../middleware/auth');
+const { previewBulkAssign, bulkAssignWork } = require('../utils/bulkWorkAssign');
+
+/**
+ * @route POST /works/bulk-assign/preview
+ * @description Превью массового назначения работы на оборудование
+ */
+router.post('/bulk-assign/preview', requirePermission('equipment', 'view'), async (req, res) => {
+  try {
+    const { workId, filters = {} } = req.body;
+    if (!workId) {
+      return res.status(400).json({ error: 'Укажите работу' });
+    }
+
+    const work = await Work.findById(workId, req.user.companyId);
+    if (!work) {
+      return res.status(404).json({ error: 'Работа не найдена' });
+    }
+
+    const preview = await previewBulkAssign(req.user.companyId, workId, filters);
+    res.json({ work, ...preview });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route POST /works/bulk-assign
+ * @description Массовое назначение работы на отфильтрованное оборудование
+ */
+router.post('/bulk-assign', requirePermission('equipment', 'edit'), async (req, res) => {
+  try {
+    const { workId, startDate, filters = {}, updateExisting = false } = req.body;
+    if (!workId) {
+      return res.status(400).json({ error: 'Укажите работу' });
+    }
+    if (!startDate) {
+      return res.status(400).json({ error: 'Укажите дату старта' });
+    }
+
+    const work = await Work.findById(workId, req.user.companyId);
+    if (!work) {
+      return res.status(404).json({ error: 'Работа не найдена' });
+    }
+
+    const result = await bulkAssignWork(req.user.companyId, {
+      workId,
+      startDate,
+      filters,
+      updateExisting: Boolean(updateExisting),
+    });
+    res.json({ work, ...result });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
 
 /**
  * @route GET /works

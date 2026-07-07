@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Calendar } from 'lucide-react';
 import api from '../services/api';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
@@ -125,6 +125,31 @@ function SchedulePage() {
     data.groups.forEach(g => g.rows.forEach(r => { if (r.equipmentName) set.add(r.equipmentName); }));
     return [...set].sort();
   }, [data]);
+
+  /** Сводная статистика по всему план-графику */
+  const scheduleStats = useMemo(() => {
+    if (!data) return { total: 0, overdue: 0, upcoming: 0, dueThisWeek: 0 };
+    const rows = data.groups.flatMap((group) => group.rows);
+    const weekEnd = addDays(today, 7);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return {
+      total: rows.length,
+      overdue: rows.filter((row) => row.status === 'overdue' || row.status === 'never').length,
+      upcoming: rows.filter((row) => row.status === 'upcoming').length,
+      dueThisWeek: rows.filter((row) => {
+        if (!row.plannedDate) return false;
+        const planned = startOfDay(new Date(row.plannedDate));
+        return planned >= today && planned <= weekEnd;
+      }).length,
+    };
+  }, [data, today]);
+
+  function startOfDay(date) {
+    const value = new Date(date);
+    value.setHours(0, 0, 0, 0);
+    return value;
+  }
 
   /** Фильтрация и сортировка всех строк план-графика */
   const allFilteredRows = useMemo(() => {
@@ -365,11 +390,41 @@ function SchedulePage() {
     <div className="schedule-page">
       <div className="header">
         <h1><CalendarDays size={24} />План-график ремонтов</h1>
-        <div className="tab-bar">
-          <button className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`} onClick={() => setActiveTab('plan')}>План</button>
-          <button className={`tab-btn ${activeTab === 'chart' ? 'active' : ''}`} onClick={() => setActiveTab('chart')}>График</button>
+        <div className="header-actions">
+          <Link to="/calendar" className="btn btn-secondary btn-small">
+            <Calendar size={16} /> Календарь
+          </Link>
+          <div className="tab-bar">
+            <button className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`} onClick={() => setActiveTab('plan')}>План</button>
+            <button className={`tab-btn ${activeTab === 'chart' ? 'active' : ''}`} onClick={() => setActiveTab('chart')}>График</button>
+          </div>
         </div>
       </div>
+
+      <div className="analytics-summary schedule-summary-cards">
+        <div className="summary-card primary">
+          <div className="summary-value">{scheduleStats.total}</div>
+          <div className="summary-label">Всего в плане</div>
+        </div>
+        <div className="summary-card danger">
+          <div className="summary-value">{scheduleStats.overdue}</div>
+          <div className="summary-label">Просрочено</div>
+        </div>
+        <div className="summary-card" style={{ borderTopColor: 'var(--warning)' }}>
+          <div className="summary-value">{scheduleStats.upcoming}</div>
+          <div className="summary-label">Близко (7 дн.)</div>
+        </div>
+        <div className="summary-card success">
+          <div className="summary-value">{scheduleStats.dueThisWeek}</div>
+          <div className="summary-label">На этой неделе</div>
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="filter-summary schedule-filter-summary">
+          По фильтрам: <strong>{allFilteredRows.length}</strong> из {scheduleStats.total}
+        </div>
+      )}
 
       {activeTab === 'plan' && (
         <>

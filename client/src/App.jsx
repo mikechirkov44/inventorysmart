@@ -8,7 +8,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderTree, ClipboardList, ScanLine, CalendarDays, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download, LayoutDashboard } from 'lucide-react';
+import { FolderTree, ClipboardList, ScanLine, CalendarDays, Calendar, AlertTriangle, BarChart3, Upload, Users, ChevronDown, FileText, Settings, PanelLeft, PanelRight, LogOut, Building2, Bell, HelpCircle, Download, LayoutDashboard } from 'lucide-react';
 
 function AndroidIcon({ size = 18, ...props }) {
   return (
@@ -53,6 +53,8 @@ const CausesDirectory = lazy(() => import('./pages/CausesDirectory'));
 const OverdueReasonsDirectory = lazy(() => import('./pages/OverdueReasonsDirectory'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SchedulePage = lazy(() => import('./pages/SchedulePage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const BulkWorkAssignPage = lazy(() => import('./pages/BulkWorkAssignPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SetupPage = lazy(() => import('./pages/SetupPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
@@ -200,6 +202,7 @@ function AppNav({ collapsed, onToggle }) {
         {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} />{!collapsed && <span>Документы</span>}</NavLink></li>}
         {canView('scanner') && <li><NavLink to="/scan"><ScanLine size={18} />{!collapsed && <span>QR-сканер</span>}</NavLink></li>}
         {canView('schedule') && <li><NavLink to="/schedule"><CalendarDays size={18} />{!collapsed && <span>План-график</span>}</NavLink></li>}
+        {canView('schedule') && <li className="nav-item-desktop-only"><NavLink to="/calendar"><Calendar size={18} />{!collapsed && <span>Календарь</span>}</NavLink></li>}
         {canView('incidents') && <li><NavLink to="/incidents"><AlertTriangle size={18} />{!collapsed && <span>Инциденты</span>}</NavLink></li>}
         {canView('analytics') && <li><NavLink to="/analytics"><BarChart3 size={18} />{!collapsed && <span>Аналитика</span>}</NavLink></li>}
         {canView('import') && <li className="nav-item-desktop-only"><NavLink to="/import"><Upload size={18} />{!collapsed && <span>Импорт</span>}</NavLink></li>}
@@ -292,7 +295,9 @@ function AppRoutes() {
       <Route path="/incidents" element={<ProtectedRoute requiredPermission="incidents"><PageWrapper><IncidentsPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute requiredPermission="analytics"><PageWrapper><AnalyticsPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/schedule" element={<ProtectedRoute requiredPermission="schedule"><PageWrapper><SchedulePage /></PageWrapper></ProtectedRoute>} />
+      <Route path="/calendar" element={<ProtectedRoute requiredPermission="schedule"><PageWrapper><CalendarPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/works" element={<ProtectedRoute requiredPermission="works"><PageWrapper><WorksDirectory /></PageWrapper></ProtectedRoute>} />
+      <Route path="/works/bulk-assign" element={<ProtectedRoute requiredPermission="works"><PageWrapper><BulkWorkAssignPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/rooms" element={<ProtectedRoute requiredPermission="rooms"><PageWrapper><RoomsDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute requiredPermission="employees"><PageWrapper><EmployeesDirectory /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment-categories" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentCategoriesDirectory /></PageWrapper></ProtectedRoute>} />

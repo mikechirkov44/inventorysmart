@@ -82,6 +82,8 @@ export const worksAPI = {
   create: (data) => api.post('/works', data),
   update: (id, data) => api.put(`/works/${id}`, data),
   delete: (id) => api.delete(`/works/${id}`),
+  previewBulkAssign: (data) => api.post('/works/bulk-assign/preview', data),
+  bulkAssign: (data) => api.post('/works/bulk-assign', data),
 };
 
 /** API для справочника помещений */
