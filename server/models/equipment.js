@@ -261,6 +261,10 @@ module.exports = {
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       if (key === 'yearOfManufacture') {
         mapped[col] = val && String(val).trim() !== '' ? parseInt(val, 10) : null;
+      } else if (key === 'commissioningDate') {
+        mapped[col] = serializeDate(val);
+      } else if (key === 'roomId' || key === 'categoryId') {
+        mapped[col] = val && String(val).trim() !== '' ? val : null;
       } else {
         mapped[col] = val;
       }
