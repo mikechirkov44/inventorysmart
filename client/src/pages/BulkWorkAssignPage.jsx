@@ -13,6 +13,7 @@ import PageHeader from '../components/PageHeader';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import FrequencyBadge from '../components/FrequencyBadge';
+import EmptyState from '../components/EmptyState';
 import { todayInputValue } from '../utils/date';
 
 const STATUS_OPTIONS = [
@@ -103,17 +104,27 @@ function BulkWorkAssignPage() {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  const assignCount = preview
+    ? (updateExisting ? preview.totalMatching : preview.toAssign)
+    : 0;
+
+  const canAssign = Boolean(
+    canEditEquipment
+    && preview
+    && !previewLoading
+    && assignCount > 0,
+  );
+
   const handleAssign = async () => {
     if (!workId || !startDate) {
       toast.error('Заполните обязательные поля');
       return;
     }
-    if (!preview || preview.toAssign === 0) {
+    if (!preview || assignCount === 0) {
       toast.error('Нет оборудования для назначения');
       return;
     }
 
-    const assignCount = updateExisting ? preview.totalMatching : preview.toAssign;
     const confirmed = await confirm({
       title: 'Назначить работу?',
       message: `Работа «${selectedWork?.name || ''}» будет назначена на ${assignCount} ед. оборудования.`,
@@ -148,160 +159,159 @@ function BulkWorkAssignPage() {
   return (
     <div className="directory-page bulk-assign-page">
       <PageHeader icon={Wrench} title="Массовое назначение работ">
-        <Link to="/works" className="btn btn-secondary">
+        <Link to="/works" className="btn btn-secondary btn-small">
           <ArrowLeft size={16} /> К справочнику
         </Link>
+        {canEditEquipment && (
+          <button
+            type="button"
+            className="btn btn-primary btn-small"
+            onClick={handleAssign}
+            disabled={saving || !canAssign}
+          >
+            {saving ? 'Назначение...' : `Назначить${assignCount > 0 ? ` (${assignCount})` : ''}`}
+          </button>
+        )}
       </PageHeader>
 
       <div className="bulk-assign-layout">
-        <div className="bulk-assign-form">
-          <div className="directory-form-card">
-            <h3><Filter size={18} /> Параметры назначения</h3>
+        <aside className="filters-panel bulk-assign-sidebar">
+          <h3 className="bulk-assign-sidebar-title">
+            <Filter size={16} /> Параметры и фильтры
+          </h3>
 
-            <div className="form-group">
-              <label>Работа *</label>
-              <CustomSelect
-                value={workId}
-                onChange={setWorkId}
-                options={works.map((work) => ({ value: work.id, label: work.name }))}
-              />
-              {selectedWork && (
-                <div className="bulk-assign-work-meta">
-                  <FrequencyBadge days={selectedWork.frequencyDays} />
-                  <span className={`priority-badge priority-${(selectedWork.priority || 'B').toLowerCase()}`}>
-                    {selectedWork.priority || 'B'}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label>Дата старта *</label>
-              <CustomDatePicker value={startDate} onChange={setStartDate} />
-            </div>
-
-            <label className="checkbox-label bulk-assign-checkbox">
-              <input
-                type="checkbox"
-                checked={updateExisting}
-                onChange={(event) => setUpdateExisting(event.target.checked)}
-              />
-              Обновить дату старта у уже назначенных
-            </label>
-          </div>
-
-          <div className="directory-form-card">
-            <h3>Фильтры оборудования</h3>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Категория</label>
-                <CustomSelect
-                  value={filters.categoryId}
-                  onChange={(value) => handleFilterChange('categoryId', value)}
-                  placeholder="Все категории"
-                  options={categories.map((category) => ({
-                    value: category.id,
-                    label: category.name,
-                  }))}
-                />
+          <div className="form-group">
+            <label>Работа *</label>
+            <CustomSelect
+              value={workId}
+              onChange={setWorkId}
+              options={works.map((work) => ({ value: work.id, label: work.name }))}
+            />
+            {selectedWork && (
+              <div className="bulk-assign-work-meta">
+                <FrequencyBadge days={selectedWork.frequencyDays} />
+                <span className={`priority-badge priority-${(selectedWork.priority || 'B').toLowerCase()}`}>
+                  {selectedWork.priority || 'B'}
+                </span>
               </div>
-              <div className="form-group">
-                <label>Помещение</label>
-                <CustomSelect
-                  value={filters.roomId}
-                  onChange={(value) => handleFilterChange('roomId', value)}
-                  placeholder="Все помещения"
-                  options={rooms.map((room) => ({ value: room.id, label: room.name }))}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Площадка / здание</label>
-                <CustomSelect
-                  value={filters.building}
-                  onChange={(value) => handleFilterChange('building', value)}
-                  placeholder="Все площадки"
-                  options={buildings.map((building) => ({ value: building, label: building }))}
-                />
-              </div>
-              <div className="form-group">
-                <label>Состояние</label>
-                <CustomSelect
-                  value={filters.status}
-                  onChange={(value) => handleFilterChange('status', value)}
-                  placeholder="Любое"
-                  options={STATUS_OPTIONS}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Поиск</label>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(event) => handleFilterChange('search', event.target.value)}
-                placeholder="Название или инвентарный номер..."
-              />
-            </div>
-          </div>
-
-          {canEditEquipment && (
-            <button
-              type="button"
-              className="btn btn-primary btn-full"
-              onClick={handleAssign}
-              disabled={saving || previewLoading || !preview || (updateExisting ? preview.totalMatching === 0 : preview.toAssign === 0)}
-            >
-              {saving ? 'Назначение...' : 'Назначить работу'}
-            </button>
-          )}
-        </div>
-
-        <div className="bulk-assign-preview">
-          <div className="bulk-assign-preview-card">
-            <div className="bulk-assign-preview-title">Превью</div>
-            {previewLoading ? (
-              <div className="loading-spinner">Загрузка превью...</div>
-            ) : preview ? (
-              <>
-                <div className="bulk-assign-preview-count">
-                  <span className="bulk-assign-preview-number">{preview.totalMatching}</span>
-                  <span className="bulk-assign-preview-label">
-                    {preview.totalMatching === 1 ? 'объект' : preview.totalMatching < 5 ? 'объекта' : 'объектов'}
-                    {' '}по фильтрам
-                  </span>
-                </div>
-                <div className="summary-cards-inline">
-                  <div className="summary-card primary">
-                    <div className="summary-value">{preview.toAssign}</div>
-                    <div className="summary-label">Новых назначений</div>
-                  </div>
-                  <div className="summary-card muted">
-                    <div className="summary-value">{preview.alreadyAssigned}</div>
-                    <div className="summary-label">Уже назначено</div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted">Выберите работу для превью</p>
             )}
           </div>
 
-          {preview && preview.equipment.length > 0 && (
-            <div className="table-container">
+          <div className="form-group">
+            <label>Дата старта *</label>
+            <CustomDatePicker value={startDate} onChange={setStartDate} />
+          </div>
+
+          <label className="checkbox-label-inline bulk-assign-checkbox">
+            <input
+              type="checkbox"
+              checked={updateExisting}
+              onChange={(event) => setUpdateExisting(event.target.checked)}
+            />
+            <span className="checkbox-text">
+              <span className="checkbox-text-main">Обновить дату у уже назначенных</span>
+            </span>
+          </label>
+
+          <div className="bulk-assign-filters-divider" />
+
+          <div className="bulk-assign-filters-grid">
+            <div className="form-group">
+              <label>Категория</label>
+              <CustomSelect
+                value={filters.categoryId}
+                onChange={(value) => handleFilterChange('categoryId', value)}
+                placeholder="Все"
+                options={categories.map((category) => ({
+                  value: category.id,
+                  label: category.name,
+                }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Помещение</label>
+              <CustomSelect
+                value={filters.roomId}
+                onChange={(value) => handleFilterChange('roomId', value)}
+                placeholder="Все"
+                options={rooms.map((room) => ({ value: room.id, label: room.name }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Площадка</label>
+              <CustomSelect
+                value={filters.building}
+                onChange={(value) => handleFilterChange('building', value)}
+                placeholder="Все"
+                options={buildings.map((building) => ({ value: building, label: building }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Состояние</label>
+              <CustomSelect
+                value={filters.status}
+                onChange={(value) => handleFilterChange('status', value)}
+                placeholder="Все"
+                options={STATUS_OPTIONS}
+              />
+            </div>
+          </div>
+
+          <div className="form-group bulk-assign-search">
+            <label>Поиск</label>
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(event) => handleFilterChange('search', event.target.value)}
+              placeholder="Название или инв. номер..."
+              className="filter-search"
+            />
+          </div>
+        </aside>
+
+        <section className="bulk-assign-main">
+          <div className="bulk-assign-stats-bar">
+            {previewLoading ? (
+              <span className="bulk-assign-stats-loading">Обновление списка...</span>
+            ) : preview ? (
+              <>
+                <span className="bulk-stat bulk-stat-total">
+                  <strong>{preview.totalMatching}</strong>
+                  {' '}
+                  {preview.totalMatching === 1 ? 'объект' : preview.totalMatching < 5 ? 'объекта' : 'объектов'}
+                </span>
+                <span className="bulk-stat bulk-stat-new">
+                  <strong>{preview.toAssign}</strong> новых
+                </span>
+                <span className="bulk-stat">
+                  <strong>{preview.alreadyAssigned}</strong> уже назначено
+                </span>
+                {preview.truncated && (
+                  <span className="bulk-stat bulk-stat-muted">показаны первые 100</span>
+                )}
+              </>
+            ) : (
+              <span className="bulk-stat bulk-stat-muted">Выберите работу для превью</span>
+            )}
+          </div>
+
+          <div className="table-container bulk-assign-table">
+            {previewLoading ? (
+              <div className="bulk-assign-table-skeleton">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="bulk-assign-row-skeleton skeleton" />
+                ))}
+              </div>
+            ) : preview && preview.equipment.length > 0 ? (
               <div className="table-scroll">
-                <table className="data-table">
+                <table className="data-table data-table-compact">
                   <thead>
                     <tr>
                       <th>Оборудование</th>
-                      <th>Инв. номер</th>
+                      <th>Инв. №</th>
                       <th>Помещение</th>
                       <th>Категория</th>
-                      <th>Статус</th>
+                      <th>Состояние</th>
                       <th>Работа</th>
                     </tr>
                   </thead>
@@ -325,12 +335,15 @@ function BulkWorkAssignPage() {
                   </tbody>
                 </table>
               </div>
-              {preview.truncated && (
-                <p className="filter-summary">Показаны первые 100 из {preview.totalMatching} единиц</p>
-              )}
-            </div>
-          )}
-        </div>
+            ) : (
+              <EmptyState
+                icon={Wrench}
+                title="Оборудование не найдено"
+                description="Измените фильтры или выберите другую работу."
+              />
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

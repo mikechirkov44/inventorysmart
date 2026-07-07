@@ -1,20 +1,17 @@
 /**
  * @fileoverview Страница календаря плановых обходов.
- * Отображает месячный календарь с плановыми работами,
- * позволяет просматривать работы на конкретный день.
  */
-
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, CalendarDays } from 'lucide-react';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../services/api';
 import PageHeader from '../components/PageHeader';
-import FrequencyBadge from '../components/FrequencyBadge';
+import EmptyState from '../components/EmptyState';
+import CalendarEventCard from '../components/CalendarEventCard';
 
-const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-/** Компонент календаря плановых обходов */
 function CalendarPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
@@ -23,153 +20,160 @@ function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState(now.getDate());
   const [loading, setLoading] = useState(true);
 
-  /** Загрузка событий календаря при смене месяца/года */
   useEffect(() => {
     setLoading(true);
     api.get('/calendar', { params: { month, year } })
-      .then(res => { setEvents(res.data); setLoading(false); })
+      .then((res) => { setEvents(res.data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [month, year]);
 
-  /** Переход к предыдущему месяцу */
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-    setSelectedDay(null);
+  useEffect(() => {
+    const today = new Date();
+    if (month === today.getMonth() && year === today.getFullYear()) {
+      setSelectedDay(today.getDate());
+    } else {
+      setSelectedDay(1);
+    }
+  }, [month, year]);
+
+  const shiftMonth = (delta) => {
+    setMonth((currentMonth) => {
+      let nextMonth = currentMonth + delta;
+      let nextYear = year;
+      if (nextMonth < 0) {
+        nextMonth = 11;
+        nextYear -= 1;
+      } else if (nextMonth > 11) {
+        nextMonth = 0;
+        nextYear += 1;
+      }
+      setYear(nextYear);
+      return nextMonth;
+    });
   };
 
-  /** Переход к следующему месяцу */
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
-    setSelectedDay(null);
-  };
-
-  /** Формирование массива дней для отображения в календаре */
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startPad = (firstDay.getDay() + 6) % 7;
     const totalDays = lastDay.getDate();
     const days = [];
-    for (let i = 0; i < startPad; i++) days.push(null);
-    for (let d = 1; d <= totalDays; d++) days.push(d);
+    for (let i = 0; i < startPad; i += 1) days.push(null);
+    for (let day = 1; day <= totalDays; day += 1) days.push(day);
     return days;
   }, [month, year]);
 
-  /** Формирование ключа даты в формате YYYY-MM-DD */
   const formatDateKey = (day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const today = new Date();
   const isToday = (day) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-
-  const todayKey = formatDateKey(today.getDate());
-  const todayEvents = (month === today.getMonth() && year === today.getFullYear()) ? (events[formatDateKey(today.getDate())] || []) : [];
-
   const selectedEvents = selectedDay ? (events[formatDateKey(selectedDay)] || []) : [];
+  const isSelectedToday = selectedDay ? isToday(selectedDay) : false;
+
+  const monthEventCount = useMemo(
+    () => Object.values(events).reduce((sum, dayEvents) => sum + dayEvents.length, 0),
+    [events],
+  );
+
+  const panelTitle = isSelectedToday
+    ? `Сегодня, ${selectedDay} ${MONTHS[month]}`
+    : `${selectedDay} ${MONTHS[month]} ${year}`;
 
   return (
-    <div className="calendar-page">
+    <div className="directory-page calendar-page">
       <PageHeader icon={Calendar} title="Календарь обходов">
+        <span className="calendar-header-meta">{monthEventCount} работ в месяце</span>
         <Link to="/schedule" className="btn btn-secondary">
           <CalendarDays size={16} /> План-график
         </Link>
       </PageHeader>
 
       <div className="calendar-layout">
-        <div className="calendar-left">
-          <div className="calendar-container compact">
+        <aside className="calendar-sidebar">
+          <div className="calendar-widget">
             <div className="calendar-nav">
-              <button onClick={prevMonth} className="btn btn-small">◄</button>
+              <button type="button" onClick={() => shiftMonth(-1)} className="btn btn-icon" aria-label="Предыдущий месяц">
+                <ChevronLeft size={18} />
+              </button>
               <span className="calendar-title">{MONTHS[month]} {year}</span>
-              <button onClick={nextMonth} className="btn btn-small">►</button>
+              <button type="button" onClick={() => shiftMonth(1)} className="btn btn-icon" aria-label="Следующий месяц">
+                <ChevronRight size={18} />
+              </button>
             </div>
 
             {loading ? (
-              <div className="loading-spinner">Загрузка...</div>
+              <div className="calendar-grid-skeleton">
+                {Array.from({ length: 35 }).map((_, index) => (
+                  <div key={index} className="calendar-skeleton-cell skeleton" />
+                ))}
+              </div>
             ) : (
-              <div className="calendar-grid compact">
-                {DAYS.map(d => <div key={d} className="calendar-day-header">{d}</div>)}
-                {calendarDays.map((day, idx) => {
-                  if (day === null) return <div key={`pad-${idx}`} className="calendar-cell empty" />;
+              <div className="calendar-grid">
+                {DAYS.map((day) => <div key={day} className="calendar-day-header">{day}</div>)}
+                {calendarDays.map((day, index) => {
+                  if (day === null) {
+                    return <div key={`pad-${index}`} className="calendar-cell empty" />;
+                  }
+
                   const key = formatDateKey(day);
                   const dayEvents = events[key] || [];
-                  const hasOverdue = dayEvents.some(e => e.isOverdue);
+                  const hasOverdue = dayEvents.some((event) => event.isOverdue);
 
                   return (
-                    <div
+                    <button
                       key={key}
-                      className={`calendar-cell ${isToday(day) ? 'today' : ''} ${selectedDay === day ? 'selected' : ''} ${hasOverdue ? 'has-overdue' : ''} ${dayEvents.length > 0 ? 'has-events' : ''}`}
+                      type="button"
+                      className={[
+                        'calendar-cell',
+                        isToday(day) ? 'today' : '',
+                        selectedDay === day ? 'selected' : '',
+                        hasOverdue ? 'has-overdue' : '',
+                        dayEvents.length > 0 ? 'has-events' : '',
+                      ].filter(Boolean).join(' ')}
                       onClick={() => setSelectedDay(day)}
                     >
                       <span className="cell-day">{day}</span>
                       {dayEvents.length > 0 && <span className="cell-badge">{dayEvents.length}</span>}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             )}
           </div>
-        </div>
+        </aside>
 
-        {/* Правая панель с событиями дня */}
-        <div className="calendar-right">
-          {/* Блок событий на сегодня */}
-          {todayEvents.length > 0 && (
-            <div className="calendar-panel today-panel">
-              <h3>Сегодня ({today.getDate()} {MONTHS[today.getMonth()]})</h3>
-              <div className="panel-events">
-                {todayEvents.map((ev, idx) => (
-                  <div key={idx} className={`panel-event ${ev.isOverdue ? 'overdue' : 'ok'}`}>
-                    <div className="panel-event-name">
-                      <Link to={`/equipment/${ev.equipmentId}`}>{ev.equipmentName}</Link>
-                    </div>
-                    <div className="panel-event-work">{ev.workName}</div>
-                    <div className="panel-event-meta">
-                      {ev.roomName && <span>📍 {ev.roomName}</span>}
-                      {ev.employeeName && <span>👤 {ev.employeeName}</span>}
-                    </div>
-                  </div>
+        <section className="calendar-content">
+          <div className="filters-panel calendar-day-panel">
+            <div className="calendar-day-panel-header">
+              <h3>{panelTitle}</h3>
+              <span className="filter-summary">
+                {selectedEvents.length} {selectedEvents.length === 1 ? 'работа' : selectedEvents.length < 5 ? 'работы' : 'работ'}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="calendar-events-skeleton">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="calendar-event-skeleton skeleton" />
                 ))}
               </div>
-            </div>
-          )}
-
-          {selectedDay && (
-            <div className="calendar-panel selected-panel">
-              <h3>{selectedDay} {MONTHS[month]} {year}</h3>
-              {selectedEvents.length === 0 ? (
-                <p className="no-events">Нет работ</p>
-              ) : (
-                <div className="panel-events">
-                  {selectedEvents.map((ev, idx) => (
-                    <div key={idx} className={`panel-event ${ev.isOverdue ? 'overdue' : 'ok'}`}>
-                      <div className="panel-event-name">
-                        <Link to={`/equipment/${ev.equipmentId}`}>{ev.equipmentName}</Link>
-                        <span className="panel-event-inv">{ev.inventoryNumber}</span>
-                      </div>
-                      <div className="panel-event-work">
-                        {ev.workName}{' '}
-                        <FrequencyBadge days={ev.frequencyDays} />
-                      </div>
-                      <div className="panel-event-meta">
-                        {ev.roomName && <span>📍 {ev.roomName}</span>}
-                        {ev.employeeName && <span>👤 {ev.employeeName}</span>}
-                        {ev.isOverdue && <span className="overdue-badge overdue">просрочено</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {!selectedDay && todayEvents.length === 0 && (
-            <div className="calendar-panel empty-panel">
-              <p>Выберите день в календаре</p>
-            </div>
-          )}
-        </div>
+            ) : selectedEvents.length === 0 ? (
+              <EmptyState
+                icon={CalendarDays}
+                title="Нет работ на этот день"
+                description="Выберите другой день в календаре или проверьте план-график."
+                actionLabel="Открыть план-график"
+                actionTo="/schedule"
+              />
+            ) : (
+              <div className="calendar-events-stack">
+                {selectedEvents.map((event, index) => (
+                  <CalendarEventCard key={`${event.equipmentId}-${event.workName}-${index}`} event={event} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
