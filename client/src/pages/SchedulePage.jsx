@@ -8,24 +8,8 @@ import { CalendarDays } from 'lucide-react';
 import api from '../services/api';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
-
-/** Варианты периодичности плановых работ */
-const FREQUENCY_OPTIONS = [
-  { value: 1, label: 'Ежедневно' },
-  { value: 7, label: '1 раз в неделю' },
-  { value: 10, label: '1 раз в 10 дней' },
-  { value: 14, label: '1 раз в 2 недели' },
-  { value: 30, label: '1 раз в месяц' },
-  { value: 60, label: '1 раз в 2 месяца' },
-  { value: 90, label: '1 раз в 3 месяца' },
-  { value: 180, label: '1 раз в 6 месяцев' },
-  { value: 365, label: '1 раз в год' },
-];
-
-function getFrequencyLabel(days) {
-  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
-  return opt ? opt.label : `каждые ${days} дн.`;
-}
+import FrequencyBadge from '../components/FrequencyBadge';
+import { FREQUENCY_OPTIONS } from '../utils/frequency';
 
 const STATUS_MAP = {
   planned: { label: 'Запланировано', className: 'status-working' },
@@ -501,7 +485,7 @@ function SchedulePage() {
                           <td>{row.inventoryNumber}</td>
                           <td>{row.roomName}</td>
                           <td className="td-bold">{row.workName}</td>
-                          <td><span className="frequency-badge">{getFrequencyLabel(row.frequencyDays)}</span></td>
+                          <td><FrequencyBadge days={row.frequencyDays} /></td>
                           <td>{row.plannedDate ? new Date(row.plannedDate).toLocaleDateString('ru-RU') : '—'}</td>
                           <td>{row.lastCompleted ? new Date(row.lastCompleted).toLocaleDateString('ru-RU') : '—'}</td>
                           <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>

@@ -19,24 +19,8 @@ import {
 } from '../components/MobileDataCard';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
-
-/** Варианты периодичности работ */
-const FREQUENCY_OPTIONS = [
-  { value: 1, label: 'Ежедневно' },
-  { value: 7, label: '1 раз в неделю' },
-  { value: 10, label: '1 раз в 10 дней' },
-  { value: 14, label: '1 раз в 2 недели' },
-  { value: 30, label: '1 раз в месяц' },
-  { value: 60, label: '1 раз в 2 месяца' },
-  { value: 90, label: '1 раз в 3 месяца' },
-  { value: 180, label: '1 раз в 6 месяцев' },
-  { value: 365, label: '1 раз в год' },
-];
-
-function getFrequencyLabel(days) {
-  const opt = FREQUENCY_OPTIONS.find(o => o.value === days);
-  return opt ? opt.label : `каждые ${days} дн.`;
-}
+import FrequencyBadge from '../components/FrequencyBadge';
+import { FREQUENCY_OPTIONS } from '../utils/frequency';
 
 function WorksDirectory() {
   const [works, setWorks] = useState([]);
@@ -257,7 +241,7 @@ function WorksDirectory() {
                   <tr key={work.id}>
                     <td className="td-bold">{work.name}</td>
                     <td>{work.category || '—'}</td>
-                    <td><span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span></td>
+                    <td><FrequencyBadge days={work.frequencyDays} /></td>
                     <td><span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span></td>
                     <td className="td-muted">{work.description || '—'}</td>
                     <td>
@@ -281,7 +265,7 @@ function WorksDirectory() {
             <MobileDataCardTitle>{work.name}</MobileDataCardTitle>
             <MobileDataCardRow label="Категория">{work.category || '—'}</MobileDataCardRow>
             <MobileDataCardRow label="Периодичность">
-              <span className="frequency-badge">{getFrequencyLabel(work.frequencyDays)}</span>
+              <FrequencyBadge days={work.frequencyDays} />
             </MobileDataCardRow>
             <MobileDataCardRow label="Приоритет">
               <span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span>
