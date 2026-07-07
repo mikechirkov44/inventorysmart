@@ -112,6 +112,7 @@ async function getCalendarEvents(year, month, companyId) {
       if (!events[key]) events[key] = [];
       events[key].push({
         equipmentId: equip.id,
+        qrCode: equip.qrCode,
         equipmentName: equip.name,
         inventoryNumber: equip.inventoryNumber,
         workId: task.workId,

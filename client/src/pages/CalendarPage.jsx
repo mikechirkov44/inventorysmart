@@ -8,11 +8,14 @@ import api from '../services/api';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import CalendarEventCard from '../components/CalendarEventCard';
+import { useAuth } from '../contexts/AuthContext';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 function CalendarPage() {
+  const { canView } = useAuth();
+  const canExecute = canView('scanner');
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
@@ -172,7 +175,11 @@ function CalendarPage() {
             ) : (
               <div className="calendar-events-stack">
                 {selectedEvents.map((event, index) => (
-                  <CalendarEventCard key={`${event.equipmentId}-${event.workName}-${index}`} event={event} />
+                  <CalendarEventCard
+                    key={`${event.equipmentId}-${event.workId}-${index}`}
+                    event={event}
+                    canExecute={canExecute}
+                  />
                 ))}
               </div>
             )}

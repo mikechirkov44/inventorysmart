@@ -15,17 +15,13 @@ import {
 import { SkeletonPage } from '../components/Skeleton';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 import { formatDate } from '../utils/date';
+import { getTaskScanPath } from '../utils/taskScan';
 
 const TODAY_STATUS_LABELS = {
   today: 'На сегодня',
   overdue: 'Просрочена',
   never: 'Не выполнялась',
 };
-
-function getTaskScanPath(task) {
-  const code = task.qrCode || task.inventoryNumber || task.equipmentId;
-  return `/scan/${encodeURIComponent(code)}?work=${task.workId}`;
-}
 
 function KpiCard({ icon: Icon, label, value, sub, to, color = 'primary' }) {
   const content = (

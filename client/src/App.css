@@ -3712,12 +3712,45 @@ input, textarea, select { font-family: inherit; }
 }
 
 .calendar-event-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   background: white;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.calendar-event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-event-actions {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.calendar-event-actions .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .calendar-event-card {
+    flex-direction: column;
+  }
+
+  .calendar-event-actions {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .calendar-event-actions .btn {
+    width: 100%;
+  }
 }
 
 .calendar-event-card:hover {
