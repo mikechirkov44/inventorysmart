@@ -56,7 +56,8 @@ function mapRow(row) {
     acceptedAt: serializeTimestamp(row.accepted_at),
     dueDate: serializeDate(row.due_date),
     completedOnTime: row.completed_on_time,
-    priority: row.priority
+    priority: row.priority,
+    incidentId: row.incident_id,
   };
 }
 
@@ -140,8 +141,8 @@ module.exports = {
   create: async (data, companyId) => {
     const status = data.status || 'pending';
     const { rows } = await query(
-      `INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id, cause_id, due_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id, cause_id, due_date, incident_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         data.equipmentId,
         data.taskId || null,
@@ -154,7 +155,8 @@ module.exports = {
         status === 'completed' ? (data.completedAt || new Date().toISOString()) : null,
         companyId,
         data.causeId || null,
-        data.dueDate || null
+        data.dueDate || null,
+        data.incidentId || null,
       ]
     );
     return mapRow(rows[0]);

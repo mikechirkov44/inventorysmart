@@ -139,6 +139,11 @@ export const incidentsAPI = {
   create: (data) => api.post('/incidents', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: (id, data) => api.put(`/incidents/${id}`, data),
   delete: (id) => api.delete(`/incidents/${id}`),
+  createWorkOrder: (id, data) => api.post(`/incidents/${id}/create-work-order`, data),
+  getActions: (id) => api.get(`/incidents/${id}/actions`),
+  createAction: (id, data) => api.post(`/incidents/${id}/actions`, data),
+  updateAction: (id, actionId, data) => api.put(`/incidents/${id}/actions/${actionId}`, data),
+  deleteAction: (id, actionId) => api.delete(`/incidents/${id}/actions/${actionId}`),
 };
 
 /** API для управления запасными частями (ЗИП) */
@@ -165,6 +170,7 @@ export const sparePartsReceiptsAPI = {
 export const analyticsAPI = {
   getAnalytics: (params) => api.get('/analytics', { params }),
   getSummary: (params) => api.get('/analytics/summary', { params }),
+  getIncidents: (params) => api.get('/analytics/incidents', { params }),
 };
 
 /** API для план-графика работ */

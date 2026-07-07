@@ -4005,6 +4005,85 @@ input, textarea, select { font-family: inherit; }
 
 .incident-modal { max-width: 560px; }
 
+.incident-modal-wide { max-width: 680px; }
+
+.incident-detail-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.why-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.why-row input {
+  padding: 8px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.incident-actions-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 16px;
+}
+
+.incident-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 14px;
+}
+
+.incident-action-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.incident-new-action {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.incident-new-action input[type="text"],
+.incident-new-action input[type="date"] {
+  padding: 8px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.incident-linked-orders {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.incident-linked-orders ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
 .incident-detail p { margin-bottom: 8px; font-size: 14px; color: var(--gray-600); }
 
 .incident-photos { margin: 12px 0; }
@@ -5142,6 +5221,8 @@ input, textarea, select { font-family: inherit; }
   .rate-bar { width: 60px; }
   .notification-dropdown { width: calc(100vw - 16px); right: 8px; left: 8px; top: 48px; }
   .incident-modal { margin: 10px; }
+  .incident-new-action { grid-template-columns: 1fr; }
+  .why-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
@@ -5150,6 +5231,8 @@ input, textarea, select { font-family: inherit; }
   .cell-badge { width: 14px; height: 14px; font-size: 8px; }
   .notification-dropdown { width: calc(100vw - 32px); right: -40px; }
   .incident-modal { margin: 10px; }
+  .incident-new-action { grid-template-columns: 1fr; }
+  .why-row { grid-template-columns: 1fr; }
 }
 
 /* Spare parts work quantity input */

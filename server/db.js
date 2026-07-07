@@ -567,6 +567,31 @@ async function migrate() {
       `);
     });
 
+    await withSavepoint(client, 'rca_incidents', async () => {
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS root_cause_notes TEXT DEFAULT ''`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS assigned_investigator_id UUID REFERENCES employees(id) ON DELETE SET NULL`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS requires_rca BOOLEAN DEFAULT false`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS whys JSONB DEFAULT '[]'`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS downtime_hours DECIMAL(10,2)`);
+      await client.query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS loss_amount NUMERIC(12,2)`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS incident_id UUID REFERENCES incidents(id) ON DELETE SET NULL`);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS incident_actions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          incident_id UUID REFERENCES incidents(id) ON DELETE CASCADE,
+          company_id UUID,
+          description TEXT NOT NULL DEFAULT '',
+          assigned_employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+          due_date DATE,
+          status VARCHAR(50) DEFAULT 'planned',
+          work_order_id UUID REFERENCES work_orders(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

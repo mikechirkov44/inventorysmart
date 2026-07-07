@@ -445,6 +445,171 @@ function EquipmentReport() {
   );
 }
 
+/** Горизонтальная диаграмма по количеству */
+function CountBarChart({ title, data, nameKey = 'name' }) {
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, [data]);
+
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map((d) => d.count), 1);
+
+  return (
+    <div className="perf-chart">
+      <div className="perf-chart-header">
+        <h3>{title}</h3>
+      </div>
+      <div className="perf-chart-body">
+        {data.slice(0, 10).map((item) => (
+          <div key={item.id || item[nameKey]} className="perf-row">
+            <div className="perf-label" title={item[nameKey]}>
+              <span className="perf-name">{item[nameKey]}</span>
+            </div>
+            <div className="perf-bar-track">
+              <div
+                className={`perf-bar-fill warn ${animated ? 'animated' : ''}`}
+                style={{ width: animated ? `${(item.count / max) * 100}%` : '0%' }}
+              />
+            </div>
+            <div className="perf-counts">
+              <span className="perf-done">{item.count}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Аналитика по инцидентам и RCA */
+function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, onQuickPeriod }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!dateFrom || !dateTo) return;
+    setLoading(true);
+    analyticsAPI.getIncidents({ from: dateFrom, to: dateTo })
+      .then((res) => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Ошибка загрузки');
+        setLoading(false);
+      });
+  }, [dateFrom, dateTo]);
+
+  if (loading) return <SkeletonPage />;
+  if (error) return <div className="error">{error}</div>;
+  if (!data) return null;
+
+  const { summary, byCause, byCommonFault, byEquipment, period } = data;
+
+  return (
+    <>
+      <div className="analytics-period-toolbar">
+        <div className="filter-row compact">
+          <div className="filter-group">
+            <CustomDatePicker value={dateFrom} onChange={onDateFromChange} placeholder="От" />
+          </div>
+          <div className="filter-group">
+            <CustomDatePicker value={dateTo} onChange={onDateToChange} placeholder="До" />
+          </div>
+          <div className="quick-periods">
+            {ANALYTICS_QUICK_PERIODS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                className="btn btn-small btn-secondary"
+                onClick={() => onQuickPeriod(preset)}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {period && (
+          <p className="analytics-period-label">
+            Отчёт за {formatDate(period.from)} — {formatDate(period.to)}
+          </p>
+        )}
+      </div>
+
+      <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 16 }}>
+        <div className="summary-card primary">
+          <div className="summary-value">{summary.total}</div>
+          <div className="summary-label">Всего инцидентов</div>
+        </div>
+        <div className="summary-card danger">
+          <div className="summary-value">{summary.investigating + summary.rca_done}</div>
+          <div className="summary-label">RCA в работе</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-value">{summary.mttrHours != null ? `${summary.mttrHours} ч` : '—'}</div>
+          <div className="summary-label">MTTR (среднее)</div>
+        </div>
+        <div className="summary-card" style={{ borderTopColor: 'var(--warning)' }}>
+          <div className="summary-value" style={{ color: 'var(--warning)' }}>{summary.recurrenceRate}%</div>
+          <div className="summary-label">Повторяемость (90 дн.)</div>
+        </div>
+      </div>
+
+      <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 24 }}>
+        <div className="summary-card success">
+          <div className="summary-value">{summary.resolved}</div>
+          <div className="summary-label">Решено</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-value">{summary.new + summary.in_progress}</div>
+          <div className="summary-label">Открытые</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-value">{summary.requiresRca}</div>
+          <div className="summary-label">С флагом RCA</div>
+        </div>
+        <div className="summary-card danger">
+          <div className="summary-value">{summary.overdueActions}</div>
+          <div className="summary-label">Просроченные мероприятия</div>
+        </div>
+      </div>
+
+      <CountBarChart title="Топ причин возникновения" data={byCause} />
+      <CountBarChart title="Топ типовых неисправностей" data={byCommonFault} />
+
+      <div className="table-container desktop-table-only" style={{ marginTop: 24 }}>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Оборудование</th>
+                <th>Инв. №</th>
+                <th>Инцидентов</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byEquipment.length === 0 ? (
+                <tr><td colSpan="3" className="no-results-cell">Нет данных</td></tr>
+              ) : (
+                byEquipment.map((eq) => (
+                  <tr key={eq.id}>
+                    <td className="td-bold">{eq.name}</td>
+                    <td>{eq.inventoryNumber || '—'}</td>
+                    <td><span className="overdue-badge new">{eq.count}</span></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /** Основной компонент страницы аналитики */
 function AnalyticsPage() {
   const initialRange = useMemo(() => getMonthRange(0), []);
@@ -493,15 +658,23 @@ function AnalyticsPage() {
     <div className="analytics-page">
       <PageHeader icon={BarChart3} title="Аналитика">
         <button type="button" onClick={() => setView('employees')} className={`btn ${view === 'employees' ? 'btn-primary' : ''}`}>Сотрудники</button>
+        <button type="button" onClick={() => setView('incidents')} className={`btn ${view === 'incidents' ? 'btn-primary' : ''}`}>Инциденты</button>
         <button type="button" onClick={() => setView('equipment')} className={`btn ${view === 'equipment' ? 'btn-primary' : ''}`}>Оборудование</button>
         <button type="button" onClick={() => setView('stock')} className={`btn ${view === 'stock' ? 'btn-primary' : ''}`}>ЗИП</button>
       </PageHeader>
 
-      {/* Переключение между видами аналитики */}
       {view === 'stock' ? (
         <StockReport />
       ) : view === 'equipment' ? (
         <EquipmentReport />
+      ) : view === 'incidents' ? (
+        <IncidentsReport
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+          onQuickPeriod={applyQuickPeriod}
+        />
       ) : (
         <>
           <div className="analytics-period-toolbar">

@@ -213,4 +213,19 @@ router.get('/summary', requirePermission('analytics', 'view'), async (req, res) 
   }
 });
 
+/**
+ * @route GET /analytics/incidents
+ * @description Аналитика по инцидентам и RCA за период
+ */
+router.get('/incidents', requirePermission('analytics', 'view'), async (req, res) => {
+  try {
+    const { getIncidentAnalytics } = require('../utils/incidentAnalytics');
+    const result = await getIncidentAnalytics(req.user.companyId, req.query.from, req.query.to);
+    res.json(result);
+  } catch (error) {
+    console.error('Incident analytics error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 module.exports = router;

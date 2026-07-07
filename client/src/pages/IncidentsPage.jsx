@@ -1,13 +1,13 @@
 /**
- * @fileoverview Страница управления инцидентами (поломками).
- * Отображает список инцидентов с фильтрацией по статусу,
- * позволяет обновлять статус, добавлять заметки и удалять инциденты.
+ * @fileoverview Страница управления инцидентами с поддержкой RCA.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Trash2, FileText } from 'lucide-react';
-import api, { incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI, causesAPI } from '../services/api';
+import { AlertTriangle, Trash2, FileText, Wrench, Plus } from 'lucide-react';
+import api, {
+  incidentsAPI, equipmentAPI, companyAPI, commonFaultsAPI, causesAPI, employeesAPI,
+} from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
 import { useConfirm } from '../components/ConfirmModal';
@@ -23,23 +23,47 @@ import { formatDate, formatDateTime } from '../utils/date';
 import UploadImage from '../components/UploadImage';
 import { resolveUploadField } from '../utils/uploads';
 
-/** Маппинг статусов инцидентов на метки и CSS-классы */
 const STATUS_MAP = {
   new: { label: 'Новый', className: 'status-needs-repair' },
   in_progress: { label: 'В работе', className: 'status-under-repair' },
+  investigating: { label: 'Расследование', className: 'status-under-repair' },
+  rca_done: { label: 'RCA завершён', className: 'status-working' },
   resolved: { label: 'Решён', className: 'status-working' },
 };
 
-/** Компонент страницы инцидентов */
+const ACTION_STATUS_MAP = {
+  planned: 'Запланировано',
+  done: 'Выполнено',
+  verified: 'Проверено',
+};
+
+const EMPTY_WHY = { question: '', answer: '' };
+
 function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterRca, setFilterRca] = useState('');
   const [selectedIncident, setSelectedIncident] = useState(null);
+  const [detailTab, setDetailTab] = useState('info');
   const [adminNotes, setAdminNotes] = useState('');
+  const [editCauseId, setEditCauseId] = useState('');
+  const [editCommonFaultId, setEditCommonFaultId] = useState('');
+  const [rootCauseNotes, setRootCauseNotes] = useState('');
+  const [requiresRca, setRequiresRca] = useState(false);
+  const [investigatorId, setInvestigatorId] = useState('');
+  const [whys, setWhys] = useState([{ ...EMPTY_WHY }]);
+  const [detailFaults, setDetailFaults] = useState([]);
+  const [actions, setActions] = useState([]);
+  const [workOrders, setWorkOrders] = useState([]);
+  const [newActionDesc, setNewActionDesc] = useState('');
+  const [newActionDue, setNewActionDue] = useState('');
+  const [newActionAssignee, setNewActionAssignee] = useState('');
+  const [saving, setSaving] = useState(false);
   const [allowInspectionWithoutQr, setAllowInspectionWithoutQr] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [allEquipment, setAllEquipment] = useState([]);
+  const [allEmployees, setAllEmployees] = useState([]);
   const [newEquipmentId, setNewEquipmentId] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newPhotos, setNewPhotos] = useState([]);
@@ -54,50 +78,52 @@ function IncidentsPage() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  /** Загрузка инцидентов при монтировании */
-  useEffect(() => { fetchIncidents(); }, []);
-
-  /** Загрузка списка инцидентов с фильтрацией по статусу */
-  const fetchIncidents = async () => {
+  const fetchIncidents = useCallback(async () => {
     try {
       const params = {};
       if (filterStatus) params.status = filterStatus;
+      if (filterRca === 'true') params.requiresRca = 'true';
       const res = await api.get('/incidents', { params });
       setIncidents(res.data);
       setLoading(false);
-    } catch { setLoading(false); }
-  };
+    } catch {
+      setLoading(false);
+    }
+  }, [filterStatus, filterRca]);
 
-  /** Перезагрузка инцидентов при изменении фильтра статуса */
-  useEffect(() => { fetchIncidents(); }, [filterStatus]);
+  useEffect(() => { fetchIncidents(); }, [fetchIncidents]);
 
-  /** Загрузка настройки компании и справочника оборудования */
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const res = await companyAPI.get();
         setAllowInspectionWithoutQr(res.data.allowInspectionWithoutQr);
-      } catch {}
+      } catch { /* ignore */ }
     };
     const fetchAllEquipment = async () => {
       try {
         const res = await equipmentAPI.getAll();
         setAllEquipment(res.data);
-      } catch {}
+      } catch { /* ignore */ }
     };
-    fetchSettings();
-    fetchAllEquipment();
-
     const fetchCauses = async () => {
       try {
         const res = await causesAPI.getAll();
         setAllCauses(res.data);
-      } catch {}
+      } catch { /* ignore */ }
     };
+    const fetchEmployees = async () => {
+      try {
+        const res = await employeesAPI.getAll();
+        setAllEmployees(res.data);
+      } catch { /* ignore */ }
+    };
+    fetchSettings();
+    fetchAllEquipment();
     fetchCauses();
+    fetchEmployees();
   }, []);
 
-  /** Загрузка типовых неисправностей при выборе оборудования */
   useEffect(() => {
     const fetchFaults = async () => {
       if (!newEquipmentId) {
@@ -109,43 +135,154 @@ function IncidentsPage() {
         const res = await commonFaultsAPI.getByEquipment(newEquipmentId);
         setCommonFaults(res.data);
         setNewCommonFaultId('');
-      } catch {}
+      } catch { /* ignore */ }
     };
     fetchFaults();
   }, [newEquipmentId]);
 
-  /** Обновление статуса и заметки инцидента */
-  const updateStatus = async (id, status) => {
+  const openIncidentDetail = async (inc) => {
     try {
-      await api.put(`/incidents/${id}`, { status, adminNotes });
-      setSelectedIncident(null);
-      setAdminNotes('');
-      fetchIncidents();
-    } catch { toast.error('Ошибка', 'Не удалось обновить статус'); }
+      const res = await incidentsAPI.getById(inc.id);
+      const data = res.data;
+      setSelectedIncident(data);
+      setDetailTab('info');
+      setAdminNotes(data.adminNotes || '');
+      setEditCauseId(data.causeId || '');
+      setEditCommonFaultId(data.commonFaultId || '');
+      setRootCauseNotes(data.rootCauseNotes || '');
+      setRequiresRca(Boolean(data.requiresRca));
+      setInvestigatorId(data.assignedInvestigatorId || '');
+      setWhys(data.whys?.length ? data.whys : [{ ...EMPTY_WHY }]);
+      setActions(data.actions || []);
+      setWorkOrders(data.workOrders || []);
+      if (data.equipmentId) {
+        const faultsRes = await commonFaultsAPI.getByEquipment(data.equipmentId);
+        setDetailFaults(faultsRes.data);
+      } else {
+        setDetailFaults([]);
+      }
+    } catch {
+      toast.error('Ошибка', 'Не удалось загрузить инцидент');
+    }
   };
 
-  /** Обработка выбора фотографий для нового инцидента */
+  const closeDetail = () => {
+    setSelectedIncident(null);
+    setNewActionDesc('');
+    setNewActionDue('');
+    setNewActionAssignee('');
+  };
+
+  const saveIncidentFields = async (extra = {}) => {
+    if (!selectedIncident) return false;
+    setSaving(true);
+    try {
+      const payload = {
+        adminNotes,
+        causeId: editCauseId || null,
+        commonFaultId: editCommonFaultId || null,
+        rootCauseNotes,
+        requiresRca,
+        assignedInvestigatorId: investigatorId || null,
+        whys: whys.filter((w) => w.question || w.answer),
+        ...extra,
+      };
+      const res = await incidentsAPI.update(selectedIncident.id, payload);
+      setSelectedIncident((prev) => ({ ...prev, ...res.data }));
+      fetchIncidents();
+      return true;
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Не удалось сохранить';
+      toast.error('Ошибка', msg);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateStatus = async (status) => {
+    const ok = await saveIncidentFields({ status });
+    if (ok) {
+      toast.success('Статус обновлён');
+      closeDetail();
+    }
+  };
+
+  const handleCreateWorkOrder = async () => {
+    if (!selectedIncident) return;
+    setSaving(true);
+    try {
+      const res = await incidentsAPI.createWorkOrder(selectedIncident.id, {});
+      toast.success('Наряд создан');
+      setWorkOrders((prev) => [res.data, ...prev]);
+      fetchIncidents();
+    } catch {
+      toast.error('Ошибка', 'Не удалось создать наряд');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddAction = async () => {
+    if (!selectedIncident || !newActionDesc.trim()) {
+      toast.error('Ошибка', 'Укажите описание мероприятия');
+      return;
+    }
+    try {
+      const res = await incidentsAPI.createAction(selectedIncident.id, {
+        description: newActionDesc.trim(),
+        dueDate: newActionDue || null,
+        assignedEmployeeId: newActionAssignee || null,
+      });
+      setActions((prev) => [...prev, res.data]);
+      setNewActionDesc('');
+      setNewActionDue('');
+      setNewActionAssignee('');
+      toast.success('Мероприятие добавлено');
+    } catch {
+      toast.error('Ошибка', 'Не удалось добавить мероприятие');
+    }
+  };
+
+  const handleActionStatus = async (actionId, status) => {
+    try {
+      const res = await incidentsAPI.updateAction(selectedIncident.id, actionId, { status });
+      setActions((prev) => prev.map((a) => (a.id === actionId ? res.data : a)));
+    } catch {
+      toast.error('Ошибка', 'Не удалось обновить мероприятие');
+    }
+  };
+
+  const handleDeleteAction = async (actionId) => {
+    const confirmed = await confirm({ title: 'Удалить мероприятие?', message: '', type: 'danger' });
+    if (!confirmed) return;
+    try {
+      await incidentsAPI.deleteAction(selectedIncident.id, actionId);
+      setActions((prev) => prev.filter((a) => a.id !== actionId));
+    } catch {
+      toast.error('Ошибка', 'Не удалось удалить');
+    }
+  };
+
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     if (newPhotos.length + files.length > 5) {
       toast.error('Максимум 5 фотографий');
       return;
     }
-    setNewPhotos(prev => [...prev, ...files]);
-    files.forEach(file => {
+    setNewPhotos((prev) => [...prev, ...files]);
+    files.forEach((file) => {
       const reader = new FileReader();
-      reader.onloadend = () => setNewPreviews(prev => [...prev, reader.result]);
+      reader.onloadend = () => setNewPreviews((prev) => [...prev, reader.result]);
       reader.readAsDataURL(file);
     });
   };
 
-  /** Удаление фотографии по индексу */
   const removePhoto = (index) => {
-    setNewPhotos(prev => prev.filter((_, i) => i !== index));
-    setNewPreviews(prev => prev.filter((_, i) => i !== index));
+    setNewPhotos((prev) => prev.filter((_, i) => i !== index));
+    setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /** Создание нового инцидента вручную */
   const handleAddSubmit = async () => {
     if (!newEquipmentId) {
       toast.error('Ошибка', 'Выберите оборудование');
@@ -162,7 +299,7 @@ function IncidentsPage() {
       if (newCommonFaultId) formData.append('commonFaultId', newCommonFaultId);
       if (newCauseId) formData.append('causeId', newCauseId);
       formData.append('description', newDescription);
-      newPhotos.forEach(photo => formData.append('photos', photo));
+      newPhotos.forEach((photo) => formData.append('photos', photo));
       await incidentsAPI.create(formData);
       toast.success('Инцидент создан');
       setShowAddModal(false);
@@ -181,16 +318,26 @@ function IncidentsPage() {
     }
   };
 
-  /** Удаление инцидента с подтверждением */
   const handleDelete = async (id) => {
     const confirmed = await confirm({ title: 'Удалить инцидент?', message: 'Инцидент будет удалён навсегда.', type: 'danger' });
     if (!confirmed) return;
-    try { await api.delete(`/incidents/${id}`); fetchIncidents(); } catch { toast.error('Ошибка', 'Не удалось удалить инцидент'); }
+    try {
+      await api.delete(`/incidents/${id}`);
+      fetchIncidents();
+    } catch {
+      toast.error('Ошибка', 'Не удалось удалить инцидент');
+    }
   };
 
-  if (loading) return <SkeletonTable rows={6} cols={7} />;
+  const employeeOptions = allEmployees.map((e) => ({
+    value: e.id,
+    label: `${e.lastName} ${e.firstName}`,
+  }));
+
+  if (loading) return <SkeletonTable rows={6} cols={8} />;
 
   const openAddModal = () => setShowAddModal(true);
+  const isResolved = selectedIncident?.status === 'resolved';
 
   return (
     <div className="directory-page">
@@ -202,20 +349,25 @@ function IncidentsPage() {
         )}
       </PageHeader>
 
-      {/* Панель фильтрации по статусу */}
       <div className="filters-panel">
         <div className="filter-row">
           <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
             { value: '', label: 'Все статусы' },
             { value: 'new', label: 'Новые' },
             { value: 'in_progress', label: 'В работе' },
-            { value: 'resolved', label: 'Решённые' }
+            { value: 'investigating', label: 'Расследование' },
+            { value: 'rca_done', label: 'RCA завершён' },
+            { value: 'resolved', label: 'Решённые' },
+          ]} />
+          <CustomSelect value={filterRca} onChange={setFilterRca} placeholder="RCA" options={[
+            { value: '', label: 'Все инциденты' },
+            { value: 'true', label: 'Требует RCA' },
           ]} />
           <span className="filter-summary">Найдено: <strong>{incidents.length}</strong></span>
         </div>
       </div>
 
-      {incidents.length === 0 && !filterStatus ? (
+      {incidents.length === 0 && !filterStatus && !filterRca ? (
         <EmptyState
           icon={AlertTriangle}
           title="Инцидентов пока нет"
@@ -232,18 +384,19 @@ function IncidentsPage() {
                   <tr>
                     <th>Дата</th>
                     <th>Оборудование</th>
-                    <th>Проблема</th>
-                    <th>Сотрудник</th>
+                    <th>Неисправность</th>
+                    <th>Причина</th>
                     <th>Статус</th>
+                    <th>RCA</th>
                     <th>Фото</th>
                     <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {incidents.length === 0 ? (
-                    <tr><td colSpan="7" className="no-results-cell">Инцидентов не найдено</td></tr>
+                    <tr><td colSpan="8" className="no-results-cell">Инцидентов не найдено</td></tr>
                   ) : (
-                    incidents.map(inc => {
+                    incidents.map((inc) => {
                       const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
                       return (
                         <tr key={inc.id}>
@@ -254,13 +407,14 @@ function IncidentsPage() {
                             </Link>
                             <div className="td-muted">{inc.inventoryNumber}</div>
                           </td>
-                          <td className="td-muted">{inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}</td>
-                          <td>{inc.employeeName || '—'}</td>
+                          <td className="td-muted">{inc.commonFaultName || '—'}</td>
+                          <td className="td-muted">{inc.causeName || '—'}</td>
                           <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                          <td>{inc.photos?.length || 0} шт.</td>
+                          <td>{inc.requiresRca ? <span className="overdue-badge new">RCA</span> : '—'}</td>
+                          <td>{inc.photos?.length || 0}</td>
                           <td>
                             <ActionsMenu items={[
-                              { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
+                              { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => openIncidentDetail(inc) },
                               { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
                             ]} />
                           </td>
@@ -274,7 +428,7 @@ function IncidentsPage() {
           </div>
 
           <MobileDataCards empty={incidents.length === 0} emptyMessage="Инцидентов не найдено">
-            {incidents.map(inc => {
+            {incidents.map((inc) => {
               const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
               return (
                 <MobileDataCard key={inc.id}>
@@ -283,19 +437,15 @@ function IncidentsPage() {
                       {inc.equipmentName || '—'}
                     </Link>
                   </MobileDataCardTitle>
-                  <MobileDataCardRow label="Инв. №">{inc.inventoryNumber || '—'}</MobileDataCardRow>
                   <MobileDataCardRow label="Дата">{formatDate(inc.createdAt)}</MobileDataCardRow>
-                  <MobileDataCardRow label="Проблема">
-                    {inc.description.substring(0, 80)}{inc.description.length > 80 ? '...' : ''}
-                  </MobileDataCardRow>
-                  <MobileDataCardRow label="Сотрудник">{inc.employeeName || '—'}</MobileDataCardRow>
+                  <MobileDataCardRow label="Неисправность">{inc.commonFaultName || '—'}</MobileDataCardRow>
+                  <MobileDataCardRow label="Причина">{inc.causeName || '—'}</MobileDataCardRow>
                   <MobileDataCardRow label="Статус">
                     <span className={`status-badge ${st.className}`}>{st.label}</span>
                   </MobileDataCardRow>
-                  <MobileDataCardRow label="Фото">{inc.photos?.length || 0} шт.</MobileDataCardRow>
                   <MobileDataCardActions>
                     <ActionsMenu items={[
-                      { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => { setSelectedIncident(inc); setAdminNotes(inc.adminNotes || ''); } },
+                      { icon: <FileText size={14} />, label: 'Подробнее', onClick: () => openIncidentDetail(inc) },
                       { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(inc.id), danger: true },
                     ]} />
                   </MobileDataCardActions>
@@ -306,59 +456,238 @@ function IncidentsPage() {
         </>
       )}
 
-      {/* Модальное окно деталей инцидента */}
       {selectedIncident && (
-        <div className="complete-task-modal" onClick={() => setSelectedIncident(null)}>
-          <div className="modal-content incident-modal" onClick={e => e.stopPropagation()}>
+        <div className="complete-task-modal" onClick={closeDetail}>
+          <div className="modal-content incident-modal incident-modal-wide" onClick={(e) => e.stopPropagation()}>
             <h3>Инцидент</h3>
-            <div className="incident-detail">
-              <p><strong>Оборудование:</strong> {selectedIncident.equipmentName} ({selectedIncident.inventoryNumber})</p>
-              <p><strong>Дата:</strong> {formatDateTime(selectedIncident.createdAt)}</p>
-              <p><strong>Сотрудник:</strong> {selectedIncident.employeeName}</p>
-              <p><strong>Проблема:</strong> {selectedIncident.description}</p>
-              {selectedIncident.causeName && (
-                <p><strong>Причина:</strong> {selectedIncident.causeName}</p>
-              )}
 
-              {selectedIncident.photos?.length > 0 && (
-                <div className="incident-photos">
-                  <strong>Фото:</strong>
-                  <div className="incident-photo-grid">
-                    {selectedIncident.photos.map((photo, idx) => (
-                      <a key={idx} href={selectedIncident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} target="_blank" rel="noopener noreferrer">
-                        <UploadImage
-                          src={selectedIncident.photoUrls?.[idx]}
-                          item={{ photo }}
-                          field="photo"
-                          alt=""
-                          className="incident-thumb"
-                        />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Заметка администратора</label>
-                <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows="3" placeholder="Комментарий..." />
-              </div>
-
-              <div className="incident-status-actions">
-                {selectedIncident.status !== 'in_progress' && (
-                  <button onClick={() => updateStatus(selectedIncident.id, 'in_progress')} className="btn btn-secondary">В работу</button>
-                )}
-                {selectedIncident.status !== 'resolved' && (
-                  <button onClick={() => updateStatus(selectedIncident.id, 'resolved')} className="btn btn-primary">Решено</button>
-                )}
-                <button onClick={() => setSelectedIncident(null)} className="btn">Закрыть</button>
-              </div>
+            <div className="incident-detail-tabs">
+              <button type="button" className={`btn btn-small ${detailTab === 'info' ? 'btn-primary' : ''}`} onClick={() => setDetailTab('info')}>Общее</button>
+              <button type="button" className={`btn btn-small ${detailTab === 'rca' ? 'btn-primary' : ''}`} onClick={() => setDetailTab('rca')}>Расследование (RCA)</button>
             </div>
+
+            {detailTab === 'info' && (
+              <div className="incident-detail">
+                <p><strong>Оборудование:</strong> {selectedIncident.equipmentName} ({selectedIncident.inventoryNumber})</p>
+                <p><strong>Дата:</strong> {formatDateTime(selectedIncident.createdAt)}</p>
+                <p><strong>Сотрудник:</strong> {selectedIncident.employeeName || '—'}</p>
+                <p><strong>Проблема:</strong> {selectedIncident.description}</p>
+
+                {!isResolved && (
+                  <>
+                    {detailFaults.length > 0 && (
+                      <div className="form-group">
+                        <label>Типовая неисправность</label>
+                        <CustomSelect
+                          value={editCommonFaultId}
+                          onChange={setEditCommonFaultId}
+                          placeholder="Не выбрано"
+                          options={detailFaults.map((f) => ({ value: f.id, label: f.name }))}
+                        />
+                      </div>
+                    )}
+                    <div className="form-group">
+                      <label>Причина возникновения {selectedIncident.status === 'resolved' ? '' : '(обязательна при закрытии)'}</label>
+                      <CustomSelect
+                        value={editCauseId}
+                        onChange={setEditCauseId}
+                        placeholder="Выберите причину"
+                        options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
+                      />
+                    </div>
+                    <label className="checkbox-label">
+                      <input type="checkbox" checked={requiresRca} onChange={(e) => setRequiresRca(e.target.checked)} />
+                      Требует RCA-расследования
+                    </label>
+                  </>
+                )}
+
+                {isResolved && (
+                  <>
+                    <p><strong>Неисправность:</strong> {selectedIncident.commonFaultName || '—'}</p>
+                    <p><strong>Причина:</strong> {selectedIncident.causeName || '—'}</p>
+                    {selectedIncident.resolvedAt && (
+                      <p><strong>Закрыт:</strong> {formatDateTime(selectedIncident.resolvedAt)}</p>
+                    )}
+                  </>
+                )}
+
+                {selectedIncident.photos?.length > 0 && (
+                  <div className="incident-photos">
+                    <strong>Фото:</strong>
+                    <div className="incident-photo-grid">
+                      {selectedIncident.photos.map((photo, idx) => (
+                        <a key={idx} href={selectedIncident.photoUrls?.[idx] || resolveUploadField({ photo }, 'photo')} target="_blank" rel="noopener noreferrer">
+                          <UploadImage src={selectedIncident.photoUrls?.[idx]} item={{ photo }} field="photo" alt="" className="incident-thumb" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label>Заметка администратора</label>
+                  <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows="3" placeholder="Комментарий..." disabled={isResolved} />
+                </div>
+
+                {workOrders.length > 0 && (
+                  <div className="incident-linked-orders">
+                    <strong>Связанные наряды:</strong>
+                    <ul>
+                      {workOrders.map((wo) => (
+                        <li key={wo.id}>
+                          <Link to="/work-orders">{wo.taskName || 'Наряд'}</Link>
+                          {' '}
+                          <span className="td-muted">({wo.status})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {!isResolved && (
+                  <div className="incident-status-actions">
+                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary" disabled={saving}>
+                      {saving ? 'Сохранение...' : 'Сохранить'}
+                    </button>
+                    <button type="button" onClick={handleCreateWorkOrder} className="btn btn-secondary" disabled={saving}>
+                      <Wrench size={14} style={{ marginRight: 4 }} /> Создать наряд
+                    </button>
+                    {selectedIncident.status === 'new' && (
+                      <button type="button" onClick={() => updateStatus('in_progress')} className="btn btn-secondary" disabled={saving}>В работу</button>
+                    )}
+                    {requiresRca && !['investigating', 'rca_done', 'resolved'].includes(selectedIncident.status) && (
+                      <button type="button" onClick={() => updateStatus('investigating')} className="btn btn-secondary" disabled={saving}>Начать RCA</button>
+                    )}
+                    {requiresRca && selectedIncident.status === 'investigating' && (
+                      <button type="button" onClick={() => updateStatus('rca_done')} className="btn btn-secondary" disabled={saving}>RCA завершён</button>
+                    )}
+                    {selectedIncident.status !== 'resolved' && (
+                      <button type="button" onClick={() => updateStatus('resolved')} className="btn btn-primary" disabled={saving}>Решено</button>
+                    )}
+                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
+                  </div>
+                )}
+                {isResolved && (
+                  <div className="incident-status-actions">
+                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {detailTab === 'rca' && (
+              <div className="incident-detail">
+                <div className="form-group">
+                  <label>Ответственный за расследование</label>
+                  <CustomSelect
+                    value={investigatorId}
+                    onChange={setInvestigatorId}
+                    placeholder="Не назначен"
+                    options={employeeOptions}
+                    disabled={isResolved}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Коренная причина</label>
+                  <textarea
+                    value={rootCauseNotes}
+                    onChange={(e) => setRootCauseNotes(e.target.value)}
+                    rows="3"
+                    placeholder="Опишите коренную причину..."
+                    disabled={isResolved}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>5 почему</label>
+                  {whys.map((why, idx) => (
+                    <div key={idx} className="why-row">
+                      <input
+                        type="text"
+                        value={why.question}
+                        onChange={(e) => {
+                          const next = [...whys];
+                          next[idx] = { ...next[idx], question: e.target.value };
+                          setWhys(next);
+                        }}
+                        placeholder={`Почему ${idx + 1}?`}
+                        disabled={isResolved}
+                      />
+                      <input
+                        type="text"
+                        value={why.answer}
+                        onChange={(e) => {
+                          const next = [...whys];
+                          next[idx] = { ...next[idx], answer: e.target.value };
+                          setWhys(next);
+                        }}
+                        placeholder="Ответ"
+                        disabled={isResolved}
+                      />
+                    </div>
+                  ))}
+                  {!isResolved && whys.length < 5 && (
+                    <button type="button" className="btn btn-small btn-secondary" onClick={() => setWhys([...whys, { ...EMPTY_WHY }])}>
+                      <Plus size={12} /> Добавить «почему»
+                    </button>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Корректирующие мероприятия</label>
+                  {actions.length === 0 && <p className="td-muted">Мероприятий пока нет</p>}
+                  <ul className="incident-actions-list">
+                    {actions.map((action) => (
+                      <li key={action.id} className="incident-action-item">
+                        <div>
+                          <strong>{action.description}</strong>
+                          {action.dueDate && <span className="td-muted"> — до {formatDate(action.dueDate)}</span>}
+                          {action.assignedEmployeeName && <span className="td-muted"> ({action.assignedEmployeeName})</span>}
+                        </div>
+                        <div className="incident-action-controls">
+                          <span className="td-muted">{ACTION_STATUS_MAP[action.status] || action.status}</span>
+                          {!isResolved && action.status === 'planned' && (
+                            <button type="button" className="btn btn-small" onClick={() => handleActionStatus(action.id, 'done')}>Выполнено</button>
+                          )}
+                          {!isResolved && (
+                            <button type="button" className="btn btn-small btn-danger" onClick={() => handleDeleteAction(action.id)}>✕</button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {!isResolved && (
+                    <div className="incident-new-action">
+                      <input type="text" value={newActionDesc} onChange={(e) => setNewActionDesc(e.target.value)} placeholder="Описание мероприятия" />
+                      <input type="date" value={newActionDue} onChange={(e) => setNewActionDue(e.target.value)} />
+                      <CustomSelect
+                        value={newActionAssignee}
+                        onChange={setNewActionAssignee}
+                        placeholder="Ответственный"
+                        options={employeeOptions}
+                      />
+                      <button type="button" className="btn btn-small btn-secondary" onClick={handleAddAction}>Добавить</button>
+                    </div>
+                  )}
+                </div>
+
+                {!isResolved && (
+                  <div className="incident-status-actions">
+                    <button type="button" onClick={() => saveIncidentFields()} className="btn btn-secondary" disabled={saving}>
+                      {saving ? 'Сохранение...' : 'Сохранить RCA'}
+                    </button>
+                    <button type="button" onClick={closeDetail} className="btn">Закрыть</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Модальное окно создания инцидента вручную */}
       {showAddModal && (
         <div ref={addModalRef} className="complete-task-modal" onClick={(e) => { if (e.target === addModalRef.current) setShowAddModal(false); }}>
           <div className="modal-content">
@@ -369,7 +698,7 @@ function IncidentsPage() {
                 value={newEquipmentId}
                 onChange={setNewEquipmentId}
                 placeholder="Выберите оборудование"
-                options={allEquipment.map(e => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
+                options={allEquipment.map((e) => ({ value: e.id, label: `${e.name} (${e.inventoryNumber || '—'})` }))}
               />
             </div>
             {commonFaults.length > 0 && (
@@ -379,11 +708,11 @@ function IncidentsPage() {
                   value={newCommonFaultId}
                   onChange={(v) => {
                     setNewCommonFaultId(v);
-                    const fault = commonFaults.find(f => f.id === v);
+                    const fault = commonFaults.find((f) => f.id === v);
                     if (fault) setNewDescription(fault.name);
                   }}
                   placeholder="Выберите из справочника (необязательно)"
-                  options={commonFaults.map(f => ({ value: f.id, label: f.name }))}
+                  options={commonFaults.map((f) => ({ value: f.id, label: f.name }))}
                 />
               </div>
             )}
@@ -394,18 +723,13 @@ function IncidentsPage() {
                   value={newCauseId}
                   onChange={setNewCauseId}
                   placeholder="Выберите причину (необязательно)"
-                  options={allCauses.map(c => ({ value: c.id, label: c.name }))}
+                  options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
                 />
               </div>
             )}
             <div className="form-group">
               <label>Описание проблемы *</label>
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Опишите что произошло..."
-                rows="4"
-              />
+              <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Опишите что произошло..." rows="4" />
             </div>
             <div className="form-group">
               <label>Фотографии ({newPhotos.length}/5)</label>
@@ -419,22 +743,11 @@ function IncidentsPage() {
                   ))}
                 </div>
                 {newPhotos.length < 5 && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn btn-secondary photo-add-btn"
-                  >
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-secondary photo-add-btn">
                     📷 Добавить фото
                   </button>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoChange}
-                  style={{ display: 'none' }}
-                />
+                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
               </div>
             </div>
             <div className="modal-actions">
