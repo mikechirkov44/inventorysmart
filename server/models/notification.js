@@ -80,6 +80,37 @@ module.exports = {
   },
 
   /**
+   * Количество непрочитанных уведомлений пользователя.
+   * @async
+   * @param {string} userId
+   * @returns {Promise<number>}
+   */
+  countUnread: async (userId) => {
+    const { rows } = await query(
+      'SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND read = false',
+      [userId],
+    );
+    return rows[0]?.count || 0;
+  },
+
+  /**
+   * Количество непрочитанных уведомлений по компании (для администратора).
+   * @async
+   * @param {string} companyId
+   * @returns {Promise<number>}
+   */
+  countUnreadForCompany: async (companyId) => {
+    const { rows } = await query(
+      `SELECT COUNT(*)::int AS count
+       FROM notifications n
+       INNER JOIN users u ON u.id = n.user_id
+       WHERE u.company_id = $1 AND n.read = false`,
+      [companyId],
+    );
+    return rows[0]?.count || 0;
+  },
+
+  /**
    * Создаёт уведомление или обновляет существующее за сегодня по той же задаче.
    * @async
    * @param {Object} data - Данные уведомления

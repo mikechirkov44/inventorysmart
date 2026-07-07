@@ -85,13 +85,12 @@ router.get('/unread-count', requirePermission('settings', 'view'), async (req, r
     const isAdmin = userPermissions.settings === 'full';
 
     if (isAdmin) {
-      const all = await Notification.findAll();
-      const count = all.filter(n => !n.read).length;
+      const count = await Notification.countUnreadForCompany(req.user.companyId);
       return res.json({ count });
     }
 
-    const unread = await Notification.findUnread(userId);
-    res.json({ count: unread.length });
+    const count = await Notification.countUnread(userId);
+    res.json({ count });
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

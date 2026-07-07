@@ -195,12 +195,18 @@ async function start() {
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    
-    // Generate work notifications on startup
-    generateWorkNotifications();
-    
-    // Re-generate work notifications every hour
-    setInterval(generateWorkNotifications, 60 * 60 * 1000);
+
+    setImmediate(() => {
+      generateWorkNotifications().catch((error) => {
+        console.error('Error generating work notifications on startup:', error);
+      });
+    });
+
+    setInterval(() => {
+      generateWorkNotifications().catch((error) => {
+        console.error('Error generating work notifications:', error);
+      });
+    }, 60 * 60 * 1000);
   });
 }
 
