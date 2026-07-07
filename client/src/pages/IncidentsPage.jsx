@@ -61,6 +61,7 @@ function IncidentsPage() {
   const [newActionAssignee, setNewActionAssignee] = useState('');
   const [saving, setSaving] = useState(false);
   const [allowInspectionWithoutQr, setAllowInspectionWithoutQr] = useState(false);
+  const [useRca, setUseRca] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [allEquipment, setAllEquipment] = useState([]);
   const [allEmployees, setAllEmployees] = useState([]);
@@ -82,14 +83,21 @@ function IncidentsPage() {
     try {
       const params = {};
       if (filterStatus) params.status = filterStatus;
-      if (filterRca === 'true') params.requiresRca = 'true';
+      if (filterRca === 'true' && useRca) params.requiresRca = 'true';
       const res = await api.get('/incidents', { params });
       setIncidents(res.data);
       setLoading(false);
     } catch {
       setLoading(false);
     }
-  }, [filterStatus, filterRca]);
+  }, [filterStatus, filterRca, useRca]);
+
+  useEffect(() => {
+    if (!useRca) {
+      setFilterRca('');
+      if (detailTab === 'rca') setDetailTab('info');
+    }
+  }, [useRca, detailTab]);
 
   useEffect(() => { fetchIncidents(); }, [fetchIncidents]);
 
@@ -98,6 +106,7 @@ function IncidentsPage() {
       try {
         const res = await companyAPI.get();
         setAllowInspectionWithoutQr(res.data.allowInspectionWithoutQr);
+        setUseRca(res.data.useRca !== false);
       } catch { /* ignore */ }
     };
     const fetchAllEquipment = async () => {
@@ -181,12 +190,16 @@ function IncidentsPage() {
         adminNotes,
         causeId: editCauseId || null,
         commonFaultId: editCommonFaultId || null,
-        rootCauseNotes,
-        requiresRca,
-        assignedInvestigatorId: investigatorId || null,
-        whys: whys.filter((w) => w.question || w.answer),
         ...extra,
       };
+      if (useRca) {
+        Object.assign(payload, {
+          rootCauseNotes,
+          requiresRca,
+          assignedInvestigatorId: investigatorId || null,
+          whys: whys.filter((w) => w.question || w.answer),
+        });
+      }
       const res = await incidentsAPI.update(selectedIncident.id, payload);
       setSelectedIncident((prev) => ({ ...prev, ...res.data }));
       if (res.data.causeId) {
@@ -341,7 +354,18 @@ function IncidentsPage() {
     label: `${e.lastName} ${e.firstName}`,
   }));
 
-  if (loading) return <SkeletonTable rows={6} cols={8} />;
+  const statusFilterOptions = [
+    { value: '', label: 'Все статусы' },
+    { value: 'new', label: 'Новые' },
+    { value: 'in_progress', label: 'В работе' },
+    ...(useRca ? [
+      { value: 'investigating', label: 'Расследование' },
+      { value: 'rca_done', label: 'RCA завершён' },
+    ] : []),
+    { value: 'resolved', label: 'Решённые' },
+  ];
+
+  if (loading) return <SkeletonTable rows={6} cols={useRca ? 8 : 7} />;
 
   const openAddModal = () => setShowAddModal(true);
   const isResolved = selectedIncident?.status === 'resolved';
@@ -358,23 +382,18 @@ function IncidentsPage() {
 
       <div className="filters-panel">
         <div className="filter-row">
-          <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
-            { value: '', label: 'Все статусы' },
-            { value: 'new', label: 'Новые' },
-            { value: 'in_progress', label: 'В работе' },
-            { value: 'investigating', label: 'Расследование' },
-            { value: 'rca_done', label: 'RCA завершён' },
-            { value: 'resolved', label: 'Решённые' },
-          ]} />
-          <CustomSelect value={filterRca} onChange={setFilterRca} placeholder="RCA" options={[
-            { value: '', label: 'Все инциденты' },
-            { value: 'true', label: 'Требует RCA' },
-          ]} />
+          <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={statusFilterOptions} />
+          {useRca && (
+            <CustomSelect value={filterRca} onChange={setFilterRca} placeholder="RCA" options={[
+              { value: '', label: 'Все инциденты' },
+              { value: 'true', label: 'Требует RCA' },
+            ]} />
+          )}
           <span className="filter-summary">Найдено: <strong>{incidents.length}</strong></span>
         </div>
       </div>
 
-      {incidents.length === 0 && !filterStatus && !filterRca ? (
+      {incidents.length === 0 && !filterStatus && (!useRca || !filterRca) ? (
         <EmptyState
           icon={AlertTriangle}
           title="Инцидентов пока нет"
@@ -394,14 +413,14 @@ function IncidentsPage() {
                     <th>Неисправность</th>
                     <th>Причина</th>
                     <th>Статус</th>
-                    <th>RCA</th>
+                    {useRca && <th>RCA</th>}
                     <th>Фото</th>
                     <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {incidents.length === 0 ? (
-                    <tr><td colSpan="8" className="no-results-cell">Инцидентов не найдено</td></tr>
+                    <tr><td colSpan={useRca ? 8 : 7} className="no-results-cell">Инцидентов не найдено</td></tr>
                   ) : (
                     incidents.map((inc) => {
                       const st = STATUS_MAP[inc.status] || STATUS_MAP.new;
@@ -417,7 +436,9 @@ function IncidentsPage() {
                           <td className="td-muted">{inc.commonFaultName || '—'}</td>
                           <td className="td-muted">{inc.causeName || '—'}</td>
                           <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
-                          <td>{inc.requiresRca ? <span className="overdue-badge new">RCA</span> : '—'}</td>
+                          {useRca && (
+                            <td>{inc.requiresRca ? <span className="overdue-badge new">RCA</span> : '—'}</td>
+                          )}
                           <td>{inc.photos?.length || 0}</td>
                           <td>
                             <ActionsMenu items={[
@@ -483,15 +504,17 @@ function IncidentsPage() {
               >
                 Общее
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={detailTab === 'rca'}
-                className={`incident-tab ${detailTab === 'rca' ? 'active' : ''}`}
-                onClick={() => setDetailTab('rca')}
-              >
-                Расследование (RCA)
-              </button>
+              {useRca && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={detailTab === 'rca'}
+                  className={`incident-tab ${detailTab === 'rca' ? 'active' : ''}`}
+                  onClick={() => setDetailTab('rca')}
+                >
+                  Расследование (RCA)
+                </button>
+              )}
             </div>
 
             <div className="incident-modal-body">
@@ -534,19 +557,23 @@ function IncidentsPage() {
                       <div className="form-group">
                         <label>
                           Причина возникновения
-                          <span className="label-hint"> (если известна сразу; иначе укажите при RCA)</span>
+                          <span className="label-hint">
+                            {useRca ? ' (если известна сразу; иначе укажите при RCA)' : ' (обязательна при закрытии)'}
+                          </span>
                         </label>
                         <CustomSelect
                           value={editCauseId}
                           onChange={setEditCauseId}
-                          placeholder="Будет установлена при RCA или выберите вручную"
+                          placeholder={useRca ? 'Будет установлена при RCA или выберите вручную' : 'Выберите причину'}
                           options={allCauses.map((c) => ({ value: c.id, label: c.name }))}
                         />
                       </div>
-                      <label className="incident-rca-checkbox">
-                        <input type="checkbox" checked={requiresRca} onChange={(e) => setRequiresRca(e.target.checked)} />
-                        <span>Требует RCA-расследования</span>
-                      </label>
+                      {useRca && (
+                        <label className="incident-rca-checkbox">
+                          <input type="checkbox" checked={requiresRca} onChange={(e) => setRequiresRca(e.target.checked)} />
+                          <span>Требует RCA-расследования</span>
+                        </label>
+                      )}
                     </div>
                   )}
 
@@ -603,7 +630,7 @@ function IncidentsPage() {
                 </div>
               )}
 
-              {detailTab === 'rca' && (
+              {useRca && detailTab === 'rca' && (
                 <div className="incident-detail">
                   <div className="form-group">
                     <label>Ответственный за расследование</label>
@@ -744,10 +771,10 @@ function IncidentsPage() {
                     {selectedIncident.status === 'new' && (
                       <button type="button" onClick={() => updateStatus('in_progress')} className="btn btn-secondary btn-small" disabled={saving}>В работу</button>
                     )}
-                    {requiresRca && !['investigating', 'rca_done', 'resolved'].includes(selectedIncident.status) && (
+                    {useRca && requiresRca && !['investigating', 'rca_done', 'resolved'].includes(selectedIncident.status) && (
                       <button type="button" onClick={() => updateStatus('investigating')} className="btn btn-secondary btn-small" disabled={saving}>Начать RCA</button>
                     )}
-                    {requiresRca && selectedIncident.status === 'investigating' && (
+                    {useRca && requiresRca && selectedIncident.status === 'investigating' && (
                       <button type="button" onClick={() => updateStatus('rca_done')} className="btn btn-secondary btn-small" disabled={saving}>RCA завершён</button>
                     )}
                     <button type="button" onClick={() => updateStatus('resolved')} className="btn btn-primary btn-small" disabled={saving}>Решено</button>
@@ -755,7 +782,7 @@ function IncidentsPage() {
                   </div>
                 </>
               )}
-              {!isResolved && detailTab === 'rca' && (
+              {useRca && !isResolved && detailTab === 'rca' && (
                 <>
                   <div className="incident-footer-group" />
                   <div className="incident-footer-group">

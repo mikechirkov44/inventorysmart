@@ -75,6 +75,9 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
     if (req.body.allowInspectionWithoutQr !== undefined) {
       data.allowInspectionWithoutQr = req.body.allowInspectionWithoutQr === 'true' || req.body.allowInspectionWithoutQr === true;
     }
+    if (req.body.useRca !== undefined) {
+      data.useRca = req.body.useRca === 'true' || req.body.useRca === true;
+    }
     if (req.file) {
       data.logo = req.file.filename;
     }

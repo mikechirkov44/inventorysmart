@@ -198,6 +198,9 @@ function HelpPage() {
             <AlertTriangle size={18} />Инциденты, наряды и RCA
           </h3>
           <p style={{ color: 'var(--gray-700)', lineHeight: 1.6, marginBottom: 12 }}>
+            Режим работы с инцидентами настраивается в <strong>Настройки → Компания → «Использовать RCA»</strong>.
+            При выключенном RCA доступен упрощённый сценарий без расследования.
+            <br /><br />
             <strong>Инцидент</strong> — фиксация поломки или неисправности. <strong>Наряд</strong> — задача на ремонт в журнале работ.
             <strong> RCA</strong> (Root Cause Analysis) — расследование коренной причины, чтобы предотвратить повторение.
           </p>
@@ -410,6 +413,12 @@ function HelpPage() {
 
           <Step number={3} icon={CheckCircle} title="Осмотры без QR">
             Включите переключатель <strong>«Разрешить осмотры и запросы без QR-кода»</strong>, чтобы сотрудники могли создавать инциденты и записи в журнале вручную.
+          </Step>
+
+          <Step number={4} icon={AlertTriangle} title="Использовать RCA">
+            Переключатель <strong>«Использовать RCA»</strong> включает полный режим расследования инцидентов: вкладка RCA, 5 почему, корректирующие мероприятия.
+            <br /><ArrowRight size={14} style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} />
+            При выключении инциденты работают в <strong>упрощённом режиме</strong>: фиксация → ремонт → указание причины при закрытии.
           </Step>
         </div>
 

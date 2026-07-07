@@ -10,6 +10,7 @@ const Notification = require('../models/notification');
 const Equipment = require('../models/equipment');
 const WorkOrder = require('../models/workOrder');
 const Cause = require('../models/causes');
+const Company = require('../models/company');
 const { authenticate, requirePermission } = require('../middleware/auth');
 const { incidentUpload } = require('../utils/upload');
 
@@ -27,7 +28,15 @@ function enrichIncident(inc, eqMap) {
   };
 }
 
+async function isRcaEnabled(companyId) {
+  const company = await Company.get(companyId);
+  return company?.useRca !== false;
+}
+
 async function syncCauseFromRootNotes(updateData, incident, companyId) {
+  const rcaEnabled = await isRcaEnabled(companyId);
+  if (!rcaEnabled) return updateData;
+
   const rootCauseNotes = updateData.rootCauseNotes !== undefined
     ? updateData.rootCauseNotes
     : incident.rootCauseNotes;
@@ -46,6 +55,7 @@ async function syncCauseFromRootNotes(updateData, incident, companyId) {
 }
 
 async function validateRcaRequirements(incident, updateData, companyId) {
+  const rcaEnabled = await isRcaEnabled(companyId);
   const nextStatus = updateData.status || incident.status;
   const requiresRca = updateData.requiresRca !== undefined ? updateData.requiresRca : incident.requiresRca;
   const rootCauseNotes = updateData.rootCauseNotes !== undefined
@@ -54,7 +64,16 @@ async function validateRcaRequirements(incident, updateData, companyId) {
   const causeId = updateData.causeId !== undefined ? updateData.causeId : incident.causeId;
 
   if (nextStatus === 'resolved' && !causeId) {
-    return 'Укажите причину возникновения или заполните коренную причину в RCA перед закрытием';
+    return rcaEnabled
+      ? 'Укажите причину возникновения или заполните коренную причину в RCA перед закрытием'
+      : 'Укажите причину возникновения перед закрытием инцидента';
+  }
+
+  if (!rcaEnabled) {
+    if (['investigating', 'rca_done'].includes(nextStatus)) {
+      return 'RCA отключён в настройках компании';
+    }
+    return null;
   }
 
   if (requiresRca && (nextStatus === 'rca_done' || nextStatus === 'resolved')) {
@@ -97,7 +116,7 @@ router.post('/', authenticate, incidentUpload.array('photos', 5), async (req, re
       photos,
       commonFaultId: commonFaultId || null,
       causeId: causeId || null,
-      requiresRca: requiresRca === 'true' || requiresRca === true,
+      requiresRca: (requiresRca === 'true' || requiresRca === true) && await isRcaEnabled(req.user.companyId),
       downtimeHours: downtimeHours ? Number(downtimeHours) : null,
       lossAmount: lossAmount ? Number(lossAmount) : null,
     }, req.user.companyId);
@@ -188,6 +207,17 @@ router.put('/:id', requirePermission('incidents', 'edit'), async (req, res) => {
 
     if (updateData.whys && typeof updateData.whys === 'string') {
       try { updateData.whys = JSON.parse(updateData.whys); } catch (_) { updateData.whys = []; }
+    }
+
+    const rcaEnabled = await isRcaEnabled(req.user.companyId);
+    if (!rcaEnabled) {
+      delete updateData.requiresRca;
+      delete updateData.rootCauseNotes;
+      delete updateData.whys;
+      delete updateData.assignedInvestigatorId;
+      if (['investigating', 'rca_done'].includes(updateData.status)) {
+        return res.status(400).json({ error: 'RCA отключён в настройках компании' });
+      }
     }
 
     await syncCauseFromRootNotes(updateData, existing, req.user.companyId);

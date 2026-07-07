@@ -592,6 +592,10 @@ async function migrate() {
       `);
     });
 
+    await withSavepoint(client, 'company_use_rca', async () => {
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS use_rca BOOLEAN DEFAULT true`);
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

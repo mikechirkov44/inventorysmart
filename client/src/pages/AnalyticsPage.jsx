@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { BarChart3, Wrench } from 'lucide-react';
-import { analyticsAPI, sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI } from '../services/api';
+import { analyticsAPI, sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI, companyAPI } from '../services/api';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import { formatDate, toDateInputValue } from '../utils/date';
@@ -488,6 +488,13 @@ function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, o
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [useRca, setUseRca] = useState(true);
+
+  useEffect(() => {
+    companyAPI.get()
+      .then((res) => setUseRca(res.data.useRca !== false))
+      .catch(() => setUseRca(true));
+  }, []);
 
   useEffect(() => {
     if (!dateFrom || !dateTo) return;
@@ -539,15 +546,17 @@ function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, o
         )}
       </div>
 
-      <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 16 }}>
+      <div className="analytics-summary" style={{ gridTemplateColumns: useRca ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', marginBottom: 16 }}>
         <div className="summary-card primary">
           <div className="summary-value">{summary.total}</div>
           <div className="summary-label">Всего инцидентов</div>
         </div>
-        <div className="summary-card danger">
-          <div className="summary-value">{summary.investigating + summary.rca_done}</div>
-          <div className="summary-label">RCA в работе</div>
-        </div>
+        {useRca && (
+          <div className="summary-card danger">
+            <div className="summary-value">{summary.investigating + summary.rca_done}</div>
+            <div className="summary-label">RCA в работе</div>
+          </div>
+        )}
         <div className="summary-card">
           <div className="summary-value">{summary.mttrHours != null ? `${summary.mttrHours} ч` : '—'}</div>
           <div className="summary-label">MTTR (среднее)</div>
@@ -558,7 +567,7 @@ function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, o
         </div>
       </div>
 
-      <div className="analytics-summary" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 24 }}>
+      <div className="analytics-summary" style={{ gridTemplateColumns: useRca ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', marginBottom: 24 }}>
         <div className="summary-card success">
           <div className="summary-value">{summary.resolved}</div>
           <div className="summary-label">Решено</div>
@@ -567,14 +576,18 @@ function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, o
           <div className="summary-value">{summary.new + summary.in_progress}</div>
           <div className="summary-label">Открытые</div>
         </div>
-        <div className="summary-card">
-          <div className="summary-value">{summary.requiresRca}</div>
-          <div className="summary-label">С флагом RCA</div>
-        </div>
-        <div className="summary-card danger">
-          <div className="summary-value">{summary.overdueActions}</div>
-          <div className="summary-label">Просроченные мероприятия</div>
-        </div>
+        {useRca && (
+          <>
+            <div className="summary-card">
+              <div className="summary-value">{summary.requiresRca}</div>
+              <div className="summary-label">С флагом RCA</div>
+            </div>
+            <div className="summary-card danger">
+              <div className="summary-value">{summary.overdueActions}</div>
+              <div className="summary-label">Просроченные мероприятия</div>
+            </div>
+          </>
+        )}
       </div>
 
       <CountBarChart title="Топ причин возникновения" data={byCause} />

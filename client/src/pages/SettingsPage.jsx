@@ -570,6 +570,7 @@ function SettingsPage() {
     logo: '',
     timezone: 'Europe/Moscow',
     allowInspectionWithoutQr: true,
+    useRca: true,
   });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -616,6 +617,7 @@ function SettingsPage() {
         logoUrl: res.data.logoUrl || '',
         timezone: res.data.timezone || 'Europe/Moscow',
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
+        useRca: res.data.useRca !== false,
       });
       if (res.data.logo) {
         setLogoPreview(null);
@@ -652,6 +654,7 @@ function SettingsPage() {
       formData.append('companyName', companyData.companyName);
       formData.append('timezone', companyData.timezone);
       formData.append('allowInspectionWithoutQr', companyData.allowInspectionWithoutQr);
+      formData.append('useRca', companyData.useRca);
       if (logoFile) {
         formData.append('logo', logoFile);
       }
@@ -933,6 +936,18 @@ function SettingsPage() {
                     disabled={isSettingsReadOnly}
                   />
                   <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>Разрешить выполнение осмотров и создание проблем без сканирования QR оборудования</span>
+                </div>
+
+                <div className="form-group">
+                  <Toggle
+                    checked={companyData.useRca}
+                    onChange={(checked) => setCompanyData({ ...companyData, useRca: checked })}
+                    label="Использовать RCA"
+                    disabled={isSettingsReadOnly}
+                  />
+                  <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
+                    При выключении инциденты работают в упрощённом режиме: без расследования RCA, 5 почему и корректирующих мероприятий. Причина указывается при закрытии.
+                  </span>
                 </div>
               </div>
 
