@@ -324,44 +324,31 @@ function WorksDirectory() {
                   />
                 </th>
                 <th>
-                  <select
+                  <CustomSelect
                     value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
+                    onChange={setFilterCategory}
+                    placeholder="Все"
+                    options={categoryFilterOptions}
                     className="column-filter-select"
-                    aria-label="Фильтр по категории"
-                  >
-                    <option value="">Все</option>
-                    <option value="__empty__">Без категории</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
+                  />
                 </th>
                 <th>
-                  <select
+                  <CustomSelect
                     value={filterFrequency}
-                    onChange={(e) => setFilterFrequency(e.target.value)}
+                    onChange={setFilterFrequency}
+                    placeholder="Все"
+                    options={FREQUENCY_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                     className="column-filter-select"
-                    aria-label="Фильтр по периодичности"
-                  >
-                    <option value="">Все</option>
-                    {FREQUENCY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  />
                 </th>
                 <th>
-                  <select
+                  <CustomSelect
                     value={filterPriority}
-                    onChange={(e) => setFilterPriority(e.target.value)}
+                    onChange={setFilterPriority}
+                    placeholder="Все"
+                    options={PRIORITY_FILTER_OPTIONS}
                     className="column-filter-select"
-                    aria-label="Фильтр по приоритету"
-                  >
-                    <option value="">Все</option>
-                    {PRIORITY_FILTER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  />
                 </th>
                 <th>
                   <input

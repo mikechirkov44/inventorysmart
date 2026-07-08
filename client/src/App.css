@@ -2336,10 +2336,13 @@ input, textarea, select { font-family: inherit; }
 }
 
 .column-filter-input,
-.column-filter-select {
+.column-filter-select.cs-wrapper {
   width: 100%;
   min-width: 72px;
   max-width: 220px;
+}
+
+.column-filter-input {
   padding: 6px 8px;
   font-size: 13px;
   border: 1px solid var(--gray-200);
@@ -2348,8 +2351,27 @@ input, textarea, select { font-family: inherit; }
   color: var(--gray-700);
 }
 
+.column-filters-row .column-filter-select.cs-wrapper {
+  display: block;
+  z-index: 3;
+}
+
+.column-filters-row .column-filter-select .cs-trigger {
+  padding: 6px 8px;
+  min-height: 32px;
+  font-size: 13px;
+  border-width: 1px;
+  border-radius: 6px;
+}
+
+.column-filters-row .column-filter-select .cs-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .column-filter-input:focus,
-.column-filter-select:focus {
+.column-filters-row .column-filter-select .cs-trigger.cs-open {
   outline: none;
   border-color: var(--primary-400);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
