@@ -2315,6 +2315,66 @@ input, textarea, select { font-family: inherit; }
   padding-right: 20px;
 }
 
+.data-table .column-filters-row th {
+  padding: 8px 12px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  top: 46px;
+  z-index: 1;
+}
+
+.data-table .column-filters-row th:first-child {
+  padding-left: 16px;
+}
+
+.data-table .column-filters-row th:last-child {
+  padding-right: 16px;
+}
+
+.column-filter-input,
+.column-filter-select {
+  width: 100%;
+  min-width: 72px;
+  max-width: 220px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  background: white;
+  color: var(--gray-700);
+}
+
+.column-filter-input:focus,
+.column-filter-select:focus {
+  outline: none;
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.column-filter-actions {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mobile-column-filters {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-column-filters {
+    display: flex;
+  }
+
+  .mobile-column-filters .filter-group {
+    flex: 1 1 140px;
+    min-width: 140px;
+  }
+}
+
 .data-table th.sortable {
   cursor: pointer;
   transition: all 0.2s;

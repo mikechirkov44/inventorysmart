@@ -24,11 +24,20 @@ import ActionsMenu from '../components/ActionsMenu';
 import FrequencyBadge from '../components/FrequencyBadge';
 import { FREQUENCY_OPTIONS } from '../utils/frequency';
 
+const PRIORITY_FILTER_OPTIONS = [
+  { value: 'A', label: 'A — Высокий' },
+  { value: 'B', label: 'B — Средний' },
+  { value: 'C', label: 'C — Низкий' },
+];
+
 function WorksDirectory() {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [filterName, setFilterName] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterFrequency, setFilterFrequency] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [filterDescription, setFilterDescription] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({
@@ -59,19 +68,47 @@ function WorksDirectory() {
     return [...new Set(works.map(w => w.category).filter(Boolean))].sort();
   }, [works]);
 
-  /** Фильтрация работ по поиску и категории */
+  const categoryFilterOptions = useMemo(() => [
+    { value: '__empty__', label: 'Без категории' },
+    ...categories.map((category) => ({ value: category, label: category })),
+  ], [categories]);
+
+  const hasActiveFilters = Boolean(
+    filterName || filterCategory || filterFrequency || filterPriority || filterDescription
+  );
+
+  const clearFilters = () => {
+    setFilterName('');
+    setFilterCategory('');
+    setFilterFrequency('');
+    setFilterPriority('');
+    setFilterDescription('');
+  };
+
+  /** Фильтрация работ по столбцам таблицы */
   const filtered = useMemo(() => {
     let result = [...works];
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(w =>
-        w.name.toLowerCase().includes(s) ||
-        (w.description && w.description.toLowerCase().includes(s))
-      );
+    if (filterName) {
+      const query = filterName.toLowerCase();
+      result = result.filter((work) => work.name.toLowerCase().includes(query));
     }
-    if (filterCategory) result = result.filter(w => w.category === filterCategory);
+    if (filterCategory === '__empty__') {
+      result = result.filter((work) => !work.category);
+    } else if (filterCategory) {
+      result = result.filter((work) => work.category === filterCategory);
+    }
+    if (filterFrequency) {
+      result = result.filter((work) => work.frequencyDays === Number(filterFrequency));
+    }
+    if (filterPriority) {
+      result = result.filter((work) => (work.priority || 'B') === filterPriority);
+    }
+    if (filterDescription) {
+      const query = filterDescription.toLowerCase();
+      result = result.filter((work) => work.description && work.description.toLowerCase().includes(query));
+    }
     return result;
-  }, [works, search, filterCategory]);
+  }, [works, filterName, filterCategory, filterFrequency, filterPriority, filterDescription]);
 
   /** Сброс формы и закрытие */
   const resetForm = () => {
@@ -136,7 +173,7 @@ function WorksDirectory() {
 
   if (loading) return <SkeletonTable rows={6} cols={6} />;
 
-  const isListEmpty = works.length === 0 && !search && !filterCategory;
+  const isListEmpty = works.length === 0 && !hasActiveFilters;
   const openAddForm = () => { resetForm(); setShowForm(true); };
 
   return (
@@ -204,16 +241,63 @@ function WorksDirectory() {
       )}
 
       <div className="filters-panel">
-        <div className="filter-row">
-          <input type="text" placeholder="Поиск по названию или описанию..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-search" />
-          <CustomSelect
-            value={filterCategory}
-            onChange={setFilterCategory}
-            placeholder="Все категории"
-            options={categories.map(c => ({ value: c, label: c }))}
-          />
+        <div className="filter-row mobile-column-filters">
+          <div className="filter-group">
+            <label>Название</label>
+            <input
+              type="text"
+              placeholder="Фильтр..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              className="column-filter-input"
+            />
+          </div>
+          <div className="filter-group">
+            <label>Категория</label>
+            <CustomSelect
+              value={filterCategory}
+              onChange={setFilterCategory}
+              placeholder="Все"
+              options={categoryFilterOptions}
+            />
+          </div>
+          <div className="filter-group">
+            <label>Периодичность</label>
+            <CustomSelect
+              value={filterFrequency}
+              onChange={setFilterFrequency}
+              placeholder="Все"
+              options={FREQUENCY_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+            />
+          </div>
+          <div className="filter-group">
+            <label>Приоритет</label>
+            <CustomSelect
+              value={filterPriority}
+              onChange={setFilterPriority}
+              placeholder="Все"
+              options={PRIORITY_FILTER_OPTIONS}
+            />
+          </div>
+          <div className="filter-group">
+            <label>Описание</label>
+            <input
+              type="text"
+              placeholder="Фильтр..."
+              value={filterDescription}
+              onChange={(e) => setFilterDescription(e.target.value)}
+              className="column-filter-input"
+            />
+          </div>
         </div>
-        <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {works.length}</div>
+        <div className="filter-row compact">
+          <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {works.length}</div>
+          {hasActiveFilters && (
+            <button type="button" className="btn btn-link btn-sm" onClick={clearFilters}>
+              Сбросить фильтры
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="table-container desktop-table-only">
@@ -227,6 +311,75 @@ function WorksDirectory() {
                 <th>Приоритет</th>
                 <th>Описание</th>
                 <th>Действия</th>
+              </tr>
+              <tr className="column-filters-row">
+                <th>
+                  <input
+                    type="text"
+                    placeholder="Фильтр..."
+                    value={filterName}
+                    onChange={(e) => setFilterName(e.target.value)}
+                    className="column-filter-input"
+                    aria-label="Фильтр по названию"
+                  />
+                </th>
+                <th>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="column-filter-select"
+                    aria-label="Фильтр по категории"
+                  >
+                    <option value="">Все</option>
+                    <option value="__empty__">Без категории</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </th>
+                <th>
+                  <select
+                    value={filterFrequency}
+                    onChange={(e) => setFilterFrequency(e.target.value)}
+                    className="column-filter-select"
+                    aria-label="Фильтр по периодичности"
+                  >
+                    <option value="">Все</option>
+                    {FREQUENCY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </th>
+                <th>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="column-filter-select"
+                    aria-label="Фильтр по приоритету"
+                  >
+                    <option value="">Все</option>
+                    {PRIORITY_FILTER_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    placeholder="Фильтр..."
+                    value={filterDescription}
+                    onChange={(e) => setFilterDescription(e.target.value)}
+                    className="column-filter-input"
+                    aria-label="Фильтр по описанию"
+                  />
+                </th>
+                <th className="column-filter-actions">
+                  {hasActiveFilters && (
+                    <button type="button" className="btn btn-link btn-sm" onClick={clearFilters}>
+                      Сбросить
+                    </button>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
