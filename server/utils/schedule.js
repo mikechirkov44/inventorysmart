@@ -8,7 +8,19 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
-const { calculateWorkDue, getWorkStartDate, resolveScheduleStatus } = require('./workDue');
+const { calculateWorkDue, getWorkStartDate, resolveScheduleStatus, startOfDay } = require('./workDue');
+
+/**
+ * @param {Date|string} value
+ * @returns {string} YYYY-MM-DD в локальной дате сервера
+ */
+function toDateKey(value) {
+  const date = startOfDay(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 /**
  * Загружает все виды работ и возвращает их в виде объекта,
@@ -95,6 +107,8 @@ async function getCalendarEvents(year, month, companyId) {
   allEmployees.forEach(e => { empMap[e.id] = e; });
 
   const events = {};
+  const today = startOfDay(new Date());
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
   for (const equip of allEquipment) {
     const tasks = await getEquipmentSchedule(equip, workMap, companyId);
@@ -103,11 +117,18 @@ async function getCalendarEvents(year, month, companyId) {
 
     tasks.forEach(task => {
       if (!task.nextDue) return;
-      const due = new Date(task.nextDue);
-      if (due.getFullYear() !== year || due.getMonth() !== month) return;
+      const due = startOfDay(new Date(task.nextDue));
 
-      const day = due.getDate();
-      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      let eventDate = null;
+      if (due.getFullYear() === year && due.getMonth() === month) {
+        eventDate = due;
+      } else if (task.isOverdue && isCurrentMonth) {
+        eventDate = today;
+      }
+
+      if (!eventDate) return;
+
+      const key = toDateKey(eventDate);
 
       if (!events[key]) events[key] = [];
       events[key].push({

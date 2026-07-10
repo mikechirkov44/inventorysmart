@@ -12,7 +12,7 @@ const { requirePermission } = require('../middleware/auth');
 /**
  * @route GET /calendar
  * @description Получение событий календаря на указанный месяц
- * @param {number} req.query.month - Месяц (1-12)
+ * @param {number} req.query.month - Месяц (0–11, как в Date)
  * @param {number} req.query.year - Год (например, 2026)
  * @returns {Object[]} Список событий календаря на заданный период
  */
