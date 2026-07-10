@@ -8,19 +8,14 @@ const Work = require('../models/work');
 const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
-const { calculateWorkDue, getWorkStartDate, resolveScheduleStatus, startOfDay } = require('./workDue');
-
-/**
- * @param {Date|string} value
- * @returns {string} YYYY-MM-DD в локальной дате сервера
- */
-function toDateKey(value) {
-  const date = startOfDay(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+const {
+  calculateWorkDue,
+  getWorkStartDate,
+  resolveScheduleStatus,
+  startOfDay,
+  fromDateKey,
+  getPlannedOccurrenceKeys,
+} = require('./workDue');
 
 /**
  * Загружает все виды работ и возвращает их в виде объекта,
@@ -62,7 +57,7 @@ async function getEquipmentSchedule(equipment, workMap, companyId) {
       .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 
     const lastCompleted = completedOrders.length > 0 ? new Date(completedOrders[0].completedAt) : null;
-    const { nextDue, isOverdue } = calculateWorkDue({
+    const { plannedDate, nextDue, isOverdue } = calculateWorkDue({
       frequencyDays: work.frequencyDays || 30,
       lastCompleted,
       startDate: getWorkStartDate(equipment, wid),
@@ -76,6 +71,7 @@ async function getEquipmentSchedule(equipment, workMap, companyId) {
       frequencyDays: work.frequencyDays,
       category: work.category,
       lastCompleted: lastCompleted ? lastCompleted.toISOString() : null,
+      plannedDate: plannedDate.toISOString(),
       nextDue: nextDue.toISOString(),
       isOverdue,
     });
@@ -108,7 +104,8 @@ async function getCalendarEvents(year, month, companyId) {
 
   const events = {};
   const today = startOfDay(new Date());
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const monthStart = startOfDay(new Date(year, month, 1));
+  const monthEnd = startOfDay(new Date(year, month + 1, 1));
 
   for (const equip of allEquipment) {
     const tasks = await getEquipmentSchedule(equip, workMap, companyId);
@@ -116,33 +113,31 @@ async function getCalendarEvents(year, month, companyId) {
     const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 
     tasks.forEach(task => {
-      if (!task.nextDue) return;
-      const due = startOfDay(new Date(task.nextDue));
+      if (!task.plannedDate) return;
 
-      let eventDate = null;
-      if (due.getFullYear() === year && due.getMonth() === month) {
-        eventDate = due;
-      } else if (task.isOverdue && isCurrentMonth) {
-        eventDate = today;
-      }
+      const occurrenceKeys = getPlannedOccurrenceKeys(
+        startOfDay(new Date(task.plannedDate)),
+        task.frequencyDays,
+        monthStart,
+        monthEnd,
+      );
 
-      if (!eventDate) return;
-
-      const key = toDateKey(eventDate);
-
-      if (!events[key]) events[key] = [];
-      events[key].push({
-        equipmentId: equip.id,
-        qrCode: equip.qrCode,
-        equipmentName: equip.name,
-        inventoryNumber: equip.inventoryNumber,
-        workId: task.workId,
-        workName: task.workName,
-        frequencyDays: task.frequencyDays,
-        isOverdue: task.isOverdue,
-        lastCompleted: task.lastCompleted,
-        roomName: room ? room.name : null,
-        employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
+      occurrenceKeys.forEach((key) => {
+        const occurrenceDate = fromDateKey(key);
+        if (!events[key]) events[key] = [];
+        events[key].push({
+          equipmentId: equip.id,
+          qrCode: equip.qrCode,
+          equipmentName: equip.name,
+          inventoryNumber: equip.inventoryNumber,
+          workId: task.workId,
+          workName: task.workName,
+          frequencyDays: task.frequencyDays,
+          isOverdue: occurrenceDate < today,
+          lastCompleted: task.lastCompleted,
+          roomName: room ? room.name : null,
+          employeeName: employee ? `${employee.lastName} ${employee.firstName}` : null,
+        });
       });
     });
   }

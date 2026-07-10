@@ -9,6 +9,67 @@ function startOfDay(value) {
   return date;
 }
 
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return startOfDay(result);
+}
+
+/** @returns {string} YYYY-MM-DD в локальной дате */
+function toDateKey(value) {
+  const date = startOfDay(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** @param {string} key YYYY-MM-DD */
+function fromDateKey(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  return startOfDay(new Date(year, month - 1, day));
+}
+
+/**
+ * Все плановые даты повторяющейся работы в полуинтервале [rangeStart, rangeEnd).
+ * Логика совпадает с диаграммой Ганта в план-графике.
+ * @returns {string[]} Отсортированные ключи YYYY-MM-DD
+ */
+function getPlannedOccurrenceKeys(baseDate, frequencyDays, rangeStart, rangeEnd) {
+  const frequency = frequencyDays > 0 ? frequencyDays : 30;
+  const base = startOfDay(baseDate);
+  const start = startOfDay(rangeStart);
+  const end = startOfDay(rangeEnd);
+
+  if (frequency <= 0) {
+    return base >= start && base < end ? [toDateKey(base)] : [];
+  }
+
+  const msPerDay = 86400000;
+  const daysDiffFromStart = Math.floor((start.getTime() - base.getTime()) / msPerDay);
+  const periodsFromStart = Math.ceil(daysDiffFromStart / frequency);
+  let firstAfterStart = addDays(base, periodsFromStart * frequency);
+  if (firstAfterStart < start) {
+    firstAfterStart = addDays(firstAfterStart, frequency);
+  }
+
+  const keys = new Set();
+
+  let current = new Date(firstAfterStart);
+  while (current < end) {
+    keys.add(toDateKey(current));
+    current = addDays(current, frequency);
+  }
+
+  let back = addDays(firstAfterStart, -frequency);
+  while (back >= start) {
+    keys.add(toDateKey(back));
+    back = addDays(back, -frequency);
+  }
+
+  return [...keys].sort();
+}
+
 /**
  * @param {object} params
  * @param {number} [params.frequencyDays=30]
@@ -102,6 +163,10 @@ function formatOverdueLabel(daysOverdue) {
 
 module.exports = {
   startOfDay,
+  addDays,
+  toDateKey,
+  fromDateKey,
+  getPlannedOccurrenceKeys,
   calculateWorkDue,
   getWorkStartDate,
   resolveScheduleStatus,
