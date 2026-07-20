@@ -28,18 +28,22 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
     const itemH = 36;
     const pad = 16;
     const naturalHeight = options.length * itemH + pad;
-    const maxH = Math.min(naturalHeight, Math.floor(winH * 0.45));
+    const spaceBelow = winH - rect.bottom - 12;
+    const spaceAbove = rect.top - 12;
+    const preferBelow = spaceBelow >= Math.min(naturalHeight, 160) || spaceBelow >= spaceAbove;
+    const available = Math.max(120, preferBelow ? spaceBelow : spaceAbove);
+    const maxH = Math.min(naturalHeight, available, Math.floor(winH * 0.6));
     const needsScroll = naturalHeight > maxH;
     const dropdownHeight = needsScroll ? maxH : naturalHeight;
 
-    let top = rect.bottom + 4;
-    if (top + dropdownHeight > winH - 8) {
-      top = Math.max(8, rect.top - dropdownHeight - 4);
+    let top = preferBelow ? rect.bottom + 4 : Math.max(8, rect.top - dropdownHeight - 4);
+    if (preferBelow && top + dropdownHeight > winH - 8) {
+      top = Math.max(8, winH - dropdownHeight - 8);
     }
 
     // Width: at least trigger width, but allow expansion up to viewport
     const minW = rect.width;
-    const maxW = Math.min(400, winW - rect.left - 16);
+    const maxW = Math.min(480, winW - rect.left - 16);
 
     setPos({ top, left: rect.left, minWidth: minW, maxWidth: maxW, maxHeight: needsScroll ? maxH : 'none' });
   };
@@ -47,7 +51,10 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
   useEffect(() => {
     if (open) {
       updatePosition();
-      const onScroll = () => setOpen(false);
+      const onScroll = (event) => {
+        if (dropdownRef.current && dropdownRef.current.contains(event.target)) return;
+        setOpen(false);
+      };
       const onResize = () => setOpen(false);
       window.addEventListener('scroll', onScroll, true);
       window.addEventListener('resize', onResize);

@@ -7072,6 +7072,9 @@ input, textarea, select { font-family: inherit; }
   opacity: 1 !important;
   animation: csSlideIn 0.15s ease-out;
   box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes csSlideIn {
@@ -7081,8 +7084,9 @@ input, textarea, select { font-family: inherit; }
 
 .cs-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -7090,7 +7094,18 @@ input, textarea, select { font-family: inherit; }
   color: var(--gray-700);
   font-size: 13px;
   background: #ffffff !important;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.cs-option > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-option > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .cs-option:hover {
