@@ -12,7 +12,7 @@ import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import OperatingHoursModal from '../components/OperatingHoursModal';
-import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus, ChevronDown } from 'lucide-react';
+import { FileText, Clock, Pencil, Trash2, ArrowLeft, Wrench, Plus, ChevronDown, Download } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
 import { formatDate } from '../utils/date';
 
@@ -139,6 +139,43 @@ function EquipmentDetail() {
       </body></html>
     `);
     win.document.close();
+  };
+
+  /** Скачивание QR-кода в формате JPG */
+  const handleDownloadQRJpg = () => {
+    if (!qrData?.qrImage) return;
+
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+
+      const safeName = (equipment.inventoryNumber || equipment.name || 'qr')
+        .replace(/[\\/:*?"<>|]+/g, '_')
+        .trim();
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Ошибка', 'Не удалось сохранить QR-код');
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `qr-${safeName}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 'image/jpeg', 0.92);
+    };
+    image.onerror = () => toast.error('Ошибка', 'Не удалось загрузить QR-код');
+    image.src = qrData.qrImage;
   };
 
   /** Обработчики типовых неисправностей */
@@ -314,10 +351,16 @@ function EquipmentDetail() {
                   <img src={qrData.qrImage} alt="QR Code" />
                   <div className="qr-label">{equipment.name}</div>
                   {equipment.inventoryNumber && <div className="qr-inventory">Инв. номер: {equipment.inventoryNumber}</div>}
-                  <button className="qr-print-btn" onClick={handlePrintQR}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                    Печать
-                  </button>
+                  <div className="qr-actions">
+                    <button type="button" className="qr-print-btn" onClick={handlePrintQR}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      Печать
+                    </button>
+                    <button type="button" className="qr-print-btn" onClick={handleDownloadQRJpg}>
+                      <Download size={14} />
+                      Скачать JPG
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
