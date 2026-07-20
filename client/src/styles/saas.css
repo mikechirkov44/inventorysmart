@@ -198,6 +198,39 @@
   margin-bottom: 32px;
 }
 
+.dashboard-today-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  text-align: left;
+}
+
+.dashboard-today-toggle:hover {
+  color: var(--primary);
+}
+
+.dashboard-today-chevron {
+  flex-shrink: 0;
+  color: var(--gray-400);
+  transition: transform 0.2s ease;
+}
+
+.dashboard-today-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.dashboard-today-section.is-collapsed .dashboard-section-header {
+  margin-bottom: 0;
+}
+
 .dashboard-today-count {
   display: inline-flex;
   align-items: center;
@@ -331,7 +364,7 @@
 }
 
 .dashboard-quick-section {
-  margin-bottom: 0;
+  margin-bottom: 28px;
 }
 
 .quick-actions {

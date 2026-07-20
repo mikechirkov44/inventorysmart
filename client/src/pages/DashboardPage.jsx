@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, Wrench, ClipboardList, AlertTriangle, Package,
-  ScanLine, Plus, BarChart3, TrendingUp, Clock, Zap, ChevronRight,
+  ScanLine, Plus, BarChart3, TrendingUp, Clock, Zap, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -22,6 +22,8 @@ const TODAY_STATUS_LABELS = {
   overdue: 'Просрочена',
   never: 'Не выполнялась',
 };
+
+const TODAY_COLLAPSED_KEY = 'dashboard-today-collapsed';
 
 function KpiCard({ icon: Icon, label, value, sub, to, color = 'primary' }) {
   const content = (
@@ -49,6 +51,25 @@ export default function DashboardPage() {
     overdue: null,
   });
   const [todayTasks, setTodayTasks] = useState([]);
+  const [todayCollapsed, setTodayCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(TODAY_COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleTodayCollapsed = () => {
+    setTodayCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(TODAY_COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const tasks = [];
@@ -167,61 +188,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {canView('schedule') && (
-        <div className="dashboard-section dashboard-today-section">
-          <div className="dashboard-section-header">
-            <h2 className="dashboard-section-title">
-              <Clock size={18} />
-              Работы на сегодня
-              <span className="dashboard-today-count">{todayTasks.length}</span>
-            </h2>
-            <Link to="/schedule" className="dashboard-section-link">План-график</Link>
-          </div>
-          {todayTasks.length === 0 ? (
-            <div className="dashboard-today-empty">На сегодня запланированных работ нет</div>
-          ) : (
-            <ul className="dashboard-today-list">
-              {todayTasks.map((task) => (
-                <li key={task.id} className="dashboard-today-item">
-                  <div className="dashboard-today-main">
-                    <Link to={`/equipment/${task.equipmentId}`} className="dashboard-today-equipment">
-                      {task.equipmentName}
-                    </Link>
-                    {task.inventoryNumber && (
-                      <span className="dashboard-today-inventory">{task.inventoryNumber}</span>
-                    )}
-                    {canView('scanner') ? (
-                      <Link to={getTaskScanPath(task)} className="dashboard-today-work dashboard-today-work-link">
-                        {task.workName}
-                      </Link>
-                    ) : (
-                      <span className="dashboard-today-work">{task.workName}</span>
-                    )}
-                  </div>
-                  <div className="dashboard-today-meta">
-                    {task.roomName && <span className="dashboard-today-room">{task.roomName}</span>}
-                    <span className={`dashboard-today-status dashboard-today-status-${task.status}`}>
-                      {task.status === 'overdue' && task.daysOverdue > 0
-                        ? `Просрочена ${task.daysOverdue} дн.`
-                        : TODAY_STATUS_LABELS[task.status] || task.status}
-                    </span>
-                    {task.nextDue && (
-                      <span className="dashboard-today-due">Срок: {formatDate(task.nextDue)}</span>
-                    )}
-                    {canView('scanner') && (
-                      <Link to={getTaskScanPath(task)} className="btn btn-primary btn-small dashboard-today-execute">
-                        Выполнить
-                        <ChevronRight size={14} />
-                      </Link>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
       <div className="dashboard-section dashboard-quick-section">
         <div className="dashboard-section-header">
           <h2 className="dashboard-section-title">
@@ -262,6 +228,72 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {canView('schedule') && (
+        <div className={`dashboard-section dashboard-today-section ${todayCollapsed ? 'is-collapsed' : ''}`}>
+          <div className="dashboard-section-header">
+            <button
+              type="button"
+              className="dashboard-today-toggle"
+              onClick={toggleTodayCollapsed}
+              aria-expanded={!todayCollapsed}
+            >
+              <ChevronDown
+                size={18}
+                className={`dashboard-today-chevron ${todayCollapsed ? 'is-collapsed' : ''}`}
+              />
+              <Clock size={18} />
+              <span>Работы на сегодня</span>
+              <span className="dashboard-today-count">{todayTasks.length}</span>
+            </button>
+            <Link to="/schedule" className="dashboard-section-link">План-график</Link>
+          </div>
+          {!todayCollapsed && (
+            todayTasks.length === 0 ? (
+              <div className="dashboard-today-empty">На сегодня запланированных работ нет</div>
+            ) : (
+              <ul className="dashboard-today-list">
+                {todayTasks.map((task) => (
+                  <li key={task.id} className="dashboard-today-item">
+                    <div className="dashboard-today-main">
+                      <Link to={`/equipment/${task.equipmentId}`} className="dashboard-today-equipment">
+                        {task.equipmentName}
+                      </Link>
+                      {task.inventoryNumber && (
+                        <span className="dashboard-today-inventory">{task.inventoryNumber}</span>
+                      )}
+                      {canView('scanner') ? (
+                        <Link to={getTaskScanPath(task)} className="dashboard-today-work dashboard-today-work-link">
+                          {task.workName}
+                        </Link>
+                      ) : (
+                        <span className="dashboard-today-work">{task.workName}</span>
+                      )}
+                    </div>
+                    <div className="dashboard-today-meta">
+                      {task.roomName && <span className="dashboard-today-room">{task.roomName}</span>}
+                      <span className={`dashboard-today-status dashboard-today-status-${task.status}`}>
+                        {task.status === 'overdue' && task.daysOverdue > 0
+                          ? `Просрочена ${task.daysOverdue} дн.`
+                          : TODAY_STATUS_LABELS[task.status] || task.status}
+                      </span>
+                      {task.nextDue && (
+                        <span className="dashboard-today-due">Срок: {formatDate(task.nextDue)}</span>
+                      )}
+                      {canView('scanner') && (
+                        <Link to={getTaskScanPath(task)} className="btn btn-primary btn-small dashboard-today-execute">
+                          Выполнить
+                          <ChevronRight size={14} />
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
