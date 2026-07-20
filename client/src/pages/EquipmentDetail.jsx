@@ -141,19 +141,78 @@ function EquipmentDetail() {
     win.document.close();
   };
 
-  /** Скачивание QR-кода в формате JPG */
+  /** Скачивание QR-кода с наименованием и инв. номером в формате JPG */
   const handleDownloadQRJpg = () => {
     if (!qrData?.qrImage) return;
 
     const image = new Image();
     image.onload = () => {
+      const padding = 32;
+      const qrSize = Math.max(image.width, 280);
+      const gap = 16;
+      const name = equipment.name || 'Оборудование';
+      const inventory = equipment.inventoryNumber
+        ? `Инв. номер: ${equipment.inventoryNumber}`
+        : 'Инв. номер: —';
+
+      const measureCanvas = document.createElement('canvas');
+      const measureCtx = measureCanvas.getContext('2d');
+      const cardWidth = qrSize + padding * 2;
+
+      const wrapText = (ctx, text, maxWidth, font) => {
+        ctx.font = font;
+        const words = String(text).split(/\s+/);
+        const lines = [];
+        let current = '';
+        words.forEach((word) => {
+          const next = current ? `${current} ${word}` : word;
+          if (ctx.measureText(next).width <= maxWidth || !current) {
+            current = next;
+          } else {
+            lines.push(current);
+            current = word;
+          }
+        });
+        if (current) lines.push(current);
+        return lines.length ? lines : [''];
+      };
+
+      const nameFont = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const invFont = '400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const nameLines = wrapText(measureCtx, name, cardWidth - padding * 2, nameFont);
+      const invLines = wrapText(measureCtx, inventory, cardWidth - padding * 2, invFont);
+      const nameLineHeight = 24;
+      const invLineHeight = 20;
+      const textBlockHeight = nameLines.length * nameLineHeight + 8 + invLines.length * invLineHeight;
+      const cardHeight = padding + qrSize + gap + textBlockHeight + padding;
+
       const canvas = document.createElement('canvas');
-      canvas.width = image.width;
-      canvas.height = image.height;
+      canvas.width = cardWidth;
+      canvas.height = cardHeight;
       const ctx = canvas.getContext('2d');
+
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0);
+
+      const qrX = (cardWidth - qrSize) / 2;
+      ctx.drawImage(image, qrX, padding, qrSize, qrSize);
+
+      let textY = padding + qrSize + gap + 18;
+      ctx.fillStyle = '#111827';
+      ctx.font = nameFont;
+      ctx.textAlign = 'center';
+      nameLines.forEach((line) => {
+        ctx.fillText(line, cardWidth / 2, textY);
+        textY += nameLineHeight;
+      });
+
+      textY += 4;
+      ctx.fillStyle = '#6b7280';
+      ctx.font = invFont;
+      invLines.forEach((line) => {
+        ctx.fillText(line, cardWidth / 2, textY);
+        textY += invLineHeight;
+      });
 
       const safeName = (equipment.inventoryNumber || equipment.name || 'qr')
         .replace(/[\\/:*?"<>|]+/g, '_')
