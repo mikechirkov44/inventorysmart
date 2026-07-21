@@ -6,13 +6,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScanLine, Camera, Square, Keyboard, AlertCircle } from 'lucide-react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { ScanLine, Camera, Square, Keyboard, AlertCircle, Flashlight } from 'lucide-react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import PageHeader from '../components/PageHeader';
 
 function getQrBoxSize() {
-  if (typeof window === 'undefined') return 260;
-  return Math.min(300, Math.max(220, window.innerWidth - 96));
+  if (typeof window === 'undefined') return 280;
+  return Math.min(340, Math.max(240, window.innerWidth - 72));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Декоративная иллюстрация до запуска камеры */
@@ -40,6 +44,8 @@ function QRScanner() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState(null);
   const [manualInput, setManualInput] = useState('');
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const scannerRef = useRef(null);
   const busyRef = useRef(false);
 
@@ -51,11 +57,59 @@ function QRScanner() {
     const s = scannerRef.current;
     if (!s) return;
     scannerRef.current = null;
+    setTorchOn(false);
+    setTorchSupported(false);
     try { s.stop().catch(() => {}); } catch (_) {}
+  }
+
+  async function enhanceCamera(qr) {
+    try {
+      await sleep(400);
+
+      let capabilities = {};
+      try {
+        if (typeof qr.getRunningTrackCapabilities === 'function') {
+          capabilities = qr.getRunningTrackCapabilities() || {};
+        }
+      } catch (_) {
+        capabilities = {};
+      }
+
+      const advanced = [];
+      if (capabilities.zoom) {
+        const { min = 1, max = 1 } = capabilities.zoom;
+        const preferred = Math.min(max, Math.max(min, 1.6));
+        if (preferred > min) advanced.push({ zoom: preferred });
+      }
+      if (capabilities.focusMode?.includes?.('continuous')) {
+        advanced.push({ focusMode: 'continuous' });
+      }
+
+      const constraints = {
+        focusMode: 'continuous',
+        advanced,
+      };
+
+      if (typeof qr.applyVideoConstraints === 'function') {
+        await qr.applyVideoConstraints(constraints);
+      }
+
+      const torchOk = Boolean(
+        capabilities.torch
+        || capabilities.fillLightMode?.includes?.('torch')
+        || capabilities.fillLightMode?.includes?.('flash'),
+      );
+      setTorchSupported(torchOk);
+    } catch (err) {
+      console.warn('Camera enhance skipped:', err);
+      setTorchSupported(false);
+    }
   }
 
   async function startScanner() {
     setError(null);
+    setTorchOn(false);
+    setTorchSupported(false);
     try {
       const el = document.getElementById('qr-reader');
       if (!el) return;
@@ -66,18 +120,45 @@ function QRScanner() {
         return;
       }
 
-      const qr = new Html5Qrcode('qr-reader');
+      const qr = new Html5Qrcode('qr-reader', {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+        verbose: false,
+      });
       scannerRef.current = qr;
       busyRef.current = false;
 
       const size = getQrBoxSize();
+      const cameraConfig = {
+        facingMode: { ideal: 'environment' },
+        width: { min: 640, ideal: 1280, max: 1920 },
+        height: { min: 480, ideal: 720, max: 1080 },
+        aspectRatio: { ideal: 1.333 },
+        focusMode: 'continuous',
+      };
+
       await qr.start(
-        { facingMode: 'environment' },
-        { fps: 12, qrbox: { width: size, height: size } },
+        cameraConfig,
+        {
+          fps: 24,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const box = Math.floor(Math.min(size, minEdge * 0.82));
+            return { width: box, height: box };
+          },
+          aspectRatio: 1.333,
+          disableFlip: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
+        },
         onDecoded,
-        () => {}
+        () => {},
       );
       setScanning(true);
+      enhanceCamera(qr);
     } catch (err) {
       console.error('Camera error:', err);
       let msg = 'неизвестная ошибка';
@@ -94,9 +175,81 @@ function QRScanner() {
         msg = 'Камера не найдена. Подключите камеру и попробуйте снова.';
       } else if (msg.includes('NotReadableError') || msg.includes('TrackStartError')) {
         msg = 'Камера занята другим приложением.';
+      } else if (msg.includes('OverconstrainedError') || msg.includes('Constraint') || msg.includes('constraint')) {
+        try {
+          tryStop();
+          await startScannerFallback();
+          return;
+        } catch (_) {
+          msg = 'Не удалось подобрать настройки камеры.';
+        }
       }
+      tryStop();
       setError(`Не удалось запустить камеру: ${msg}`);
       setScanning(false);
+    }
+  }
+
+  async function startScannerFallback() {
+    const el = document.getElementById('qr-reader');
+    if (!el) return;
+    el.innerHTML = '';
+
+    const qr = new Html5Qrcode('qr-reader', {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true,
+      },
+      verbose: false,
+    });
+    scannerRef.current = qr;
+    busyRef.current = false;
+
+    const size = getQrBoxSize();
+    await qr.start(
+      { facingMode: 'environment' },
+      {
+        fps: 20,
+        qrbox: { width: size, height: size },
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+      },
+      onDecoded,
+      () => {},
+    );
+    setScanning(true);
+    setError(null);
+    enhanceCamera(qr);
+  }
+
+  async function toggleTorch() {
+    const qr = scannerRef.current;
+    if (!qr || !torchSupported) return;
+
+    const next = !torchOn;
+    try {
+      if (typeof qr.applyVideoConstraints === 'function') {
+        await qr.applyVideoConstraints({
+          advanced: [{ torch: next }],
+        });
+        setTorchOn(next);
+        return;
+      }
+    } catch (_) {
+      /* try MediaStreamTrack below */
+    }
+
+    try {
+      const video = document.querySelector('#qr-reader video');
+      const track = video?.srcObject?.getVideoTracks?.()?.[0];
+      if (!track?.applyConstraints) throw new Error('no track');
+      await track.applyConstraints({ advanced: [{ torch: next }] });
+      setTorchOn(next);
+    } catch (err) {
+      console.warn('Torch toggle failed:', err);
+      setTorchSupported(false);
+      setError('Фонарик недоступен на этом устройстве.');
     }
   }
 
@@ -156,6 +309,18 @@ function QRScanner() {
                 <span className="qr-scanning-dot" />
                 Сканирование…
               </div>
+              {torchSupported && (
+                <button
+                  type="button"
+                  className={`qr-torch-btn ${torchOn ? 'is-on' : ''}`}
+                  onClick={toggleTorch}
+                  aria-pressed={torchOn}
+                  title={torchOn ? 'Выключить фонарик' : 'Включить фонарик'}
+                >
+                  <Flashlight size={18} />
+                  {torchOn ? 'Фонарик вкл.' : 'Фонарик'}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -205,8 +370,9 @@ function QRScanner() {
       </div>
 
       <ul className="qr-tips">
-        <li>Держите телефон на расстоянии 15–25 см от кода</li>
-        <li>Убедитесь, что QR-код хорошо освещён</li>
+        <li>Держите телефон под углом 15–30°, чтобы убрать блик с металлической пластины</li>
+        <li>Оптимальная дистанция — 15–30 см; чуть отодвиньте камеру при сильном отражении</li>
+        <li>При слабом свете включите фонарик (если доступен)</li>
         <li>На этикетке оборудования может быть ссылка или UUID</li>
       </ul>
     </div>

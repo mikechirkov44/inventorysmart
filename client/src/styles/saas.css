@@ -1098,7 +1098,7 @@
 .qr-viewfinder-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.45) 100%);
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.28) 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -1141,6 +1141,30 @@
   font-weight: 500;
   z-index: 5;
   backdrop-filter: blur(6px);
+}
+
+.qr-torch-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.qr-torch-btn.is-on {
+  background: color-mix(in srgb, var(--primary) 75%, black);
+  border-color: transparent;
 }
 
 .qr-scanning-dot {
