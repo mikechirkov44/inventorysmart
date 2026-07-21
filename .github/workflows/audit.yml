@@ -25,8 +25,15 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ matrix.directory }}
-        run: npm ci
+        run: npm ci --no-fund --no-audit
 
       - name: Run npm audit
         working-directory: ${{ matrix.directory }}
-        run: npm audit --audit-level=high
+        run: |
+          set -o pipefail
+          if ! npm audit --audit-level=high; then
+            echo "::error::npm audit failed in ${{ matrix.directory }}"
+            echo "Full audit report:"
+            npm audit || true
+            exit 1
+          fi
