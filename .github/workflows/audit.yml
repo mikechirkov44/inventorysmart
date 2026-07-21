@@ -12,6 +12,7 @@ jobs:
   npm-audit:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         directory: ['.', 'client', 'client-admin']
     steps:
@@ -20,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install dependencies
         working-directory: ${{ matrix.directory }}

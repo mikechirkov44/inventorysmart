@@ -12,7 +12,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
-    "axios": "^1.7.0",
+    "axios": "^1.18.1",
     "lucide-react": "^0.400.0"
   },
   "devDependencies": {
