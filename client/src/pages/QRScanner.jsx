@@ -85,13 +85,22 @@ function QRScanner() {
         advanced.push({ focusMode: 'continuous' });
       }
 
-      const constraints = {
-        focusMode: 'continuous',
-        advanced,
-      };
-
       if (typeof qr.applyVideoConstraints === 'function') {
-        await qr.applyVideoConstraints(constraints);
+        try {
+          await qr.applyVideoConstraints({
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            focusMode: 'continuous',
+            advanced,
+          });
+        } catch (_) {
+          // Некоторые устройства не принимают все constraints сразу — пробуем по частям
+          try {
+            await qr.applyVideoConstraints({ focusMode: 'continuous', advanced });
+          } catch (innerErr) {
+            console.warn('Camera enhance skipped:', innerErr);
+          }
+        }
       }
 
       const torchOk = Boolean(
@@ -131,16 +140,10 @@ function QRScanner() {
       busyRef.current = false;
 
       const size = getQrBoxSize();
-      const cameraConfig = {
-        facingMode: { ideal: 'environment' },
-        width: { min: 640, ideal: 1280, max: 1920 },
-        height: { min: 480, ideal: 720, max: 1080 },
-        aspectRatio: { ideal: 1.333 },
-        focusMode: 'continuous',
-      };
 
+      // html5-qrcode: cameraIdOrConfig — только 1 ключ (facingMode или deviceId)
       await qr.start(
-        cameraConfig,
+        { facingMode: 'environment' },
         {
           fps: 24,
           qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -175,52 +178,11 @@ function QRScanner() {
         msg = 'Камера не найдена. Подключите камеру и попробуйте снова.';
       } else if (msg.includes('NotReadableError') || msg.includes('TrackStartError')) {
         msg = 'Камера занята другим приложением.';
-      } else if (msg.includes('OverconstrainedError') || msg.includes('Constraint') || msg.includes('constraint')) {
-        try {
-          tryStop();
-          await startScannerFallback();
-          return;
-        } catch (_) {
-          msg = 'Не удалось подобрать настройки камеры.';
-        }
       }
       tryStop();
       setError(`Не удалось запустить камеру: ${msg}`);
       setScanning(false);
     }
-  }
-
-  async function startScannerFallback() {
-    const el = document.getElementById('qr-reader');
-    if (!el) return;
-    el.innerHTML = '';
-
-    const qr = new Html5Qrcode('qr-reader', {
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true,
-      },
-      verbose: false,
-    });
-    scannerRef.current = qr;
-    busyRef.current = false;
-
-    const size = getQrBoxSize();
-    await qr.start(
-      { facingMode: 'environment' },
-      {
-        fps: 20,
-        qrbox: { width: size, height: size },
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
-      },
-      onDecoded,
-      () => {},
-    );
-    setScanning(true);
-    setError(null);
-    enhanceCamera(qr);
   }
 
   async function toggleTorch() {
