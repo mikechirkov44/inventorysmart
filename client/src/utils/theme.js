@@ -36,15 +36,25 @@ function lightenHex(hex, amount = 0.35) {
 export function applyThemeColor(color) {
   const primary = /^#[0-9a-fA-F]{6}$/.test(color) ? color : DEFAULT_PRIMARY;
   const root = document.documentElement;
+  const rgb = hexToRgb(primary) || { r: 79, g: 70, b: 229 };
   const hover = darkenHex(primary);
   const accent = lightenHex(primary, 0.25);
+  const soft = lightenHex(primary, 0.55);
+  const softer = lightenHex(primary, 0.7);
 
   root.style.setProperty('--primary', primary);
   root.style.setProperty('--primary-hover', hover);
+  root.style.setProperty('--primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
   root.style.setProperty('--primary-light', `${primary}1a`);
   root.style.setProperty('--primary-glow', `${primary}26`);
   root.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${primary}, ${accent})`);
   root.style.setProperty('--gradient-primary-hover', `linear-gradient(135deg, ${hover}, ${darkenHex(accent)})`);
+
+  // Сайдбар: выделение активного пункта и акценты
+  root.style.setProperty('--nav-active-bg', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.22)`);
+  root.style.setProperty('--nav-active-border', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
+  root.style.setProperty('--nav-accent', soft);
+  root.style.setProperty('--nav-accent-soft', softer);
 }
 
 export function resetThemeColor() {

@@ -106,7 +106,7 @@
 }
 
 .kpi-card-link:hover .kpi-card {
-  border-color: rgba(79, 70, 229, 0.22);
+  border-color: rgba(var(--primary-rgb), 0.22);
   box-shadow: var(--shadow-md);
 }
 
@@ -285,7 +285,7 @@
 }
 
 .dashboard-today-item:hover {
-  border-color: rgba(79, 70, 229, 0.2);
+  border-color: rgba(var(--primary-rgb), 0.2);
   box-shadow: var(--shadow-sm);
 }
 
@@ -403,7 +403,7 @@
 }
 
 .quick-action-btn:hover {
-  border-color: rgba(79, 70, 229, 0.35);
+  border-color: rgba(var(--primary-rgb), 0.35);
   color: var(--primary);
   background: var(--primary-light);
   box-shadow: var(--shadow-sm);

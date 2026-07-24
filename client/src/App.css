@@ -8,8 +8,13 @@
 :root {
   --primary: #4f46e5;
   --primary-hover: #4338ca;
+  --primary-rgb: 79, 70, 229;
   --primary-light: #eef2ff;
   --primary-glow: rgba(79, 70, 229, 0.12);
+  --nav-active-bg: rgba(79, 70, 229, 0.22);
+  --nav-active-border: rgba(129, 140, 248, 0.28);
+  --nav-accent: #a5b4fc;
+  --nav-accent-soft: #c7d2fe;
   --success: #059669;
   --success-light: #ecfdf5;
   --success-glow: rgba(5, 150, 105, 0.15);
@@ -208,15 +213,15 @@ input, textarea, select { font-family: inherit; }
 }
 
 .nav-links a.active {
-  background: rgba(79, 70, 229, 0.22);
+  background: var(--nav-active-bg);
   color: #ffffff;
   position: relative;
-  box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.28);
+  box-shadow: inset 0 0 0 1px var(--nav-active-border);
 }
 
 .nav-links a.active svg {
   opacity: 1;
-  color: #c7d2fe;
+  color: var(--nav-accent-soft);
 }
 
 .nav-links a.active::before {
@@ -227,7 +232,7 @@ input, textarea, select { font-family: inherit; }
   transform: translateY(-50%);
   width: 3px;
   height: 18px;
-  background: #a5b4fc;
+  background: var(--nav-accent);
   border-radius: 0 4px 4px 0;
 }
 
@@ -236,7 +241,7 @@ input, textarea, select { font-family: inherit; }
   margin: 0 12px 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #c7d2fe;
+  color: var(--nav-accent-soft);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -436,9 +441,9 @@ input, textarea, select { font-family: inherit; }
 }
 
 .nav-dropdown-trigger.active {
-  background: rgba(79, 70, 229, 0.22);
+  background: var(--nav-active-bg);
   color: white;
-  box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.28);
+  box-shadow: inset 0 0 0 1px var(--nav-active-border);
 }
 
 .nav-dropdown-menu {
@@ -7005,7 +7010,7 @@ input, textarea, select { font-family: inherit; }
   transform: translateY(-50%) scaleY(0);
   width: 3px;
   height: 0;
-  background: #a5b4fc;
+  background: var(--nav-accent);
   border-radius: 0 2px 2px 0;
   transition: all var(--transition);
 }
