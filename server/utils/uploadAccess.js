@@ -48,6 +48,7 @@ function verifyUploadSignature(filename, companyId, exp, sig) {
 
 function withUploadUrls(data, companyId) {
   if (data == null || !companyId) return data;
+  if (data instanceof Date) return data;
   if (Array.isArray(data)) return data.map((item) => withUploadUrls(item, companyId));
   if (typeof data !== 'object') return data;
 

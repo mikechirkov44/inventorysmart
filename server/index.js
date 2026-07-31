@@ -104,6 +104,9 @@ async function start() {
     authenticate(req, res, next);
   });
 
+  const { auditChanges } = require('./middleware/audit');
+  app.use('/api', auditChanges);
+
   app.use('/api', (req, res, next) => {
     if (req.path === '/uploads' || req.path.startsWith('/uploads/')) return next();
     const originalJson = res.json.bind(res);
@@ -164,6 +167,7 @@ async function start() {
   const equipmentCategoryRoutes = require('./routes/equipmentCategories');
   const causesRoutes = require('./routes/causes');
   const overdueReasonsRoutes = require('./routes/overdueReasons');
+  const activityHistoryRoutes = require('./routes/activityHistory');
 
   app.use('/api/equipment', equipmentRoutes);
   app.use('/api/equipment-categories', equipmentCategoryRoutes);
@@ -186,6 +190,7 @@ async function start() {
   app.use('/api/schedule', scheduleRoutes);
   app.use('/api/company', companyRoutes);
   app.use('/api/positions', positionsRoutes);
+  app.use('/api/activity-history', activityHistoryRoutes);
 
   // Global error handler — never leak internals
   app.use((err, req, res, next) => {

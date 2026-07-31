@@ -596,6 +596,46 @@ async function migrate() {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS use_rca BOOLEAN DEFAULT true`);
     });
 
+    await withSavepoint(client, 'activity_history', async () => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS login_history (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID,
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+          username VARCHAR(255) NOT NULL,
+          company_name VARCHAR(255) DEFAULT '',
+          success BOOLEAN NOT NULL DEFAULT false,
+          failure_reason VARCHAR(100),
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID NOT NULL,
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+          action VARCHAR(30) NOT NULL,
+          resource VARCHAR(100) NOT NULL,
+          resource_id VARCHAR(255),
+          method VARCHAR(10) NOT NULL,
+          path TEXT NOT NULL,
+          status_code INTEGER NOT NULL,
+          changes JSONB DEFAULT '{}',
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await client.query('CREATE INDEX IF NOT EXISTS idx_login_history_company_created ON login_history(company_id, created_at DESC)');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_login_history_user_created ON login_history(user_id, created_at DESC)');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_company_created ON audit_logs(company_id, created_at DESC)');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(company_id, resource, resource_id)');
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

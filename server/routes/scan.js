@@ -152,7 +152,7 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
  * @param {Array} [req.body.sparePartsUsed] - Использованные запчасти [{sparePartId, quantity}]
  * @returns {Object} Созданная запись WorkOrder и список списанных запчастей
  */
-router.post('/complete', requirePermission('scanner', 'view'), async (req, res) => {
+router.post('/complete', requirePermission('scanner', 'edit'), async (req, res) => {
   try {
     const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;
 

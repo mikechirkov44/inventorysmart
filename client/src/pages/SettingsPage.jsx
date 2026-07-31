@@ -16,6 +16,7 @@ import Toggle from '../components/Toggle';
 import PasswordInput from '../components/PasswordInput';
 import UploadImage from '../components/UploadImage';
 import AppearanceTab from '../components/AppearanceTab';
+import ActivityHistoryTab from '../components/ActivityHistoryTab';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
@@ -68,6 +69,7 @@ const PERM_VALUES = {
 
 /** Вкладки настроек */
 const TABS = [
+  { id: 'history', label: 'История' },
   { id: 'company', label: 'Компания' },
   { id: 'users', label: 'Пользователи' },
   { id: 'positions', label: 'Роли' },
@@ -1103,6 +1105,7 @@ function SettingsPage() {
         {activeTab === 'appearance' && (
           <AppearanceTab readOnly={isSettingsReadOnly} />
         )}
+        {activeTab === 'history' && <ActivityHistoryTab />}
       </div>
     </div>
   );

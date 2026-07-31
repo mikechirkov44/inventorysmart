@@ -10,6 +10,25 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { query } = require('../db');
 const { authenticate } = require('../middleware/auth');
+const ActivityHistory = require('../models/activityHistory');
+
+function loginContext(req, overrides = {}) {
+  return {
+    username: String(req.body?.username || '').slice(0, 255),
+    companyName: String(req.body?.companyName || '').slice(0, 255),
+    ipAddress: req.ip,
+    userAgent: req.get('user-agent'),
+    ...overrides,
+  };
+}
+
+async function recordLogin(req, overrides) {
+  try {
+    await ActivityHistory.recordLogin(loginContext(req, overrides));
+  } catch (error) {
+    console.error('Login history error:', error);
+  }
+}
 
 /**
  * @route POST /auth/login
@@ -26,18 +45,28 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password, companyName } = req.body;
     if (!username || !password) {
+      await recordLogin(req, { success: false, failureReason: 'missing_credentials' });
       return res.status(400).json({ error: 'Введите логин и пароль' });
     }
     if (!companyName || !companyName.trim()) {
+      await recordLogin(req, { success: false, failureReason: 'missing_company' });
       return res.status(400).json({ error: 'Введите наименование компании' });
     }
 
     const user = await User.findByUsername(username);
     if (!user || !User.verifyPassword(password, user.password_hash)) {
+      await recordLogin(req, {
+        companyId: user?.company_id,
+        userId: user?.id,
+        employeeId: user?.employee_id,
+        success: false,
+        failureReason: 'invalid_credentials',
+      });
       return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
     }
 
     if (!user.company_id) {
+      await recordLogin(req, { userId: user.id, employeeId: user.employee_id, success: false, failureReason: 'no_company' });
       return res.status(403).json({ error: 'Пользователь не привязан к компании' });
     }
 
@@ -46,11 +75,13 @@ router.post('/login', async (req, res) => {
       [user.company_id]
     );
     if (companies.length === 0) {
+      await recordLogin(req, { companyId: user.company_id, userId: user.id, employeeId: user.employee_id, success: false, failureReason: 'company_not_found' });
       return res.status(403).json({ error: 'Компания пользователя не найдена' });
     }
 
     const actualCompanyName = companies[0].company_name;
     if (actualCompanyName.trim().toLowerCase() !== companyName.trim().toLowerCase()) {
+      await recordLogin(req, { companyId: user.company_id, userId: user.id, employeeId: user.employee_id, success: false, failureReason: 'invalid_company' });
       return res.status(403).json({ error: 'Неверное наименование компании' });
     }
 
@@ -74,6 +105,14 @@ router.post('/login', async (req, res) => {
       User.JWT_SECRET,
       { expiresIn: User.JWT_EXPIRES }
     );
+
+    await recordLogin(req, {
+      companyId: user.company_id,
+      userId: user.id,
+      employeeId: user.employee_id,
+      companyName: actualCompanyName,
+      success: true,
+    });
 
     res.json({
       token,

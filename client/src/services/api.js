@@ -113,6 +113,11 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+export const activityHistoryAPI = {
+  getChanges: (params) => api.get('/activity-history/changes', { params }),
+  getLogins: (params) => api.get('/activity-history/logins', { params }),
+};
+
 /** API для работы с QR-сканером */
 export const scanAPI = {
   scanQR: (qrCode) => api.get(`/scan/${qrCode}`),

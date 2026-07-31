@@ -256,7 +256,13 @@ router.post('/users', async (req, res) => {
     let effectivePositionId = positionId || null;
     if (!effectivePositionId) {
       const { rows } = await require('../db').query(
-        "SELECT id FROM positions WHERE name = 'Администратор' LIMIT 1"
+        `SELECT id
+         FROM positions
+         WHERE company_id = $1
+           AND permissions->>'settings' = 'full'
+         ORDER BY created_at
+         LIMIT 1`,
+        [companyId]
       );
       effectivePositionId = rows[0]?.id || null;
     }
