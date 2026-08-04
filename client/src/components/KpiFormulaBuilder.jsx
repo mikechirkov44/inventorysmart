@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, Plus, Trash2, WandSparkles } from 'lucide-react';
+import { GripVertical, Plus, RotateCcw, Trash2, WandSparkles } from 'lucide-react';
 import Toggle from './Toggle';
 
 const OPERATIONS = [
@@ -63,9 +63,15 @@ export default function KpiFormulaBuilder({ value, onChange, metrics = [], readO
         <Toggle checked={config.enabled === true} onChange={(enabled) => update({ enabled })} label="" disabled={readOnly} />
       </div>
 
-      {!readOnly && <button type="button" className="btn btn-small" onClick={applyMaintenanceTemplate}>
-        <WandSparkles size={15} /> Пример
-      </button>}
+      {!readOnly && <div className="kpi-builder-actions">
+        <button type="button" className="btn btn-small" onClick={applyMaintenanceTemplate}>
+          <WandSparkles size={15} /> Пример
+        </button>
+        <button type="button" className="btn btn-small kpi-clear-button" disabled={tokens.length === 0}
+          onClick={() => update({ tokens: [] })} title="Удалить все элементы формулы">
+          <RotateCcw size={15} /> Очистить формулу
+        </button>
+      </div>}
 
       <div className="kpi-palette">
         <div>
@@ -111,7 +117,7 @@ export default function KpiFormulaBuilder({ value, onChange, metrics = [], readO
           <div className="kpi-threshold-row" key={index}>
             <label><span>Результат KPI от</span><span className="kpi-number-field"><input disabled={readOnly} type="number" step="0.1" value={item.from} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, from: Number(event.target.value) }; update({ thresholds: next }); }} /><b>%</b></span></label>
             <label><span>Размер премии</span><span className="kpi-number-field"><input disabled={readOnly} type="number" step="0.1" value={item.payout} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, payout: Number(event.target.value) }; update({ thresholds: next }); }} /><b>%</b></span></label>
-            {!readOnly && <button type="button" className="icon-btn danger" aria-label="Удалить порог" onClick={() => update({ thresholds: thresholds.filter((_, i) => i !== index) })}><Trash2 size={15} /></button>}
+            {!readOnly && <button type="button" className="kpi-icon-action danger" aria-label="Удалить порог" title="Удалить порог" onClick={() => update({ thresholds: thresholds.filter((_, i) => i !== index) })}><Trash2 size={16} strokeWidth={1.8} /></button>}
           </div>
         ))}
       </div>
