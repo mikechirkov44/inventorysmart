@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Users, Copy, Pencil, Trash2 } from 'lucide-react';
-import { employeesAPI } from '../services/api';
+import { employeesAPI, jobPositionsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import PageHeader from '../components/PageHeader';
@@ -20,10 +20,12 @@ import {
   MobileDataCardActions,
 } from '../components/MobileDataCard';
 import ActionsMenu from '../components/ActionsMenu';
+import CustomSelect from '../components/CustomSelect';
 
 /** Компонент справочника сотрудников */
 function EmployeesDirectory() {
   const [employees, setEmployees] = useState([]);
+  const [jobPositions, setJobPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
@@ -33,7 +35,7 @@ function EmployeesDirectory() {
     firstName: '',
     lastName: '',
     middleName: '',
-    jobTitle: '',
+    jobPositionId: '',
     phone: '',
     email: ''
   });
@@ -43,6 +45,7 @@ function EmployeesDirectory() {
   /** Загрузка списка сотрудников при монтировании */
   useEffect(() => {
     fetchEmployees();
+    fetchJobPositions();
   }, []);
 
   /** Загрузка списка сотрудников с сервера */
@@ -52,6 +55,11 @@ function EmployeesDirectory() {
       setEmployees(response.data);
       setLoading(false);
     } catch { toast.error('Ошибка загрузки'); setLoading(false); }
+  };
+
+  const fetchJobPositions = async () => {
+    try { const response = await jobPositionsAPI.getCatalog(); setJobPositions(response.data); }
+    catch { toast.error('Не удалось загрузить справочник должностей'); }
   };
 
   /** Фильтрация сотрудников по поиску */
@@ -70,7 +78,7 @@ function EmployeesDirectory() {
 
   /** Сброс формы сотрудника */
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', middleName: '', jobTitle: '', phone: '', email: '' });
+    setFormData({ firstName: '', lastName: '', middleName: '', jobPositionId: '', phone: '', email: '' });
     setEditId(null);
     setShowForm(false);
   };
@@ -81,7 +89,7 @@ function EmployeesDirectory() {
       firstName: emp.firstName || '',
       lastName: emp.lastName || '',
       middleName: emp.middleName || '',
-      jobTitle: emp.jobTitle || '',
+      jobPositionId: emp.jobPositionId || '',
       phone: emp.phone || '',
       email: emp.email || ''
     });
@@ -95,7 +103,7 @@ function EmployeesDirectory() {
       firstName: emp.firstName || '',
       lastName: emp.lastName + ' (копия)',
       middleName: emp.middleName || '',
-      jobTitle: emp.jobTitle || '',
+      jobPositionId: emp.jobPositionId || '',
       phone: emp.phone || '',
       email: emp.email || ''
     });
@@ -168,7 +176,7 @@ function EmployeesDirectory() {
             <div className="form-row">
               <div className="form-group">
                 <label>Должность</label>
-                <input type="text" value={formData.jobTitle} onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })} placeholder="Например, инженер" />
+                <CustomSelect value={formData.jobPositionId} onChange={(jobPositionId) => setFormData({ ...formData, jobPositionId })} options={jobPositions.map((position) => ({ value: position.id, label: position.name }))} placeholder="Выберите должность" />
               </div>
               <div className="form-group">
                 <label>Телефон</label>

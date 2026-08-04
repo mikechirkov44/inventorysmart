@@ -240,6 +240,15 @@ export const positionsAPI = {
   delete: (id) => api.delete(`/positions/${id}`),
 };
 
+export const jobPositionsAPI = {
+  getAll: () => api.get('/job-positions'),
+  getCatalog: () => api.get('/job-positions/catalog'),
+  getKpiMetrics: () => api.get('/job-positions/kpi/metrics'),
+  create: (data) => api.post('/job-positions', data),
+  update: (id, data) => api.put(`/job-positions/${id}`, data),
+  delete: (id) => api.delete(`/job-positions/${id}`),
+};
+
 /** API для управления наработкой оборудования */
 export const operatingHoursAPI = {
   getByEquipmentId: (equipmentId) => api.get(`/equipment/${equipmentId}/operating-hours`),

@@ -45,7 +45,7 @@ router.post('/', requirePermission('settings', 'edit'), async (req, res) => {
     res.status(201).json(position);
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.message?.includes('формул') || error.message?.includes('KPI') ? 400 : 500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -56,7 +56,7 @@ router.put('/:id', requirePermission('settings', 'edit'), async (req, res) => {
     res.json(position);
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.message?.includes('формул') || error.message?.includes('KPI') ? 400 : 500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 });
 

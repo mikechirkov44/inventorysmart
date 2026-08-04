@@ -12,6 +12,8 @@ const WorkOrder = require('../models/workOrder');
 const Room = require('../models/room');
 const Employee = require('../models/employee');
 const { requirePermission } = require('../middleware/auth');
+const JobPosition = require('../models/jobPosition');
+const { evaluate: evaluateKpi } = require('../utils/kpiFormula');
 const { getWorkStartDate, startOfDay } = require('../utils/workDue');
 const {
   parsePeriodQuery,
@@ -39,6 +41,8 @@ async function getAnalytics(companyId, fromStr, toStr) {
   const allWorkOrders = await WorkOrder.findAll(companyId);
   const allRooms = await Room.findAll(companyId);
   const allEmployees = await Employee.findAll(companyId);
+  const positions = await JobPosition.findAll(companyId);
+  const positionMap = Object.fromEntries(positions.map((position) => [position.id, position]));
 
   const workMap = {};
   allWorks.forEach((work) => { workMap[work.id] = work; });
@@ -53,6 +57,8 @@ async function getAnalytics(companyId, fromStr, toStr) {
       employeeId: emp.id,
       employeeName: `${emp.lastName} ${emp.firstName}`,
       position: emp.jobTitle || '',
+      jobTitle: emp.jobTitle || '',
+      jobPositionId: emp.jobPositionId,
       totalPlanned: 0,
       totalCompleted: 0,
       onTime: 0,
@@ -138,15 +144,14 @@ async function getAnalytics(companyId, fromStr, toStr) {
   });
 
   const employees = Object.values(employeeStats).map((stats) => {
-    const duePassed = stats.totalPlanned > 0
-      ? stats.totalCompleted + stats.overdue + stats.neverCompleted
-      : 0;
-
+    const duePassed = stats.totalCompleted + stats.overdue + stats.neverCompleted;
+    const position = positionMap[stats.jobPositionId];
     return {
       ...stats,
       completionRate: duePassed > 0
         ? Math.round((stats.totalCompleted / duePassed) * 100)
         : 0,
+      kpi: position ? evaluateKpi(position.kpiConfig, { ...stats, duePassed }) : null,
     };
   });
 

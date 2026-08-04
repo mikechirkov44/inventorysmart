@@ -759,6 +759,7 @@ function AnalyticsPage() {
                     <th>Запланировано</th>
                     <th>Выполнено</th>
                     <th>% выполнения</th>
+                    <th>KPI / премия</th>
                     <th>Вовремя</th>
                     <th>С опозданием</th>
                     <th>Не выполнялось</th>
@@ -766,7 +767,7 @@ function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {analytics.length === 0 ? (
-                    <tr><td colSpan="8" className="no-results-cell">Нет данных</td></tr>
+                    <tr><td colSpan="9" className="no-results-cell">Нет данных</td></tr>
                   ) : (
                     analytics.map(emp => (
                       <tr key={emp.employeeId}>
@@ -784,6 +785,7 @@ function AnalyticsPage() {
                             </div>
                           </div>
                         </td>
+                        <td>{emp.kpi ? <strong>{emp.kpi.score}% / {emp.kpi.payout}%</strong> : '—'}</td>
                         <td><span className="overdue-badge ok">{emp.onTime}</span></td>
                         <td><span className="overdue-badge overdue">{emp.completedLate}</span></td>
                         <td><span className="overdue-badge new">{emp.neverCompleted}</span></td>
@@ -801,6 +803,7 @@ function AnalyticsPage() {
                 <MobileDataCardRow label="Должность">{emp.jobTitle || '—'}</MobileDataCardRow>
                 <MobileDataCardRow label="Выполнено">{emp.totalCompleted} / {emp.totalPlanned}</MobileDataCardRow>
                 <MobileDataCardRow label="% выполнения">{emp.completionRate}%</MobileDataCardRow>
+                {emp.kpi && <MobileDataCardRow label="KPI / премия">{emp.kpi.score}% / {emp.kpi.payout}%</MobileDataCardRow>}
                 <MobileDataCardRow label="Просрочено">{emp.overdue}</MobileDataCardRow>
               </MobileDataCard>
             ))}

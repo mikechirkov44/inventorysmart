@@ -7,7 +7,7 @@
 const { query } = require('../db');
 const { pickAllowed } = require('../utils/allowlist');
 
-const EMPLOYEE_UPDATE_FIELDS = ['firstName', 'lastName', 'middleName', 'position', 'positionId', 'jobTitle', 'phone', 'email'];
+const EMPLOYEE_UPDATE_FIELDS = ['firstName', 'lastName', 'middleName', 'jobPositionId', 'phone', 'email'];
 
 /**
  * Преобразует строку из БД в объект сотрудника.
@@ -21,8 +21,10 @@ function mapRow(row) {
     firstName: row.first_name,
     lastName: row.last_name,
     middleName: row.middle_name,
-    positionId: row.position_id,
-    jobTitle: row.job_title || '',
+    jobPositionId: row.job_position_id,
+    positionId: row.job_position_id,
+    positionName: row.job_position_name || row.job_title || '',
+    jobTitle: row.job_position_name || row.job_title || '',
     phone: row.phone,
     email: row.email,
     createdAt: row.created_at,
@@ -37,7 +39,7 @@ module.exports = {
    * @returns {Promise<Array<Object>>} Список сотрудников
    */
   findAll: async (companyId) => {
-    const { rows } = await query('SELECT * FROM employees WHERE company_id = $1 ORDER BY last_name, first_name', [companyId]);
+    const { rows } = await query('SELECT e.*, jp.name AS job_position_name FROM employees e LEFT JOIN job_positions jp ON jp.id = e.job_position_id WHERE e.company_id = $1 ORDER BY e.last_name, e.first_name', [companyId]);
     return rows.map(mapRow);
   },
 
@@ -48,7 +50,7 @@ module.exports = {
    * @returns {Promise<Object|null>} Объект сотрудника или null
    */
   findById: async (id, companyId) => {
-    const { rows } = await query('SELECT * FROM employees WHERE id = $1 AND company_id = $2', [id, companyId]);
+    const { rows } = await query('SELECT e.*, jp.name AS job_position_name FROM employees e LEFT JOIN job_positions jp ON jp.id = e.job_position_id WHERE e.id = $1 AND e.company_id = $2', [id, companyId]);
     return mapRow(rows[0]);
   },
 
@@ -66,8 +68,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO employees (first_name, last_name, middle_name, position_id, job_title, phone, email, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [data.firstName || '', data.lastName || '', data.middleName || '', data.positionId || null, data.jobTitle || '', data.phone || '', data.email || '', companyId]
+      'INSERT INTO employees (first_name, last_name, middle_name, job_position_id, phone, email, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.firstName || '', data.lastName || '', data.middleName || '', data.jobPositionId || null, data.phone || '', data.email || '', companyId]
     );
     return mapRow(rows[0]);
   },
@@ -81,7 +83,7 @@ module.exports = {
    */
   update: async (id, data, companyId) => {
     const safeData = pickAllowed(data, EMPLOYEE_UPDATE_FIELDS);
-    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', positionId: 'position_id', jobTitle: 'job_title' };
+    const fieldMap = { firstName: 'first_name', lastName: 'last_name', middleName: 'middle_name', jobPositionId: 'job_position_id' };
     const fields = [];
     const values = [];
     let i = 1;

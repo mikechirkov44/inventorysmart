@@ -276,11 +276,24 @@ async function migrate() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      ALTER TABLE positions ADD COLUMN IF NOT EXISTS kpi_config JSONB NOT NULL DEFAULT '{"enabled":false,"tokens":[],"thresholds":[]}';
+
+      CREATE TABLE IF NOT EXISTS job_positions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID,
+        name VARCHAR(255) NOT NULL,
+        kpi_config JSONB NOT NULL DEFAULT '{"enabled":false,"tokens":[],"thresholds":[]}',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(company_id, name)
+      );
+
       ALTER TABLE users ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id UUID REFERENCES employees(id) ON DELETE SET NULL;
 
       ALTER TABLE employees ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
       ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_title VARCHAR(255) DEFAULT '';
+      ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_position_id UUID REFERENCES job_positions(id) ON DELETE SET NULL;
 
       ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS license_key TEXT DEFAULT '';
 
@@ -541,6 +554,25 @@ async function migrate() {
         await Position.seedDefaultsForCompany(company.company_id);
       }
     }
+
+    await withSavepoint(client, 'job_positions_backfill', async () => {
+      await client.query(`
+        INSERT INTO job_positions (company_id, name)
+        SELECT DISTINCT company_id, TRIM(job_title)
+        FROM employees
+        WHERE company_id IS NOT NULL AND TRIM(COALESCE(job_title, '')) <> ''
+        ON CONFLICT (company_id, name) DO NOTHING
+      `);
+      await client.query(`
+        UPDATE employees e
+        SET job_position_id = jp.id
+        FROM job_positions jp
+        WHERE e.job_position_id IS NULL
+          AND jp.company_id = e.company_id
+          AND LOWER(jp.name) = LOWER(TRIM(e.job_title))
+          AND TRIM(COALESCE(e.job_title, '')) <> ''
+      `);
+    });
 
     if (legacyPositions.length > 0) {
       const legacyIds = legacyPositions.map((p) => p.id);

@@ -44,6 +44,7 @@ async function authenticate(req, res, next) {
       ...decoded,
       id: user.id,
       companyId: user.companyId,
+      positionName: user.positionName || decoded.positionName,
       permissions,
     };
     return next();
@@ -99,4 +100,15 @@ function requireSuperadmin(req, res, next) {
   next();
 }
 
-module.exports = { authenticate, requirePermission, requireSuperadmin };
+function requireAdministrator(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Authorization required' });
+  const isAdministrator = req.user.role === 'admin'
+    || req.user.role === 'superadmin'
+    || String(req.user.positionName || '').trim().toLowerCase() === 'администратор';
+  if (!isAdministrator) {
+    return res.status(403).json({ error: 'Настраивать KPI может только администратор' });
+  }
+  return next();
+}
+
+module.exports = { authenticate, requirePermission, requireSuperadmin, requireAdministrator };

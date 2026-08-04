@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { companyAPI, usersAPI, positionsAPI, employeesAPI, licenseAPI } from '../services/api';
+import { companyAPI, usersAPI, positionsAPI, jobPositionsAPI, employeesAPI, licenseAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, Server, CheckCircle, XCircle, Shield, Settings, Copy, Pencil, Trash2, Key } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -17,6 +17,7 @@ import PasswordInput from '../components/PasswordInput';
 import UploadImage from '../components/UploadImage';
 import AppearanceTab from '../components/AppearanceTab';
 import ActivityHistoryTab from '../components/ActivityHistoryTab';
+import KpiFormulaBuilder from '../components/KpiFormulaBuilder';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
@@ -73,6 +74,7 @@ const TABS = [
   { id: 'company', label: 'Компания' },
   { id: 'users', label: 'Пользователи' },
   { id: 'positions', label: 'Роли' },
+  { id: 'jobPositions', label: 'Должности и KPI' },
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
@@ -357,15 +359,17 @@ function IntegrationsTab() {
 
 /** Вкладка управления ролями и правами доступа */
 function PositionsTab() {
-  const { canEdit } = useAuth();
+  const { canEdit, user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [readOnlyForm, setReadOnlyForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', permissions: {} });
   const canEditSettings = canEdit('settings');
+  const canViewRows = user?.positionName === 'Руководитель';
 
   /** Загрузка ролей при монтировании */
   useEffect(() => { fetchPositions(); }, []);
@@ -386,6 +390,7 @@ function PositionsTab() {
   const resetForm = () => {
     setFormData({ name: '', permissions: {} });
     setEditId(null);
+    setReadOnlyForm(false);
     setShowForm(false);
   };
 
@@ -393,6 +398,14 @@ function PositionsTab() {
   const handleEdit = (pos) => {
     setFormData({ name: pos.name, permissions: { ...pos.permissions } });
     setEditId(pos.id);
+    setReadOnlyForm(false);
+    setShowForm(true);
+  };
+
+  const handleView = (pos) => {
+    setFormData({ name: pos.name, permissions: { ...pos.permissions } });
+    setEditId(pos.id);
+    setReadOnlyForm(true);
     setShowForm(true);
   };
 
@@ -446,12 +459,12 @@ function PositionsTab() {
   return (
     <div className="settings-section">
       <h2 className="settings-section-title">Роли</h2>
-      <p className="settings-section-desc">Управление ролями и правами доступа пользователей к ресурсам системы.</p>
+      <p className="settings-section-desc">Роли определяют только права доступа пользователей к разделам системы.</p>
 
       <div className="settings-card">
         <div className="settings-card-header">
           <h3 className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Shield size={18} /> Список ролей
+            <Shield size={18} /> Роли доступа
           </h3>
           {canEditSettings && (
             <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn btn-primary btn-small">
@@ -466,7 +479,7 @@ function PositionsTab() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Название *</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <input disabled={readOnlyForm} type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
 
               <div className="permissions-grid">
@@ -482,6 +495,7 @@ function PositionsTab() {
                           checked={val === true}
                           onChange={(checked) => handlePermChange(key, checked)}
                           label=""
+                          disabled={readOnlyForm}
                         />
                       ) : isInstructions ? (
                         <CustomSelect
@@ -492,6 +506,7 @@ function PositionsTab() {
                             { value: 'view', label: 'Только просмотр' },
                             { value: 'none', label: 'Нет доступа' },
                           ]}
+                          disabled={readOnlyForm}
                         />
                       ) : (
                         <CustomSelect
@@ -502,6 +517,7 @@ function PositionsTab() {
                             { value: 'view', label: 'Только чтение' },
                             { value: 'none', label: 'Нет доступа' },
                           ]}
+                          disabled={readOnlyForm}
                         />
                       )}
                     </div>
@@ -510,7 +526,7 @@ function PositionsTab() {
               </div>
 
               <div className="form-actions-inline">
-                <button type="submit" className="btn btn-primary">{editId ? 'Обновить' : 'Создать'}</button>
+                {!readOnlyForm && <button type="submit" className="btn btn-primary">{editId ? 'Обновить' : 'Создать'}</button>}
                 <button type="button" onClick={resetForm} className="btn">Отмена</button>
               </div>
             </form>
@@ -529,7 +545,8 @@ function PositionsTab() {
               </thead>
               <tbody>
                 {positions.map(pos => (
-                  <tr key={pos.id}>
+                  <tr key={pos.id} className={canEditSettings ? 'row-interactive' : canViewRows ? 'row-interactive row-readonly' : ''}
+                    onClick={() => canEditSettings ? handleEdit(pos) : canViewRows ? handleView(pos) : undefined}>
                     <td className="td-bold">{pos.name}</td>
                     <td>
                       <div className="permissions-summary">
@@ -541,7 +558,7 @@ function PositionsTab() {
                         })}
                       </div>
                     </td>
-                    <td>
+                    <td onClick={(event) => event.stopPropagation()}>
                       {canEditSettings && (
                         <ActionsMenu items={[
                           { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(pos) },
@@ -561,9 +578,112 @@ function PositionsTab() {
   );
 }
 
+function JobPositionsTab() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [items, setItems] = useState([]);
+  const [metrics, setMetrics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [readOnlyForm, setReadOnlyForm] = useState(false);
+  const emptyConfig = { enabled: false, tokens: [], thresholds: [] };
+  const [formData, setFormData] = useState({ name: '', kpiConfig: emptyConfig });
+  const isAdministrator = user?.role === 'admin' || user?.role === 'superadmin' || user?.positionName === 'Администратор';
+  const canViewRows = user?.positionName === 'Руководитель';
+
+  const load = async () => {
+    try {
+      const response = await jobPositionsAPI.getAll();
+      setItems(response.data);
+      if (isAdministrator || canViewRows) {
+        const metricsResponse = await jobPositionsAPI.getKpiMetrics();
+        setMetrics(metricsResponse.data);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Не удалось загрузить должности');
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const reset = () => {
+    setFormData({ name: '', kpiConfig: emptyConfig });
+    setEditId(null);
+    setReadOnlyForm(false);
+    setShowForm(false);
+  };
+
+  const edit = (item) => {
+    setFormData({ name: item.name, kpiConfig: item.kpiConfig || emptyConfig });
+    setEditId(item.id);
+    setReadOnlyForm(false);
+    setShowForm(true);
+  };
+
+  const view = (item) => {
+    setFormData({ name: item.name, kpiConfig: item.kpiConfig || emptyConfig });
+    setEditId(item.id);
+    setReadOnlyForm(true);
+    setShowForm(true);
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!formData.name.trim()) return toast.error('Введите название должности');
+    try {
+      if (editId) await jobPositionsAPI.update(editId, formData);
+      else await jobPositionsAPI.create(formData);
+      toast.success(editId ? 'Должность обновлена' : 'Должность создана');
+      reset();
+      load();
+    } catch (error) { toast.error(error.response?.data?.error || 'Не удалось сохранить должность'); }
+  };
+
+  const remove = async (id) => {
+    if (!await confirm('Удалить должность? У сотрудников она станет не назначена.')) return;
+    try { await jobPositionsAPI.delete(id); load(); }
+    catch (error) { toast.error(error.response?.data?.error || 'Не удалось удалить должность'); }
+  };
+
+  if (loading) return <div className="loading-spinner">Загрузка...</div>;
+  return (
+    <div className="settings-section">
+      <h2 className="settings-section-title">Справочник должностей</h2>
+      <p className="settings-section-desc">Должность назначается сотруднику и определяет формулу его KPI. Она не управляет доступом к системе.</p>
+      {!isAdministrator && <div className="info-banner">Просмотр доступен. Создавать должности и изменять KPI может только администратор.</div>}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <h3 className="settings-card-title">Должности сотрудников</h3>
+          {isAdministrator && <button className="btn btn-primary btn-small" onClick={() => { reset(); setShowForm(true); }}>+ Добавить</button>}
+        </div>
+        {showForm && (isAdministrator || canViewRows) && (
+          <div className="settings-user-form">
+            <form onSubmit={submit}>
+              <div className="form-group"><label>Название должности *</label><input disabled={readOnlyForm} value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} /></div>
+              <KpiFormulaBuilder readOnly={readOnlyForm} value={formData.kpiConfig} metrics={metrics} onChange={(kpiConfig) => setFormData((prev) => ({ ...prev, kpiConfig }))} />
+              <div className="form-actions-inline">{!readOnlyForm && <button className="btn btn-primary" type="submit">Сохранить</button>}<button className="btn" type="button" onClick={reset}>Закрыть</button></div>
+            </form>
+          </div>
+        )}
+        <div className="table-container"><div className="table-scroll"><table className="data-table">
+          <thead><tr><th>Должность</th><th>KPI</th>{isAdministrator && <th>Действия</th>}</tr></thead>
+          <tbody>{items.map((item) => <tr key={item.id} className={isAdministrator ? 'row-interactive' : canViewRows ? 'row-interactive row-readonly' : ''}
+            onClick={() => isAdministrator ? edit(item) : canViewRows ? view(item) : undefined}>
+            <td className="td-bold">{item.name}</td>
+            <td>{item.kpiConfig?.enabled ? <span className="status-badge status-completed">Настроен</span> : <span className="text-muted">Не задан</span>}</td>
+            {isAdministrator && <td onClick={(event) => event.stopPropagation()}><ActionsMenu items={[{ icon: <Pencil size={14} />, label: 'Изменить', onClick: () => edit(item) }, { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => remove(item.id), danger: true }]} /></td>}
+          </tr>)}</tbody>
+        </table></div></div>
+      </div>
+    </div>
+  );
+}
+
 /** Основной компонент страницы настроек */
 function SettingsPage() {
-  const { canEdit } = useAuth();
+  const { canEdit, user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState('company');
@@ -583,6 +703,7 @@ function SettingsPage() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editUserId, setEditUserId] = useState(null);
+  const [readOnlyUserForm, setReadOnlyUserForm] = useState(false);
   const [userFormData, setUserFormData] = useState({ username: '', password: '', fullName: '', positionId: '', employeeId: '' });
 
   const [positions, setPositions] = useState([]);
@@ -593,6 +714,7 @@ function SettingsPage() {
   const [activating, setActivating] = useState(false);
 
   const isSettingsReadOnly = canEdit('settings') === false;
+  const isManager = user?.positionName === 'Руководитель';
 
   /** Загрузка данных компании при монтировании */
   useEffect(() => {
@@ -728,6 +850,7 @@ function SettingsPage() {
   const resetUserForm = () => {
     setUserFormData({ username: '', password: '', fullName: '', positionId: '', employeeId: '' });
     setEditUserId(null);
+    setReadOnlyUserForm(false);
     setShowUserForm(false);
   };
 
@@ -741,6 +864,14 @@ function SettingsPage() {
       employeeId: user.employeeId || ''
     });
     setEditUserId(user.id);
+    setReadOnlyUserForm(false);
+    setShowUserForm(true);
+  };
+
+  const handleViewUser = (item) => {
+    setUserFormData({ username: item.username, password: '', fullName: item.fullName || '', positionId: item.positionId || '', employeeId: item.employeeId || '' });
+    setEditUserId(item.id);
+    setReadOnlyUserForm(true);
     setShowUserForm(true);
   };
 
@@ -973,9 +1104,9 @@ function SettingsPage() {
             <div className="settings-card">
               <div className="settings-card-header">
                 <h3 className="settings-card-title">Учётные записи</h3>
-                <button onClick={() => { resetUserForm(); setShowUserForm(!showUserForm); }} className="btn btn-primary btn-small">
+                {!isSettingsReadOnly && <button onClick={() => { resetUserForm(); setShowUserForm(!showUserForm); }} className="btn btn-primary btn-small">
                   {showUserForm ? 'Закрыть' : '+ Добавить'}
-                </button>
+                </button>}
               </div>
 
               {showUserForm && (
@@ -985,17 +1116,17 @@ function SettingsPage() {
                     <div className="form-row">
                       <div className="form-group">
                         <label>Логин *</label>
-                        <input type="text" value={userFormData.username} onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })} disabled={!!editUserId} />
+                        <input type="text" value={userFormData.username} onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })} disabled={!!editUserId || readOnlyUserForm} />
                       </div>
                       <div className="form-group">
                         <label>{editUserId ? 'Новый пароль (пусто = без изменений)' : 'Пароль *'}</label>
-                        <PasswordInput value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })} />
+                        <PasswordInput disabled={readOnlyUserForm} value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })} />
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>ФИО</label>
-                        <input type="text" value={userFormData.fullName} onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })} />
+                        <input disabled={readOnlyUserForm} type="text" value={userFormData.fullName} onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })} />
                       </div>
                       <div className="form-group">
                         <label>Роль</label>
@@ -1004,6 +1135,7 @@ function SettingsPage() {
                           onChange={(v) => setUserFormData({ ...userFormData, positionId: v })}
                           placeholder="Не назначена"
                           options={positions.map(p => ({ value: p.id, label: p.name }))}
+                          disabled={readOnlyUserForm}
                         />
                       </div>
                     </div>
@@ -1015,12 +1147,13 @@ function SettingsPage() {
                           onChange={(v) => setUserFormData({ ...userFormData, employeeId: v })}
                           placeholder="Не привязан"
                           options={employees.map(emp => ({ value: emp.id, label: `${emp.lastName} ${emp.firstName} ${emp.middleName}` }))}
+                          disabled={readOnlyUserForm}
                         />
                       </div>
                       <div className="form-group" />
                     </div>
                     <div className="form-actions-inline">
-                      <button type="submit" className="btn btn-primary">{editUserId ? 'Обновить' : 'Создать'}</button>
+                      {!readOnlyUserForm && <button type="submit" className="btn btn-primary">{editUserId ? 'Обновить' : 'Создать'}</button>}
                       <button type="button" onClick={resetUserForm} className="btn">Отмена</button>
                     </div>
                   </form>
@@ -1046,10 +1179,11 @@ function SettingsPage() {
                       </thead>
                       <tbody>
                         {users.map(u => (
-                          <tr key={u.id}>
+                          <tr key={u.id} className={!isSettingsReadOnly ? 'row-interactive' : isManager ? 'row-interactive row-readonly' : ''}
+                            onClick={() => !isSettingsReadOnly ? handleEditUser(u) : isManager ? handleViewUser(u) : undefined}>
                             <td className="td-bold">{u.username}</td>
                             <td>{u.fullName || '—'}</td>
-                            <td>
+                            <td onClick={(event) => event.stopPropagation()}>
                               {u.positionName ? (
                                 <span className="status-badge status-under-repair">{u.positionName}</span>
                               ) : <span className="status-badge status-needs-repair">Не назначена</span>}
@@ -1057,10 +1191,10 @@ function SettingsPage() {
                             <td>{u.employeeName || '—'}</td>
                             <td>{formatDate(u.createdAt)}</td>
                             <td>
-                              <ActionsMenu items={[
+                              {!isSettingsReadOnly && <ActionsMenu items={[
                                 { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEditUser(u) },
                                 { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDeleteUser(u.id), danger: true },
-                              ]} />
+                              ]} />}
                             </td>
                           </tr>
                         ))}
@@ -1076,12 +1210,12 @@ function SettingsPage() {
                       <MobileDataCardRow label="Роль">{u.positionName || 'Не назначена'}</MobileDataCardRow>
                       <MobileDataCardRow label="Сотрудник">{u.employeeName || '—'}</MobileDataCardRow>
                       <MobileDataCardRow label="Создан">{formatDate(u.createdAt)}</MobileDataCardRow>
-                      <MobileDataCardActions>
+                      {!isSettingsReadOnly && <MobileDataCardActions>
                         <ActionsMenu items={[
                           { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => handleEditUser(u) },
                           { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDeleteUser(u.id), danger: true },
                         ]} />
-                      </MobileDataCardActions>
+                      </MobileDataCardActions>}
                     </MobileDataCard>
                   ))}
                 </MobileDataCards>
@@ -1095,6 +1229,8 @@ function SettingsPage() {
         {activeTab === 'positions' && (
           <PositionsTab />
         )}
+
+        {activeTab === 'jobPositions' && <JobPositionsTab />}
 
         {/* Вкладка «Интеграции» */}
         {activeTab === 'integrations' && (

@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/employee');
+const JobPosition = require('../models/jobPosition');
 const { requirePermission } = require('../middleware/auth');
 
 /**
@@ -71,6 +72,9 @@ router.get('/:id', requirePermission('employees', 'view'), async (req, res) => {
  */
 router.post('/', requirePermission('employees', 'edit'), async (req, res) => {
   try {
+    if (req.body.jobPositionId && !await JobPosition.findById(req.body.jobPositionId, req.user.companyId)) {
+      return res.status(400).json({ error: 'Выбранная должность не найдена' });
+    }
     const employee = await Employee.create(req.body, req.user.companyId);
     res.status(201).json(employee);
   } catch (error) {
@@ -89,6 +93,9 @@ router.post('/', requirePermission('employees', 'edit'), async (req, res) => {
  */
 router.put('/:id', requirePermission('employees', 'edit'), async (req, res) => {
   try {
+    if (req.body.jobPositionId && !await JobPosition.findById(req.body.jobPositionId, req.user.companyId)) {
+      return res.status(400).json({ error: 'Выбранная должность не найдена' });
+    }
     const employee = await Employee.update(req.params.id, req.body, req.user.companyId);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
