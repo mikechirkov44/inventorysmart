@@ -64,7 +64,7 @@ export default function KpiFormulaBuilder({ value, onChange, metrics = [], readO
       </div>
 
       {!readOnly && <button type="button" className="btn btn-small" onClick={applyMaintenanceTemplate}>
-        <WandSparkles size={15} /> Шаблон «Профилактика»
+        <WandSparkles size={15} /> Пример
       </button>}
 
       <div className="kpi-palette">
@@ -109,8 +109,8 @@ export default function KpiFormulaBuilder({ value, onChange, metrics = [], readO
         {thresholds.length === 0 && <p className="text-muted">Добавьте пороги, например: от 98% результата — 100% премии.</p>}
         {thresholds.map((item, index) => (
           <div className="kpi-threshold-row" key={index}>
-            <label>Если KPI от <input disabled={readOnly} type="number" step="0.1" value={item.from} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, from: Number(event.target.value) }; update({ thresholds: next }); }} /> %</label>
-            <label>Премия <input disabled={readOnly} type="number" step="0.1" value={item.payout} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, payout: Number(event.target.value) }; update({ thresholds: next }); }} /> %</label>
+            <label><span>Результат KPI от</span><span className="kpi-number-field"><input disabled={readOnly} type="number" step="0.1" value={item.from} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, from: Number(event.target.value) }; update({ thresholds: next }); }} /><b>%</b></span></label>
+            <label><span>Размер премии</span><span className="kpi-number-field"><input disabled={readOnly} type="number" step="0.1" value={item.payout} onChange={(event) => { const next = [...thresholds]; next[index] = { ...item, payout: Number(event.target.value) }; update({ thresholds: next }); }} /><b>%</b></span></label>
             {!readOnly && <button type="button" className="icon-btn danger" aria-label="Удалить порог" onClick={() => update({ thresholds: thresholds.filter((_, i) => i !== index) })}><Trash2 size={15} /></button>}
           </div>
         ))}
