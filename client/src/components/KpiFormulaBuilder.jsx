@@ -7,6 +7,7 @@ const OPERATIONS = [
   { type: 'operator', value: '*', label: '×' }, { type: 'operator', value: '/', label: '÷' },
   { type: 'paren', value: '(', label: '(' }, { type: 'paren', value: ')', label: ')' },
   { type: 'number', value: 100, label: '100' },
+  { type: 'suffix', value: '%', label: '%' },
 ];
 
 const DEFAULT_THRESHOLDS = [

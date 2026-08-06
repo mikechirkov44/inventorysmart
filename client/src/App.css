@@ -6318,7 +6318,7 @@ input, textarea, select { font-family: inherit; }
 .data-table tr.row-interactive { cursor: pointer; }
 .data-table tr.row-interactive:hover td { background: var(--bg-hover, #f8fafc); }
 .data-table tr.row-readonly { cursor: zoom-in; }
-.kpi-token.operator, .kpi-token.paren, .kpi-token.number { border-color: #ddd6fe; background: #f5f3ff; color: #5b21b6; font-weight: 700; }
+.kpi-token.operator, .kpi-token.paren, .kpi-token.number, .kpi-token.suffix { border-color: #ddd6fe; background: #f5f3ff; color: #5b21b6; font-weight: 700; }
 .kpi-token button { border: 0; background: transparent; color: inherit; font-size: 18px; cursor: pointer; line-height: 1; }
 .kpi-formula-preview { margin: 10px 0 22px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 .kpi-thresholds { border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 18px; }

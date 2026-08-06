@@ -44,6 +44,8 @@ function validateConfig(value) {
       if (expectValue || balance === 0) throw new Error('Некорректная закрывающая скобка');
       balance -= 1;
       expectValue = false;
+    } else if (token.type === 'suffix' && token.value === '%') {
+      if (expectValue) throw new Error('Знак процента должен стоять после значения');
     } else {
       throw new Error('Недопустимый элемент формулы');
     }
@@ -68,6 +70,7 @@ function evaluate(configValue, values) {
   const operators = [];
   config.tokens.forEach((token) => {
     if (token.type === 'metric' || token.type === 'number') output.push(token);
+    if (token.type === 'suffix') output.push(token);
     if (token.type === 'operator') {
       while (operators.length && OPERATORS.has(operators.at(-1).value)
         && PRECEDENCE[operators.at(-1).value] >= PRECEDENCE[token.value]) output.push(operators.pop());
@@ -84,6 +87,9 @@ function evaluate(configValue, values) {
   output.forEach((token) => {
     if (token.type === 'metric') stack.push(Number(values[token.value]) || 0);
     else if (token.type === 'number') stack.push(Number(token.value));
+    else if (token.type === 'suffix') {
+      // KPI already returns a percentage score; this postfix node is a visual unit marker.
+    }
     else {
       const right = stack.pop();
       const left = stack.pop();
