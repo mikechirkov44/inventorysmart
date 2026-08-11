@@ -164,6 +164,7 @@ async function start() {
   const companyRoutes = require('./routes/company');
   const positionsRoutes = require('./routes/positions');
   const jobPositionsRoutes = require('./routes/jobPositions');
+  const kpiIndicatorsRoutes = require('./routes/kpiIndicators');
   const commonFaultsRoutes = require('./routes/commonFaults');
   const equipmentCategoryRoutes = require('./routes/equipmentCategories');
   const causesRoutes = require('./routes/causes');
@@ -192,6 +193,7 @@ async function start() {
   app.use('/api/company', companyRoutes);
   app.use('/api/positions', positionsRoutes);
   app.use('/api/job-positions', jobPositionsRoutes);
+  app.use('/api/kpi-indicators', kpiIndicatorsRoutes);
   app.use('/api/activity-history', activityHistoryRoutes);
 
   // Global error handler — never leak internals

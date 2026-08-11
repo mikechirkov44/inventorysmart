@@ -96,11 +96,14 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
  */
 router.patch('/theme', authenticate, requirePermission('settings', 'edit'), async (req, res) => {
   try {
-    const { themeColor } = req.body;
+    const { themeColor, themeMode } = req.body;
     if (!themeColor || !/^#[0-9a-fA-F]{6}$/.test(themeColor)) {
       return res.status(400).json({ error: 'Укажите цвет в формате #RRGGBB' });
     }
-    const company = await Company.update({ companyId: req.user.companyId, themeColor });
+    if (themeMode !== undefined && !['light', 'dark', 'hybrid'].includes(themeMode)) {
+      return res.status(400).json({ error: 'Неизвестная тема оформления' });
+    }
+    const company = await Company.update({ companyId: req.user.companyId, themeColor, themeMode });
     res.json(company);
   } catch (error) {
     console.error('Route error:', error);

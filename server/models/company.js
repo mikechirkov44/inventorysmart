@@ -30,6 +30,7 @@ function mapRow(row) {
     apiEnabled: row.api_enabled,
     apiKey: row.api_key || '',
     themeColor: row.theme_color || '#4f46e5',
+    themeMode: row.theme_mode || 'light',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -180,6 +181,7 @@ module.exports = {
     if (data.apiEnabled !== undefined) mapped.api_enabled = data.apiEnabled;
     if (data.apiKey !== undefined) mapped.api_key = data.apiKey;
     if (data.themeColor !== undefined) mapped.theme_color = data.themeColor;
+    if (data.themeMode !== undefined) mapped.theme_mode = data.themeMode;
     mapped.updated_at = new Date();
 
     const keys = Object.keys(mapped);

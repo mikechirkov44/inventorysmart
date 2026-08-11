@@ -21,15 +21,16 @@ function normalizeConfig(value) {
   };
 }
 
-function validateConfig(value) {
+function validateConfig(value, extraMetricIds = []) {
   const config = normalizeConfig(value);
+  const allowedMetricIds = new Set([...METRIC_IDS, ...extraMetricIds]);
   if (config.tokens.length > 100) throw new Error('Формула слишком длинная');
   let balance = 0;
   let expectValue = true;
   config.tokens.forEach((token) => {
     if (!token || typeof token !== 'object') throw new Error('Некорректный элемент формулы');
     if (token.type === 'metric') {
-      if (!expectValue || !METRIC_IDS.has(token.value)) throw new Error('Некорректный показатель в формуле');
+      if (!expectValue || !allowedMetricIds.has(token.value)) throw new Error('Некорректный показатель в формуле');
       expectValue = false;
     } else if (token.type === 'number') {
       if (!expectValue || !Number.isFinite(Number(token.value))) throw new Error('Некорректное число в формуле');
@@ -64,7 +65,7 @@ function validateConfig(value) {
 }
 
 function evaluate(configValue, values) {
-  const config = validateConfig(configValue);
+  const config = validateConfig(configValue, Object.keys(values));
   if (!config.enabled || config.tokens.length === 0) return null;
   const output = [];
   const operators = [];

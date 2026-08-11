@@ -288,6 +288,31 @@ async function migrate() {
         UNIQUE(company_id, name)
       );
 
+      CREATE TABLE IF NOT EXISTS kpi_indicators (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(100) NOT NULL,
+        unit VARCHAR(50) NOT NULL DEFAULT '%',
+        higher_is_better BOOLEAN NOT NULL DEFAULT true,
+        active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(company_id, code)
+      );
+
+      CREATE TABLE IF NOT EXISTS kpi_indicator_values (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        indicator_id UUID NOT NULL REFERENCES kpi_indicators(id) ON DELETE CASCADE,
+        company_id UUID NOT NULL,
+        period_month DATE NOT NULL,
+        plan_value NUMERIC(14,2) NOT NULL DEFAULT 0,
+        actual_value NUMERIC(14,2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(indicator_id, period_month)
+      );
+
       ALTER TABLE users ADD COLUMN IF NOT EXISTS position_id UUID REFERENCES positions(id) ON DELETE SET NULL;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id UUID REFERENCES employees(id) ON DELETE SET NULL;
 
@@ -505,6 +530,7 @@ async function migrate() {
 
     await withSavepoint(client, 'theme_color', async () => {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS theme_color VARCHAR(20) DEFAULT '#4f46e5'`);
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS theme_mode VARCHAR(20) DEFAULT 'light'`);
     });
 
     // Migrate positions to per-company scope (critical — must succeed)

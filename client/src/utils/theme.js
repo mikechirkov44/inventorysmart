@@ -57,6 +57,11 @@ export function applyThemeColor(color) {
   root.style.setProperty('--nav-accent-soft', softer);
 }
 
+export function applyThemeMode(mode) {
+  const safe = ['light', 'dark', 'hybrid'].includes(mode) ? mode : 'light';
+  document.documentElement.dataset.theme = safe;
+}
+
 export function resetThemeColor() {
   applyThemeColor(DEFAULT_PRIMARY);
 }

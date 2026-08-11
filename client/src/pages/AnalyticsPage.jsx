@@ -627,6 +627,7 @@ function IncidentsReport({ dateFrom, dateTo, onDateFromChange, onDateToChange, o
 function AnalyticsPage() {
   const initialRange = useMemo(() => getMonthRange(0), []);
   const [analytics, setAnalytics] = useState([]);
+  const [indicators, setIndicators] = useState([]);
   const [summary, setSummary] = useState(null);
   const [period, setPeriod] = useState(initialRange);
   const [dateFrom, setDateFrom] = useState(initialRange.from);
@@ -644,6 +645,7 @@ function AnalyticsPage() {
     ])
       .then(([analyticsResponse, summaryResponse]) => {
         setAnalytics(analyticsResponse.data.employees || []);
+        setIndicators(analyticsResponse.data.indicators || []);
         setPeriod(analyticsResponse.data.period || summaryResponse.data.period || params);
         setSummary(summaryResponse.data);
         setLoading(false);
@@ -748,6 +750,11 @@ function AnalyticsPage() {
           )}
 
           <PerformanceChart data={analytics} />
+
+          {indicators.length > 0 && <div className="table-container indicator-analytics"><div className="table-scroll"><table className="data-table">
+            <thead><tr><th>Показатель</th><th>План</th><th>Факт</th><th>Выполнение</th><th>Отклонение</th></tr></thead>
+            <tbody>{indicators.map(item => <tr key={item.id}><td className="td-bold">{item.name}</td><td>{item.planValue} {item.unit}</td><td>{item.actualValue} {item.unit}</td><td><span className={`rate-value ${item.performance>=100?'good':item.performance>=80?'warn':'bad'}`}>{item.performance}%</span></td><td>{Math.round((item.actualValue-item.planValue)*100)/100} {item.unit}</td></tr>)}</tbody>
+          </table></div></div>}
 
           <div className="table-container desktop-table-only">
             <div className="table-scroll">

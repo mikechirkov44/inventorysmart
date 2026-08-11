@@ -13,6 +13,7 @@ const Room = require('../models/room');
 const Employee = require('../models/employee');
 const { requirePermission } = require('../middleware/auth');
 const JobPosition = require('../models/jobPosition');
+const KpiIndicator = require('../models/kpiIndicator');
 const { evaluate: evaluateKpi } = require('../utils/kpiFormula');
 const { getWorkStartDate, startOfDay } = require('../utils/workDue');
 const {
@@ -42,6 +43,9 @@ async function getAnalytics(companyId, fromStr, toStr) {
   const allRooms = await Room.findAll(companyId);
   const allEmployees = await Employee.findAll(companyId);
   const positions = await JobPosition.findAll(companyId);
+  const indicatorMonth = `${from.toISOString().slice(0, 7)}-01`;
+  const indicators = await KpiIndicator.findAll(companyId, indicatorMonth);
+  const customValues = Object.fromEntries(indicators.map((item) => [`custom:${item.id}`, item.actualValue]));
   const positionMap = Object.fromEntries(positions.map((position) => [position.id, position]));
 
   const workMap = {};
@@ -151,7 +155,7 @@ async function getAnalytics(companyId, fromStr, toStr) {
       completionRate: duePassed > 0
         ? Math.round((stats.totalCompleted / duePassed) * 100)
         : 0,
-      kpi: position ? evaluateKpi(position.kpiConfig, { ...stats, duePassed }) : null,
+      kpi: position ? evaluateKpi(position.kpiConfig, { ...stats, duePassed, ...customValues }) : null,
     };
   });
 
@@ -161,6 +165,7 @@ async function getAnalytics(companyId, fromStr, toStr) {
       to: to.toISOString().slice(0, 10),
     },
     employees,
+    indicators,
   };
 }
 

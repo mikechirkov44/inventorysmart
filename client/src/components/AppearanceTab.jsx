@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Palette } from 'lucide-react';
 import { companyAPI } from '../services/api';
 import { useToast } from './Toast';
-import { applyThemeColor } from '../utils/theme';
+import { applyThemeColor, applyThemeMode } from '../utils/theme';
 
 const PRESET_COLORS = [
   { id: 'indigo', value: '#4f46e5', label: 'Индиго' },
@@ -21,6 +21,7 @@ const PRESET_COLORS = [
 export default function AppearanceTab({ readOnly }) {
   const toast = useToast();
   const [color, setColor] = useState('#4f46e5');
+  const [mode, setMode] = useState('light');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +29,9 @@ export default function AppearanceTab({ readOnly }) {
     companyAPI.get().then((res) => {
       const c = res.data.themeColor || '#4f46e5';
       setColor(c);
+      setMode(res.data.themeMode || 'light');
       applyThemeColor(c);
+      applyThemeMode(res.data.themeMode || 'light');
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -48,6 +51,14 @@ export default function AppearanceTab({ readOnly }) {
     }
   };
 
+  const handleMode = async (newMode) => {
+    if (readOnly) return;
+    setMode(newMode); applyThemeMode(newMode); setSaving(true);
+    try { await companyAPI.updateTheme({ themeColor: color, themeMode: newMode }); toast.success('Тема сохранена'); }
+    catch { toast.error('Не удалось сохранить тему'); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return <div className="loading-spinner">Загрузка...</div>;
 
   return (
@@ -56,6 +67,14 @@ export default function AppearanceTab({ readOnly }) {
       <p className="settings-hint" style={{ marginBottom: 16 }}>
         Выберите основной цвет интерфейса для вашей компании. Изменения применяются сразу.
       </p>
+
+      <div className="theme-mode-grid">
+        {[['light','Светлая','Светлый фон и панели'],['dark','Тёмная','Тёмный фон и панели'],['hybrid','Гибрид','Тёмная навигация, светлый контент']].map(([id,label,desc]) => (
+          <button key={id} type="button" disabled={readOnly || saving} className={`theme-mode-card ${mode === id ? 'active' : ''}`} onClick={() => handleMode(id)}>
+            <span className={`theme-mode-preview ${id}`}><i /><i /></span><strong>{label}</strong><small>{desc}</small>
+          </button>
+        ))}
+      </div>
 
       <div className="appearance-colors">
         {PRESET_COLORS.map((preset) => (

@@ -18,6 +18,7 @@ import UploadImage from '../components/UploadImage';
 import AppearanceTab from '../components/AppearanceTab';
 import ActivityHistoryTab from '../components/ActivityHistoryTab';
 import KpiFormulaBuilder from '../components/KpiFormulaBuilder';
+import KpiIndicatorsTab from '../components/KpiIndicatorsTab';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
@@ -75,6 +76,7 @@ const TABS = [
   { id: 'users', label: 'Пользователи' },
   { id: 'positions', label: 'Роли' },
   { id: 'jobPositions', label: 'Должности и KPI' },
+  { id: 'indicators', label: 'Показатели' },
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
@@ -1231,6 +1233,7 @@ function SettingsPage() {
         )}
 
         {activeTab === 'jobPositions' && <JobPositionsTab />}
+        {activeTab === 'indicators' && <KpiIndicatorsTab />}
 
         {/* Вкладка «Интеграции» */}
         {activeTab === 'integrations' && (

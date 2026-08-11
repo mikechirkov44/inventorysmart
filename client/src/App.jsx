@@ -31,7 +31,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LicenseBanner from './components/LicenseBanner';
 import MobileMoreMenu from './components/MobileMoreMenu';
 import NotificationBell from './components/NotificationBell';
-import { applyThemeColor } from './utils/theme';
+import { applyThemeColor, applyThemeMode } from './utils/theme';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage'));
@@ -175,6 +175,7 @@ function AppNav({ collapsed, onToggle }) {
         if (res.data?.themeColor) {
           applyThemeColor(res.data.themeColor);
         }
+        applyThemeMode(res.data?.themeMode || 'light');
       }).catch(() => {});
     }
   }, [user]);

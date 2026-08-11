@@ -249,6 +249,14 @@ export const jobPositionsAPI = {
   delete: (id) => api.delete(`/job-positions/${id}`),
 };
 
+export const kpiIndicatorsAPI = {
+  getAll: (month) => api.get('/kpi-indicators', { params: { month } }),
+  create: (data) => api.post('/kpi-indicators', data),
+  update: (id, data) => api.put(`/kpi-indicators/${id}`, data),
+  setValue: (id, data) => api.put(`/kpi-indicators/${id}/value`, data),
+  delete: (id) => api.delete(`/kpi-indicators/${id}`),
+};
+
 /** API для управления наработкой оборудования */
 export const operatingHoursAPI = {
   getByEquipmentId: (equipmentId) => api.get(`/equipment/${equipmentId}/operating-hours`),
