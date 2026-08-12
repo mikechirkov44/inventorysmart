@@ -76,7 +76,6 @@ const TABS = [
   { id: 'users', label: 'Пользователи' },
   { id: 'positions', label: 'Роли' },
   { id: 'jobPositions', label: 'Должности и KPI' },
-  { id: 'indicators', label: 'Показатели' },
   { id: 'integrations', label: 'Интеграции' },
   { id: 'appearance', label: 'Оформление' },
 ];
@@ -608,6 +607,12 @@ function JobPositionsTab() {
     } finally { setLoading(false); }
   };
 
+  const reloadMetrics = async () => {
+    if (!(isAdministrator || canViewRows)) return;
+    const response = await jobPositionsAPI.getKpiMetrics();
+    setMetrics(response.data);
+  };
+
   useEffect(() => { load(); }, []);
 
   const reset = () => {
@@ -664,6 +669,7 @@ function JobPositionsTab() {
           <div className="settings-user-form">
             <form onSubmit={submit}>
               <div className="form-group"><label>Название должности *</label><input disabled={readOnlyForm} value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} /></div>
+              <KpiIndicatorsTab embedded onChanged={reloadMetrics} />
               <KpiFormulaBuilder readOnly={readOnlyForm} value={formData.kpiConfig} metrics={metrics} onChange={(kpiConfig) => setFormData((prev) => ({ ...prev, kpiConfig }))} />
               <div className="form-actions-inline">{!readOnlyForm && <button className="btn btn-primary" type="submit">Сохранить</button>}<button className="btn" type="button" onClick={reset}>Закрыть</button></div>
             </form>
@@ -1233,7 +1239,6 @@ function SettingsPage() {
         )}
 
         {activeTab === 'jobPositions' && <JobPositionsTab />}
-        {activeTab === 'indicators' && <KpiIndicatorsTab />}
 
         {/* Вкладка «Интеграции» */}
         {activeTab === 'integrations' && (

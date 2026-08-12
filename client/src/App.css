@@ -6342,19 +6342,34 @@ input, textarea, select { font-family: inherit; }
 .theme-mode-preview i:first-child { background: #172033; }.theme-mode-preview i:last-child { background: #fff; }
 .theme-mode-preview.dark i { background: #111827; }.theme-mode-preview.dark i:last-child { background: #1f2937; }
 .theme-mode-preview.light i:first-child { background: #eef2f7; }
-.indicator-create { display:grid; grid-template-columns:2fr 1.2fr .7fr auto auto; gap:10px; align-items:center; padding:16px; margin-bottom:14px; background:var(--bg-secondary,#f8fafc); border:1px solid var(--border-color,#e2e8f0); border-radius:12px; }
-.indicator-direction { display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:13px; }.indicator-toolbar{display:flex;justify-content:flex-end;margin:10px 0}.indicator-toolbar label{display:flex;align-items:center;gap:8px}.indicator-value{width:110px}.indicator-code{display:block;color:var(--text-muted,#64748b);margin-top:3px}.indicator-actions{display:flex;gap:4px}
+.kpi-indicators.embedded { margin: 22px 0 0; padding: 18px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 14px; background: var(--bg-secondary, #f8fafc); }
+.kpi-indicators-header { align-items: flex-start; }
+.kpi-indicators-header > div:first-child { min-width: 0; }
+.kpi-indicators-header .settings-section-desc { margin: 4px 0 0; }
+.indicator-editor { margin: 16px 0; border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; background: var(--bg-primary, #fff); }
+.indicator-editor .settings-card-header { margin-bottom: 14px; }
+.indicator-editor h4 { margin: 0; color: var(--text-primary, #0f172a); }
+.indicator-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding-top: 24px; }
+.indicator-toolbar { display: flex; justify-content: flex-end; margin: 14px 0 10px; }
+.indicator-toolbar label { display: flex; align-items: center; gap: 10px; color: var(--text-secondary, #475569); font-size: 13px; font-weight: 600; }
+.indicator-toolbar input { width: auto; min-width: 150px; }
+.indicator-value { width: 110px; }
+.indicator-code { display: block; color: var(--text-muted, #64748b); margin-top: 3px; font-weight: 400; }
+.indicator-actions { display: flex; gap: 4px; }
+.indicator-empty { padding: 28px !important; text-align: center; }
 
 :root[data-theme="dark"] { color-scheme: dark; --bg-primary:#1f2937; --bg-secondary:#111827; --text-primary:#f8fafc; --text-secondary:#cbd5e1; --text-muted:#94a3b8; --border-color:#374151; }
 :root[data-theme="dark"] body, :root[data-theme="dark"] .app, :root[data-theme="dark"] .main-content { background:#111827; color:#f8fafc; }
-:root[data-theme="dark"] .settings-card, :root[data-theme="dark"] .table-container, :root[data-theme="dark"] .directory-form-card, :root[data-theme="dark"] .summary-card, :root[data-theme="dark"] .kpi-builder, :root[data-theme="dark"] input, :root[data-theme="dark"] textarea { background:#1f2937; color:#f8fafc; border-color:#374151; }
+:root[data-theme="dark"] .settings-card, :root[data-theme="dark"] .table-container, :root[data-theme="dark"] .directory-form-card, :root[data-theme="dark"] .summary-card, :root[data-theme="dark"] .kpi-builder, :root[data-theme="dark"] .kpi-indicators, :root[data-theme="dark"] .indicator-editor, :root[data-theme="dark"] input, :root[data-theme="dark"] textarea { background:#1f2937; color:#f8fafc; border-color:#374151; }
 :root[data-theme="dark"] .data-table td, :root[data-theme="dark"] .data-table th { border-color:#374151; color:#e5e7eb; }
 :root[data-theme="hybrid"] { --bg-primary:#fff; --bg-secondary:#f5f7fb; --text-primary:#0f172a; --text-secondary:#475569; --text-muted:#64748b; --border-color:#e2e8f0; }
 :root[data-theme="hybrid"] .sidebar { background:#111827; }
 
 @media (max-width: 720px) {
   .theme-mode-grid { grid-template-columns: 1fr; }
-  .indicator-create { grid-template-columns:1fr; }
+  .kpi-indicators-header { flex-direction: column; }
+  .kpi-indicators-header .btn { width: 100%; justify-content: center; }
+  .indicator-toggles { padding-top: 0; }
   .kpi-palette { grid-template-columns: 1fr; }
   .kpi-threshold-row { grid-template-columns: 1fr auto; gap: 10px; }
   .kpi-threshold-row label { grid-column: 1; justify-content: space-between; }
