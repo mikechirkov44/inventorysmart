@@ -65,7 +65,7 @@ export default function AppearanceTab({ readOnly }) {
     <div className="settings-section">
       <h2 className="settings-section-title"><Palette size={20} /> Оформление</h2>
       <p className="settings-hint" style={{ marginBottom: 16 }}>
-        Выберите основной цвет интерфейса для вашей компании. Изменения применяются сразу.
+        Выберите режим и основной цвет интерфейса. Настройка применяется ко всем страницам компании сразу.
       </p>
 
       <div className="theme-mode-grid">
@@ -104,15 +104,26 @@ export default function AppearanceTab({ readOnly }) {
         </div>
       )}
 
-      <div className="appearance-preview">
-        <div className="appearance-preview-title">Предпросмотр</div>
-        <div className="appearance-preview-row">
-          <span className="appearance-preview-btn">Кнопка</span>
-          <span className="appearance-preview-badge">Бейдж</span>
-          <span className="appearance-preview-nav">● Пункт меню</span>
-          <div className="appearance-preview-kpi">
-            <div className="appearance-preview-kpi-value">24</div>
-            <div className="appearance-preview-kpi-label">KPI</div>
+      <div className={`appearance-preview appearance-preview-${mode}`}>
+        <div className="appearance-preview-title">Предпросмотр темы</div>
+        <div className="appearance-demo-shell">
+          <aside className="appearance-demo-sidebar">
+            <span className="appearance-demo-logo">IS</span>
+            <span className="appearance-demo-nav active">Обзор</span>
+            <span className="appearance-demo-nav">Аналитика</span>
+            <span className="appearance-demo-nav">Настройки</span>
+          </aside>
+          <div className="appearance-demo-main">
+            <div className="appearance-demo-header"><i /><i /><i /></div>
+            <div className="appearance-demo-content">
+              <div className="appearance-demo-heading"><span>Рабочая панель</span><span className="appearance-preview-btn">Создать</span></div>
+              <div className="appearance-demo-cards">
+                <div className="appearance-preview-kpi"><div className="appearance-preview-kpi-value">24</div><div className="appearance-preview-kpi-label">Выполнено</div></div>
+                <div className="appearance-preview-kpi"><div className="appearance-preview-kpi-value">96%</div><div className="appearance-preview-kpi-label">KPI месяца</div></div>
+                <div className="appearance-demo-list"><span /><span /><span /></div>
+              </div>
+              <div className="appearance-preview-row"><span className="appearance-preview-badge">Выполнено</span><span className="appearance-preview-badge neutral">В работе</span></div>
+            </div>
           </div>
         </div>
       </div>

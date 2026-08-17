@@ -60,7 +60,12 @@ export function applyThemeColor(color) {
 export function applyThemeMode(mode) {
   const safe = ['light', 'dark', 'hybrid'].includes(mode) ? mode : 'light';
   document.documentElement.dataset.theme = safe;
+  localStorage.setItem('inventorysmart_theme_mode', safe);
 }
+
+// Применяем последнюю известную тему до ответа API, чтобы при загрузке не было
+// яркой вспышки светлого интерфейса перед включением тёмного режима.
+applyThemeMode(localStorage.getItem('inventorysmart_theme_mode') || 'light');
 
 export function resetThemeColor() {
   applyThemeColor(DEFAULT_PRIMARY);

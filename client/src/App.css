@@ -6358,12 +6358,123 @@ input, textarea, select { font-family: inherit; }
 .indicator-actions { display: flex; gap: 4px; }
 .indicator-empty { padding: 28px !important; text-align: center; }
 
-:root[data-theme="dark"] { color-scheme: dark; --bg-primary:#1f2937; --bg-secondary:#111827; --text-primary:#f8fafc; --text-secondary:#cbd5e1; --text-muted:#94a3b8; --border-color:#374151; }
-:root[data-theme="dark"] body, :root[data-theme="dark"] .app, :root[data-theme="dark"] .main-content { background:#111827; color:#f8fafc; }
-:root[data-theme="dark"] .settings-card, :root[data-theme="dark"] .table-container, :root[data-theme="dark"] .directory-form-card, :root[data-theme="dark"] .summary-card, :root[data-theme="dark"] .kpi-builder, :root[data-theme="dark"] .kpi-indicators, :root[data-theme="dark"] .indicator-editor, :root[data-theme="dark"] input, :root[data-theme="dark"] textarea { background:#1f2937; color:#f8fafc; border-color:#374151; }
-:root[data-theme="dark"] .data-table td, :root[data-theme="dark"] .data-table th { border-color:#374151; color:#e5e7eb; }
-:root[data-theme="hybrid"] { --bg-primary:#fff; --bg-secondary:#f5f7fb; --text-primary:#0f172a; --text-secondary:#475569; --text-muted:#64748b; --border-color:#e2e8f0; }
-:root[data-theme="hybrid"] .sidebar { background:#111827; }
+:root[data-theme="light"],
+:root[data-theme="hybrid"] {
+  color-scheme: light;
+  --bg-primary: #fff;
+  --bg-secondary: #f5f7fb;
+  --bg-hover: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-primary: #182233;
+  --bg-secondary: #0f1725;
+  --bg-hover: #202c3e;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #2d3a4f;
+  --white: #182233;
+  --surface: #182233;
+  --surface-muted: #202c3e;
+  --border-subtle: rgba(148, 163, 184, 0.18);
+  --gray-50: #111a29;
+  --gray-100: #172235;
+  --gray-200: #2d3a4f;
+  --gray-300: #425168;
+  --gray-400: #718096;
+  --gray-500: #94a3b8;
+  --gray-600: #b7c2d1;
+  --gray-700: #d6deea;
+  --gray-800: #edf2f7;
+  --gray-900: #f8fafc;
+  --success-light: rgba(5, 150, 105, 0.15);
+  --warning-light: rgba(217, 119, 6, 0.15);
+  --danger-light: rgba(220, 38, 38, 0.15);
+  --gradient-app-bg: linear-gradient(180deg, #0c1422 0%, #111a29 180px, #111a29 100%);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-sm: 0 3px 10px rgba(0, 0, 0, 0.2);
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, 0.26);
+  --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.32);
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .app,
+:root[data-theme="dark"] .app-body,
+:root[data-theme="dark"] .main-content { background: var(--gradient-app-bg); color: var(--text-primary); }
+
+:root[data-theme="dark"] .top-header,
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .table-container,
+:root[data-theme="dark"] .directory-form-card,
+:root[data-theme="dark"] .summary-card,
+:root[data-theme="dark"] .kpi-builder,
+:root[data-theme="dark"] .kpi-indicators,
+:root[data-theme="dark"] .indicator-editor,
+:root[data-theme="dark"] .modal,
+:root[data-theme="dark"] .modal-content,
+:root[data-theme="dark"] .confirm-modal,
+:root[data-theme="dark"] .notification-dropdown,
+:root[data-theme="dark"] .cs-trigger,
+:root[data-theme="dark"] .cs-dropdown,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+:root[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger),
+:root[data-theme="dark"] .modal-footer,
+:root[data-theme="dark"] .settings-user-form,
+:root[data-theme="dark"] .data-table th { background: var(--surface-muted); color: var(--text-secondary); border-color: var(--border-color); }
+:root[data-theme="dark"] .data-table td,
+:root[data-theme="dark"] .data-table th,
+:root[data-theme="dark"] .top-header,
+:root[data-theme="dark"] .settings-tabs { border-color: var(--border-color); }
+:root[data-theme="dark"] .data-table td { color: var(--text-primary); }
+:root[data-theme="dark"] .settings-section-title,
+:root[data-theme="dark"] .settings-card-title,
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] h3,
+:root[data-theme="dark"] h4 { color: var(--text-primary); }
+:root[data-theme="dark"] .text-muted,
+:root[data-theme="dark"] .settings-hint,
+:root[data-theme="dark"] .settings-section-desc,
+:root[data-theme="dark"] .form-hint { color: var(--text-muted); }
+:root[data-theme="dark"] .kpi-canvas { background: #121c2b; border-color: #425168; }
+:root[data-theme="dark"] .kpi-chip { background: #202c3e; color: #d6deea; border-color: #425168; }
+:root[data-theme="dark"] .kpi-token.metric { background: rgba(var(--primary-rgb), .18); color: var(--nav-accent-soft); border-color: rgba(var(--primary-rgb), .4); }
+
+/* Светлая тема действительно светлая; гибрид оставляет фирменную тёмную навигацию. */
+:root[data-theme="light"] .sidebar {
+  background: linear-gradient(180deg, #fff 0%, #f6f8fb 100%);
+  color: var(--gray-800);
+  box-shadow: 1px 0 0 var(--gray-200), 8px 0 28px rgba(15, 23, 42, 0.06);
+}
+:root[data-theme="light"] .nav-brand { border-color: var(--gray-200); }
+:root[data-theme="light"] .nav-brand a,
+:root[data-theme="light"] .nav-user-name { color: var(--gray-900); }
+:root[data-theme="light"] .nav-links a,
+:root[data-theme="light"] .nav-dropdown-trigger,
+:root[data-theme="light"] .nav-company,
+:root[data-theme="light"] .nav-footer button { color: var(--gray-600); }
+:root[data-theme="light"] .nav-links a:hover,
+:root[data-theme="light"] .nav-dropdown-trigger:hover { color: var(--primary); background: var(--primary-light); }
+:root[data-theme="light"] .nav-links a.active,
+:root[data-theme="light"] .nav-dropdown-trigger.active { color: var(--primary); background: var(--primary-light); }
+:root[data-theme="light"] .nav-footer { border-color: var(--gray-200); }
+
+:root[data-theme="hybrid"] .sidebar,
+:root[data-theme="dark"] .sidebar { background: linear-gradient(180deg, #0f172a 0%, #111827 100%); }
 
 @media (max-width: 720px) {
   .theme-mode-grid { grid-template-columns: 1fr; }

@@ -761,10 +761,10 @@
 
 .appearance-preview {
   margin-top: 24px;
-  padding: 20px;
-  background: var(--gray-50);
+  padding: 18px;
+  background: var(--surface-muted);
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .appearance-preview-title {
@@ -780,6 +780,51 @@
   gap: 10px;
   align-items: center;
 }
+
+.appearance-demo-shell {
+  display: grid;
+  grid-template-columns: 138px 1fr;
+  min-height: 230px;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: #f5f7fb;
+  box-shadow: var(--shadow-sm);
+}
+
+.appearance-demo-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 10px;
+  background: #fff;
+  border-right: 1px solid #e2e8f0;
+}
+
+.appearance-demo-logo {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 6px 12px;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.appearance-demo-nav { padding: 8px 10px; border-radius: 7px; color: #64748b; font-size: 11px; font-weight: 600; }
+.appearance-demo-nav.active { color: var(--primary); background: var(--primary-light); }
+.appearance-demo-main { min-width: 0; background: #f5f7fb; }
+.appearance-demo-header { display: flex; justify-content: flex-end; gap: 5px; padding: 12px 14px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+.appearance-demo-header i { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; }
+.appearance-demo-content { padding: 16px; }
+.appearance-demo-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; color: #0f172a; font-size: 13px; font-weight: 750; }
+.appearance-demo-cards { display: grid; grid-template-columns: 100px 100px minmax(130px, 1fr); gap: 10px; margin-bottom: 12px; }
+.appearance-demo-list { display: flex; flex-direction: column; justify-content: center; gap: 9px; padding: 13px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
+.appearance-demo-list span { height: 6px; border-radius: 3px; background: #e2e8f0; }
+.appearance-demo-list span:nth-child(2) { width: 72%; background: var(--primary-light); }
 
 .appearance-preview-btn {
   padding: 8px 16px;
@@ -815,11 +860,31 @@
 
 .appearance-preview-kpi {
   padding: 12px 16px;
-  background: white;
+  background: #fff;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   min-width: 100px;
 }
+
+.appearance-preview-badge.neutral { color: #475569; background: #e2e8f0; }
+
+.appearance-preview-dark .appearance-demo-shell,
+.appearance-preview-dark .appearance-demo-main { background: #0f1725; border-color: #2d3a4f; }
+.appearance-preview-dark .appearance-demo-sidebar { background: #111827; border-color: #2d3a4f; }
+.appearance-preview-dark .appearance-demo-nav { color: #94a3b8; }
+.appearance-preview-dark .appearance-demo-nav.active { color: var(--nav-accent-soft); background: var(--nav-active-bg); }
+.appearance-preview-dark .appearance-demo-header,
+.appearance-preview-dark .appearance-preview-kpi,
+.appearance-preview-dark .appearance-demo-list { background: #182233; border-color: #2d3a4f; }
+.appearance-preview-dark .appearance-demo-heading,
+.appearance-preview-dark .appearance-preview-kpi-value { color: #f8fafc; }
+.appearance-preview-dark .appearance-preview-kpi-label { color: #94a3b8; }
+.appearance-preview-dark .appearance-demo-list span { background: #2d3a4f; }
+.appearance-preview-dark .appearance-preview-badge.neutral { color: #cbd5e1; background: #2d3a4f; }
+
+.appearance-preview-hybrid .appearance-demo-sidebar { background: #111827; border-color: #1e293b; }
+.appearance-preview-hybrid .appearance-demo-nav { color: #94a3b8; }
+.appearance-preview-hybrid .appearance-demo-nav.active { color: var(--nav-accent-soft); background: var(--nav-active-bg); }
 
 .appearance-preview-kpi-value {
   font-size: 1.25rem;
@@ -831,6 +896,13 @@
   font-size: 11px;
   color: var(--gray-500);
   margin-top: 2px;
+}
+
+@media (max-width: 720px) {
+  .appearance-demo-shell { grid-template-columns: 82px 1fr; }
+  .appearance-demo-nav { overflow: hidden; padding-inline: 7px; text-overflow: ellipsis; }
+  .appearance-demo-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .appearance-demo-list { grid-column: 1 / -1; }
 }
 
 /* Modal unification */
