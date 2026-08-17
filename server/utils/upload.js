@@ -58,16 +58,24 @@ function excelFilter(req, file, cb) {
 }
 
 /**
- * Фильтр для PDF-файлов.
+ * Фильтр для файлов инструкций (PDF и Microsoft Word).
  */
 function pdfFilter(req, file, cb) {
-  const allowedTypes = /pdf/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = file.mimetype === 'application/pdf';
-  if (extname && mimetype) {
+  const extension = path.extname(file.originalname).toLowerCase();
+  const allowedMimeTypes = {
+    '.pdf': ['application/pdf'],
+    '.doc': ['application/msword', 'application/octet-stream'],
+    '.docx': [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/zip',
+      'application/octet-stream',
+    ],
+  };
+  const mimeTypes = allowedMimeTypes[extension];
+  if (mimeTypes && mimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Допустимы только PDF файлы'));
+    cb(new Error('Допустимы только файлы PDF, DOC и DOCX'));
   }
 }
 
@@ -92,7 +100,7 @@ const excelUpload = multer({
   fileFilter: excelFilter
 });
 
-// Загрузчик PDF-файлов (20 МБ, префикс 'instruction')
+// Загрузчик файлов инструкций (20 МБ, префикс 'instruction')
 const pdfUpload = multer({
   storage: createStorage('instruction'),
   limits: { fileSize: 20 * 1024 * 1024 },

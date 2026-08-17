@@ -72,6 +72,7 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
 
     let workIds = equipment.workIds || [];
     if (!Array.isArray(workIds)) workIds = [];
+    if (equipment.status === 'reserve') workIds = [];
     const dueTasks = [];
     const notDueTasks = [];
 

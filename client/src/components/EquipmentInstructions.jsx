@@ -8,7 +8,7 @@ import { resolveUploadField } from '../utils/uploads';
 
 /**
  * @module EquipmentInstructions
- * @description Компонент для управления инструкциями оборудования (PDF и Markdown)
+ * @description Компонент для управления инструкциями оборудования (PDF, Word и Markdown)
  */
 function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, instructionPdfUrl, onUpdate }) {
   const { can, canEdit } = useAuth();
@@ -27,8 +27,9 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      toast.error('Ошибка', 'Допустимы только PDF файлы');
+    const extension = file.name.toLowerCase().match(/\.(pdf|doc|docx)$/)?.[1];
+    if (!extension) {
+      toast.error('Ошибка', 'Допустимы только файлы PDF, DOC и DOCX');
       return;
     }
 
@@ -44,27 +45,27 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
 
       await equipmentAPI.uploadInstructionPdf(equipmentId, formData);
       
-      toast.success('Успех', 'PDF инструкция загружена');
+      toast.success('Успех', 'Файл инструкции загружен');
       if (onUpdate) onUpdate();
     } catch (err) {
-      console.error('Error uploading PDF:', err);
-      toast.error('Ошибка', 'Не удалось загрузить PDF');
+      console.error('Error uploading instruction:', err);
+      toast.error('Ошибка', err.response?.data?.error || 'Не удалось загрузить файл инструкции');
     } finally {
       setUploading(false);
     }
   };
 
   const handlePdfDelete = async () => {
-    if (!window.confirm('Удалить PDF инструкцию?')) return;
+    if (!window.confirm('Удалить файл инструкции?')) return;
 
     try {
       await equipmentAPI.deleteInstructionPdf(equipmentId);
       
-      toast.success('Успех', 'PDF инструкция удалена');
+      toast.success('Успех', 'Файл инструкции удалён');
       if (onUpdate) onUpdate();
     } catch (err) {
-      console.error('Error deleting PDF:', err);
-      toast.error('Ошибка', 'Не удалось удалить PDF');
+      console.error('Error deleting instruction:', err);
+      toast.error('Ошибка', 'Не удалось удалить файл инструкции');
     }
   };
 
@@ -199,6 +200,8 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
 
   const hasPdf = !!instructionPdf;
   const hasMd = !!instructionMd;
+  const instructionExtension = instructionPdf?.split('.').pop()?.toLowerCase() || 'pdf';
+  const instructionType = instructionExtension === 'pdf' ? 'PDF' : 'Microsoft Word';
 
   if (!canViewInstructions) {
     return null;
@@ -216,7 +219,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
             className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
             onClick={() => setActiveTab('pdf')}
           >
-            PDF
+            PDF / Word
           </button>
           <button
             className={`tab-btn ${activeTab === 'md' ? 'active' : ''}`}
@@ -236,8 +239,8 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
                   <FileText size={32} />
                 </div>
                 <div className="pdf-file-text">
-                  <div className="pdf-file-title">Инструкция.pdf</div>
-                  <div className="pdf-file-subtitle">PDF документ</div>
+                  <div className="pdf-file-title">Инструкция.{instructionExtension}</div>
+                  <div className="pdf-file-subtitle">{instructionType} документ</div>
                 </div>
               </div>
               <div className="pdf-file-buttons">
@@ -248,7 +251,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
                   className="btn btn-secondary"
                 >
                   <FileText size={14} />
-                  Открыть PDF
+                  Открыть файл
                 </a>
                 {canEditInstructions && (
                   <button
@@ -266,11 +269,11 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
               <div className="upload-area">
                 <label className="upload-label">
                   <Upload size={24} />
-                  <span>Загрузить PDF инструкцию</span>
-                  <span className="upload-hint">Максимум 20 МБ</span>
+                  <span>Загрузить инструкцию</span>
+                  <span className="upload-hint">PDF, DOC или DOCX · максимум 20 МБ</span>
                   <input
                     type="file"
-                    accept=".pdf,application/pdf"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={handlePdfUpload}
                     disabled={uploading}
                   />
@@ -279,7 +282,7 @@ function EquipmentInstructions({ equipmentId, instructionPdf, instructionMd, ins
               </div>
             ) : (
               <div className="md-empty">
-                <p>PDF инструкция не загружена</p>
+                <p>Файл инструкции не загружен</p>
               </div>
             )
           )}

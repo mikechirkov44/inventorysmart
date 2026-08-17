@@ -18,6 +18,7 @@ const STATUS_MAP = {
   working: { label: 'Работает', className: 'status-working' },
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
   needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
+  reserve: { label: 'Резерв', className: 'status-reserve' },
 };
 
 function EquipmentList({ embedded }) {

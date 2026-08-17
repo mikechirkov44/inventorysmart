@@ -77,6 +77,8 @@ async function getAnalytics(companyId, fromStr, toStr) {
   });
 
   allEquipment.forEach((equip) => {
+    if (equip.status === 'reserve') return;
+
     const room = equip.roomId ? roomMap[equip.roomId] : null;
     const employeeId = room ? room.responsibleEmployeeId : null;
     if (!employeeId || !employeeStats[employeeId]) return;

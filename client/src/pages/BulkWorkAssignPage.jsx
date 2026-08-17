@@ -20,6 +20,7 @@ const STATUS_OPTIONS = [
   { value: 'working', label: 'Работает' },
   { value: 'under_repair', label: 'В ремонте' },
   { value: 'needs_repair', label: 'Требует ремонта' },
+  { value: 'reserve', label: 'Резерв' },
 ];
 
 const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((item) => [item.value, item.label]));
@@ -240,7 +241,9 @@ function BulkWorkAssignPage() {
             <CustomSelect
               value={workId}
               onChange={setWorkId}
-              options={works.map((work) => ({ value: work.id, label: work.name }))}
+              options={works.map((work) => ({ value: work.id, label: work.name, searchText: work.description || '' }))}
+              searchable
+              searchPlaceholder="Поиск работы..."
             />
             {selectedWork && (
               <div className="bulk-assign-work-meta">

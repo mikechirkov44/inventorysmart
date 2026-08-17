@@ -37,6 +37,7 @@ const STATUS_OPTIONS = [
   { value: 'working', label: 'Работает' },
   { value: 'under_repair', label: 'В ремонте' },
   { value: 'needs_repair', label: 'Требует ремонта' },
+  { value: 'reserve', label: 'Резерв' },
 ];
 
 function EquipmentForm() {

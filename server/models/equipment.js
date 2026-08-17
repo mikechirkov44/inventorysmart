@@ -11,8 +11,20 @@ const { pickAllowed } = require('../utils/allowlist');
 const EQUIPMENT_UPDATE_FIELDS = [
   'name', 'inventoryNumber', 'description', 'location', 'category', 'roomId',
   'categoryId', 'manufacturer', 'serialNumber', 'yearOfManufacture',
-  'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'workIds', 'workLinks',
+  'commissioningDate', 'instructionPdf', 'instructionMd', 'photo', 'status', 'workIds', 'workLinks',
 ];
+
+const EQUIPMENT_STATUSES = new Set(['working', 'under_repair', 'needs_repair', 'reserve']);
+
+function normalizeStatus(value) {
+  const status = String(value || 'working').trim();
+  if (!EQUIPMENT_STATUSES.has(status)) {
+    const error = new Error('Недопустимый статус оборудования');
+    error.code = 'INVALID_EQUIPMENT_STATUS';
+    throw error;
+  }
+  return status;
+}
 
 function serializeDate(value) {
   if (value == null || value === '') return null;
@@ -219,7 +231,7 @@ module.exports = {
         data.photo || null,
         data.roomId || null,
         data.categoryId || null,
-        data.status || 'working',
+        normalizeStatus(data.status),
         data.manufacturer || '',
         data.serialNumber || '',
         yearOfManufacture,
@@ -265,6 +277,8 @@ module.exports = {
         mapped[col] = serializeDate(val);
       } else if (key === 'roomId' || key === 'categoryId') {
         mapped[col] = val && String(val).trim() !== '' ? val : null;
+      } else if (key === 'status') {
+        mapped[col] = normalizeStatus(val);
       } else {
         mapped[col] = val;
       }

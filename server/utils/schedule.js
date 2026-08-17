@@ -39,6 +39,8 @@ async function getWorkMap(companyId) {
  *   nextDue: string|null, isOverdue: boolean}>>} Список задач с датами
  */
 async function getEquipmentSchedule(equipment, workMap, companyId) {
+  if (equipment.status === 'reserve') return [];
+
   const workOrders = await WorkOrder.findByEquipmentId(equipment.id, companyId);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -221,6 +223,8 @@ async function getTodayTasks(companyId) {
   const tasks = [];
 
   allEquipment.forEach((equip) => {
+    if (equip.status === 'reserve') return;
+
     const room = equip.roomId ? roomMap[equip.roomId] : null;
     const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 

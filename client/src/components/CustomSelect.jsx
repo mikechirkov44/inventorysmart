@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 /**
  * Custom styled select dropdown — SaaS-style.
@@ -12,9 +12,11 @@ import { ChevronDown, Check } from 'lucide-react';
  *   placeholder - placeholder text
  *   className - extra CSS class
  *   disabled - boolean
+ *   searchable - показывает поиск по вариантам
  */
-export default function CustomSelect({ value, onChange, options = [], placeholder = 'Выберите...', className = '', disabled = false }) {
+export default function CustomSelect({ value, onChange, options = [], placeholder = 'Выберите...', className = '', disabled = false, searchable = false, searchPlaceholder = 'Поиск...' }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef(null);
   const triggerRef = useRef(null);
@@ -27,7 +29,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
     const winW = window.innerWidth;
     const itemH = 36;
     const pad = 16;
-    const naturalHeight = options.length * itemH + pad;
+    const naturalHeight = options.length * itemH + pad + (searchable ? 48 : 0);
     const spaceBelow = winH - rect.bottom - 12;
     const spaceAbove = rect.top - 12;
     const preferBelow = spaceBelow >= Math.min(naturalHeight, 160) || spaceBelow >= spaceAbove;
@@ -91,11 +93,16 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
   }, [open]);
 
   const selected = options.find(o => o.value === value);
+  const normalizedSearch = search.trim().toLocaleLowerCase('ru');
+  const filteredOptions = normalizedSearch
+    ? options.filter((option) => `${option.label} ${option.searchText || ''}`.toLocaleLowerCase('ru').includes(normalizedSearch))
+    : options;
 
   const handleToggle = () => {
     if (disabled) return;
     if (!open) updatePosition();
     setOpen(!open);
+    if (open) setSearch('');
   };
 
   return (
@@ -124,7 +131,19 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
             zIndex: 99999,
           }}
         >
-          {options.map(opt => (
+          {searchable && (
+            <div className="cs-search" onClick={(event) => event.stopPropagation()}>
+              <Search size={15} />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={searchPlaceholder}
+                autoFocus
+              />
+            </div>
+          )}
+          {filteredOptions.map(opt => (
             <div
               key={opt.value}
               className={`cs-option ${opt.value === value ? 'cs-selected' : ''}`}
@@ -134,6 +153,9 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
               {opt.value === value && <Check size={14} />}
             </div>
           ))}
+          {filteredOptions.length === 0 && (
+            <div className="cs-empty">Ничего не найдено</div>
+          )}
         </div>,
         document.body
       )}

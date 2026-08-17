@@ -2707,6 +2707,9 @@ input, textarea, select { font-family: inherit; }
 .status-needs-repair { background: #fee2e2; color: #991b1b; }
 .status-needs-repair::before { background: #dc2626; }
 
+.status-reserve { background: var(--gray-200); color: var(--gray-700); }
+.status-reserve::before { background: var(--gray-500); }
+
 .frequency-badge {
   display: inline-flex;
   align-items: center;
@@ -2879,6 +2882,165 @@ input, textarea, select { font-family: inherit; }
   outline: none;
   border-color: var(--primary);
   background: white;
+}
+
+/* Компактный выбор оборудования в форме ЗИП */
+.equipment-picker-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.equipment-picker-label > span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.equipment-picker {
+  position: relative;
+  padding: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.equipment-picker-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.equipment-picker-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 340px;
+  padding: 7px 7px 7px 10px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border-color));
+  border-radius: 9px;
+}
+
+.equipment-picker-chip > span,
+.equipment-picker-option > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.equipment-picker-chip strong,
+.equipment-picker-option strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-picker-chip small,
+.equipment-picker-option small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.equipment-picker-chip button,
+.equipment-picker-search button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.equipment-picker-chip button:hover,
+.equipment-picker-search button:hover {
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+.equipment-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.equipment-picker-search:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.equipment-picker-search > svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.equipment-picker-search input[type="search"] {
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text-primary);
+}
+
+.equipment-picker-results {
+  position: absolute;
+  z-index: 200;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: 260px;
+  padding: 5px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+
+.equipment-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.equipment-picker-option:hover {
+  background: var(--primary-light);
+}
+
+.equipment-picker-option > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.equipment-picker-empty {
+  padding: 18px 10px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
 }
 
 .checkbox-item {
@@ -7316,6 +7478,49 @@ input, textarea, select { font-family: inherit; }
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.cs-search {
+  position: sticky;
+  top: -4px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px -4px 4px;
+  padding: 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cs-search svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.cs-search input[type="search"] {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.cs-search input[type="search"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.cs-empty {
+  padding: 14px 10px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
 }
 
 @keyframes csSlideIn {

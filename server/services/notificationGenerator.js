@@ -60,6 +60,8 @@ async function generateForCompany(companyId) {
   const upcomingTasks = [];
 
   allEquipment.forEach(equip => {
+    if (equip.status === 'reserve') return;
+
     const room = equip.roomId ? roomMap[equip.roomId] : null;
     const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
     const equipOrders = allWorkOrders.filter(wo => wo.equipmentId === equip.id);

@@ -63,6 +63,8 @@ router.get('/', requirePermission('schedule', 'view'), async (req, res) => {
     const rows = [];
 
     allEquipment.forEach(equip => {
+      if (equip.status === 'reserve') return;
+
       const room = equip.roomId ? roomMap[equip.roomId] : null;
       const employee = room && room.responsibleEmployeeId ? empMap[room.responsibleEmployeeId] : null;
 

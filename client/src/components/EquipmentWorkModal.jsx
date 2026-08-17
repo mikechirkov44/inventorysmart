@@ -79,8 +79,11 @@ function EquipmentWorkModal({
                 options={availableWorks.map((work) => ({
                   value: work.id,
                   label: work.name,
+                  searchText: work.description || '',
                 }))}
                 placeholder="Выберите работу"
+                searchable
+                searchPlaceholder="Поиск работы..."
               />
             )}
           </div>

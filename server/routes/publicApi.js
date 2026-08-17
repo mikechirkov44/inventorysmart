@@ -15,7 +15,7 @@ router.use(authenticateApiKey);
 /**
  * @route GET /api/public/equipment
  * @description Получить список всего оборудования компании
- * @query {string} [status] - Фильтр по статусу (working, under_repair, needs_repair)
+ * @query {string} [status] - Фильтр по статусу (working, under_repair, needs_repair, reserve)
  * @query {string} [category] - Фильтр по категории
  * @query {string} [room] - Фильтр по помещению (ID)
  * @query {string} [search] - Поиск по названию или инвентарному номеру
@@ -139,7 +139,8 @@ router.get('/stats', async (req, res) => {
       byStatus: {
         working: equipment.filter(e => e.status === 'working').length,
         underRepair: equipment.filter(e => e.status === 'under_repair').length,
-        needsRepair: equipment.filter(e => e.status === 'needs_repair').length
+        needsRepair: equipment.filter(e => e.status === 'needs_repair').length,
+        reserve: equipment.filter(e => e.status === 'reserve').length
       }
     };
 
@@ -162,7 +163,8 @@ function getStatusLabel(status) {
   const labels = {
     working: 'Работает',
     under_repair: 'В ремонте',
-    needs_repair: 'Требует ремонта'
+    needs_repair: 'Требует ремонта',
+    reserve: 'Резерв'
   };
   return labels[status] || status;
 }

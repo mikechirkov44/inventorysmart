@@ -366,7 +366,8 @@ function EquipmentReport() {
           <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
             { value: 'working', label: 'Работает' },
             { value: 'under_repair', label: 'В ремонте' },
-            { value: 'needs_repair', label: 'Требует ремонта' }
+            { value: 'needs_repair', label: 'Требует ремонта' },
+            { value: 'reserve', label: 'Резерв' }
           ]} />
           <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все помещения" options={rooms.map(r => ({ value: r.id, label: r.name }))} />
         </div>
@@ -395,7 +396,8 @@ function EquipmentReport() {
                   const statusMap = {
                     working: { label: 'Работает', className: 'status-working' },
                     under_repair: { label: 'В ремонте', className: 'status-under-repair' },
-                    needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' }
+                    needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
+                    reserve: { label: 'Резерв', className: 'status-reserve' }
                   };
                   const st = statusMap[item.status] || statusMap.working;
                   return (
@@ -429,6 +431,7 @@ function EquipmentReport() {
             working: 'Работает',
             under_repair: 'В ремонте',
             needs_repair: 'Требует ремонта',
+            reserve: 'Резерв',
           };
           return (
             <MobileDataCard key={item.id}>

@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Copy, Pencil, Trash2 } from 'lucide-react';
+import { Package, Copy, Pencil, Trash2, Search, Plus, X } from 'lucide-react';
 import { sparePartsAPI, equipmentAPI, worksAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -34,6 +34,7 @@ function SparePartsDirectory() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [eqSearch, setEqSearch] = useState('');
+  const [eqPickerOpen, setEqPickerOpen] = useState(false);
   const [wkSearch, setWkSearch] = useState('');
   const [formData, setFormData] = useState({
     name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: []
@@ -89,6 +90,9 @@ function SparePartsDirectory() {
   /** Сброс формы и состояния редактирования */
   const resetForm = () => {
     setFormData({ name: '', article: '', manufacturer: '', unit: 'шт', minStock: 0, quantity: 0, equipmentIds: [], workLinks: [] });
+    setEqSearch('');
+    setEqPickerOpen(false);
+    setWkSearch('');
     setEditId(null);
     setShowForm(false);
   };
@@ -179,6 +183,8 @@ function SparePartsDirectory() {
 
   const isListEmpty = items.length === 0 && !search;
   const openAddForm = () => { resetForm(); setShowForm(true); };
+  const selectedEquipment = equipment.filter((item) => formData.equipmentIds.includes(item.id));
+  const availableEquipment = filteredEq.filter((item) => !formData.equipmentIds.includes(item.id));
 
   return (
     <div className="directory-page">
@@ -234,31 +240,71 @@ function SparePartsDirectory() {
             </div>
 
             <div className="form-group">
-              <label>Оборудование</label>
-              {formData.equipmentIds.length > 0 && (
-                <div className="works-checkbox-list compact selected-list">
-                  {equipment.filter(e => formData.equipmentIds.includes(e.id)).map(eq => (
-                    <label key={eq.id} className="checkbox-item selected">
-                      <input type="checkbox" checked={true} onChange={() => toggleId('equipmentIds', eq.id)} />
-                      <span className="checkbox-label">{eq.name}<span className="checkbox-hint">{eq.inventoryNumber}</span></span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <input type="text" placeholder="Найти и добавить оборудование..." value={eqSearch} onChange={(e) => setEqSearch(e.target.value)} className="filter-search-sm" />
-              {eqSearch && (
-                <div className="works-checkbox-list compact search-results">
-                  {filteredEq.filter(e => !formData.equipmentIds.includes(e.id)).length === 0 && (
-                    <p className="no-works-hint">Ничего не найдено</p>
+              <div className="equipment-picker-label">
+                <label>Оборудование</label>
+                {selectedEquipment.length > 0 && (
+                  <span>Выбрано: {selectedEquipment.length}</span>
+                )}
+              </div>
+
+              <div className="equipment-picker">
+                {selectedEquipment.length > 0 && (
+                  <div className="equipment-picker-selected">
+                    {selectedEquipment.map((eq) => (
+                      <div key={eq.id} className="equipment-picker-chip">
+                        <span>
+                          <strong>{eq.name}</strong>
+                          <small>{eq.inventoryNumber || 'Без инвентарного номера'}</small>
+                        </span>
+                        <button type="button" onClick={() => toggleId('equipmentIds', eq.id)} aria-label={`Убрать ${eq.name}`}>
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="equipment-picker-search">
+                  <Search size={16} />
+                  <input
+                    type="search"
+                    placeholder="Поиск по названию или инвентарному номеру"
+                    value={eqSearch}
+                    onFocus={() => setEqPickerOpen(true)}
+                    onBlur={() => setTimeout(() => setEqPickerOpen(false), 150)}
+                    onChange={(event) => { setEqSearch(event.target.value); setEqPickerOpen(true); }}
+                  />
+                  {eqSearch && (
+                    <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => setEqSearch('')} aria-label="Очистить поиск">
+                      <X size={15} />
+                    </button>
                   )}
-                  {filteredEq.filter(e => !formData.equipmentIds.includes(e.id)).map(eq => (
-                    <label key={eq.id} className="checkbox-item">
-                      <input type="checkbox" checked={false} onChange={() => { toggleId('equipmentIds', eq.id); setEqSearch(''); }} />
-                      <span className="checkbox-label">{eq.name}<span className="checkbox-hint">{eq.inventoryNumber}</span></span>
-                    </label>
-                  ))}
                 </div>
-              )}
+
+                {eqPickerOpen && (
+                  <div className="equipment-picker-results">
+                    {availableEquipment.length === 0 ? (
+                      <div className="equipment-picker-empty">
+                        {equipment.length === selectedEquipment.length ? 'Всё оборудование уже выбрано' : 'Оборудование не найдено'}
+                      </div>
+                    ) : availableEquipment.map((eq) => (
+                      <button
+                        key={eq.id}
+                        type="button"
+                        className="equipment-picker-option"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => { toggleId('equipmentIds', eq.id); setEqSearch(''); }}
+                      >
+                        <span>
+                          <strong>{eq.name}</strong>
+                          <small>{eq.inventoryNumber || 'Без инвентарного номера'}</small>
+                        </span>
+                        <Plus size={17} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label>Работы (расход ЗИП)</label>

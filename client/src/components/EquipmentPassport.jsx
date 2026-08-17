@@ -17,6 +17,7 @@ const STATUS_MAP = {
   working: 'Работает',
   under_repair: 'В ремонте',
   needs_repair: 'Требует ремонта',
+  reserve: 'Резерв',
 };
 
 /** Варианты периодичности плановых работ */

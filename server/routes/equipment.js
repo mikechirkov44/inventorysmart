@@ -279,7 +279,7 @@ router.delete('/:id', requirePermission('equipment', 'edit'), async (req, res) =
 
 /**
  * @route POST /equipment/:id/instruction-pdf
- * @description Загрузка PDF инструкции
+ * @description Загрузка инструкции в формате PDF, DOC или DOCX
  * @requires permission instructions:full
  */
 router.post('/:id/instruction-pdf', requirePermission('instructions', 'full'), pdfUpload.single('pdf'), async (req, res) => {
@@ -311,7 +311,7 @@ router.post('/:id/instruction-pdf', requirePermission('instructions', 'full'), p
 
 /**
  * @route DELETE /equipment/:id/instruction-pdf
- * @description Удаление PDF инструкции
+ * @description Удаление файла инструкции
  * @requires permission instructions:full
  */
 router.delete('/:id/instruction-pdf', requirePermission('instructions', 'full'), async (req, res) => {
