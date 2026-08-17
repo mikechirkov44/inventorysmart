@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmModal';
 import Toggle from './Toggle';
+import CustomMonthPicker from './CustomMonthPicker';
 
 const EMPTY_FORM = { name: '', code: '', unit: '%', higherIsBetter: true, active: true };
 
@@ -83,7 +84,7 @@ export default function KpiIndicatorsTab({ embedded = false, onChanged }) {
       <div className="form-actions-inline"><button className="btn btn-primary" disabled={saving}><Save size={15}/>{saving ? 'Сохранение...' : 'Сохранить'}</button><button type="button" className="btn" onClick={closeForm}>Отмена</button></div>
     </form>}
 
-    <div className="indicator-toolbar"><label>Плановый период <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}/></label></div>
+    <div className="indicator-toolbar"><label>Плановый период <CustomMonthPicker value={month} onChange={setMonth}/></label></div>
     <div className="table-container"><div className="table-scroll"><table className="data-table"><thead><tr><th>Показатель</th><th>Ед.</th><th>План</th><th>Факт</th><th>Выполнение</th>{admin && <th>Действия</th>}</tr></thead><tbody>
       {items.length === 0 && <tr><td colSpan={admin ? 6 : 5} className="text-muted indicator-empty">Показатели ещё не созданы</td></tr>}
       {items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong><small className="indicator-code">{item.code}{!item.active ? ' · неактивен' : ''}</small></td><td>{item.unit}</td>
