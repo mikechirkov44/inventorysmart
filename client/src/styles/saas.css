@@ -1052,7 +1052,7 @@
 }
 
 .qr-scanner-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -1063,7 +1063,7 @@
 .qr-viewfinder {
   position: relative;
   min-height: 320px;
-  background: linear-gradient(160deg, var(--gray-900) 0%, #1e293b 55%, #0f172a 100%);
+  background: linear-gradient(160deg, #2b3850 0%, #18243a 55%, #0b1220 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1268,7 +1268,7 @@
 
 .qr-scanner-actions {
   padding: 16px 20px 20px;
-  background: white;
+  background: var(--surface);
 }
 
 .qr-action-btn {
@@ -1289,8 +1289,8 @@
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   background: var(--danger-light);
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--surface));
+  color: var(--danger);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -1301,7 +1301,7 @@
 }
 
 .qr-manual-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   padding: 18px 20px;
