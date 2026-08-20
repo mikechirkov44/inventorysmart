@@ -19,7 +19,7 @@ const AuthContext = createContext(null);
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem('token') || sessionStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [setupRequired, setSetupRequired] = useState(false);
   const [license, setLicense] = useState(null);
@@ -47,9 +47,12 @@ export function AuthProvider({ children }) {
    * @param {string} password - Пароль
    * @returns {Promise<Object>} Данные пользователя
    */
-  const login = async (username, password, companyName) => {
-    const res = await api.post('/auth/login', { username, password, companyName });
-    localStorage.setItem('token', res.data.token);
+  const login = async (username, password, companyName, rememberMe = false) => {
+    const res = await api.post('/auth/login', { username, password, companyName, rememberMe });
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
     return res.data.user;
@@ -58,6 +61,7 @@ export function AuthProvider({ children }) {
   /** Выходит из системы, очищая токен и данные пользователя */
   const logout = () => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setToken(null);
     setUser(null);
   };

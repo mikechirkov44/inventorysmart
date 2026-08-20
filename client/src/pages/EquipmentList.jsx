@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderTree, Eye, Pencil, Trash2, Wrench } from 'lucide-react';
+import { FolderTree, Eye, Pencil, Trash2, Wrench, X, MapPin, Hash, Factory, CalendarDays } from 'lucide-react';
 import { equipmentAPI, roomsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -29,6 +29,7 @@ function EquipmentList({ embedded }) {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+  const [viewingEquipment, setViewingEquipment] = useState(null);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -150,7 +151,19 @@ function EquipmentList({ embedded }) {
                     {group.items.map(item => {
                       const st = STATUS_MAP[item.status] || STATUS_MAP.working;
                       return (
-                        <div key={item.id} className="equipment-card">
+                        <div
+                          key={item.id}
+                          className="equipment-card equipment-card-clickable"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setViewingEquipment(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setViewingEquipment(item);
+                            }
+                          }}
+                        >
                           <div className="card-photo">
                             {item.photo ? (
                               <UploadImage item={item} field="photo" alt={item.name} />
@@ -170,11 +183,13 @@ function EquipmentList({ embedded }) {
                             )}
                             <div className="card-status-row">
                               <span className={`status-badge ${st.className}`}>{st.label}</span>
-                              <ActionsMenu items={[
-                                { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => window.location.href = `/equipment/${item.id}` },
-                                { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => window.location.href = `/equipment/${item.id}/edit` },
-                                { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
-                              ]} />
+                              <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                                <ActionsMenu items={[
+                                  { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => window.location.href = `/equipment/${item.id}` },
+                                  { icon: <Pencil size={14} />, label: 'Изменить', onClick: () => window.location.href = `/equipment/${item.id}/edit` },
+                                  { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(item.id), danger: true },
+                                ]} />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -187,6 +202,53 @@ function EquipmentList({ embedded }) {
           })
         )}
       </div>
+
+      {viewingEquipment && (() => {
+        const status = STATUS_MAP[viewingEquipment.status] || STATUS_MAP.working;
+        return (
+          <div className="modal-overlay" onClick={() => setViewingEquipment(null)}>
+            <div className="modal equipment-preview-modal" role="dialog" aria-modal="true" aria-label={`Оборудование ${viewingEquipment.name}`} onClick={(event) => event.stopPropagation()}>
+              <div className="modal-header">
+                <div>
+                  <span className="equipment-preview-eyebrow">Просмотр оборудования</span>
+                  <h3>{viewingEquipment.name}</h3>
+                </div>
+                <button type="button" className="btn-icon" onClick={() => setViewingEquipment(null)} aria-label="Закрыть">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="equipment-preview-body">
+                <div className="equipment-preview-photo">
+                  {viewingEquipment.photo ? (
+                    <UploadImage item={viewingEquipment} field="photo" alt={viewingEquipment.name} />
+                  ) : (
+                    <div className="no-photo">Нет фото</div>
+                  )}
+                </div>
+                <div className="equipment-preview-content">
+                  <span className={`status-badge ${status.className}`}>{status.label}</span>
+                  <div className="equipment-preview-grid">
+                    <div><Hash size={15} /><span><small>Инвентарный номер</small>{viewingEquipment.inventoryNumber || '—'}</span></div>
+                    <div><MapPin size={15} /><span><small>Помещение</small>{roomMap[viewingEquipment.roomId] || 'Без помещения'}</span></div>
+                    <div><Factory size={15} /><span><small>Производитель</small>{viewingEquipment.manufacturer || '—'}</span></div>
+                    <div><CalendarDays size={15} /><span><small>Год выпуска</small>{viewingEquipment.yearOfManufacture || '—'}</span></div>
+                  </div>
+                  {viewingEquipment.description && (
+                    <div className="equipment-preview-description">
+                      <small>Описание</small>
+                      <p>{viewingEquipment.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn" onClick={() => setViewingEquipment(null)}>Закрыть</button>
+                <Link to={`/equipment/${viewingEquipment.id}`} className="btn btn-primary">Открыть полную карточку</Link>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

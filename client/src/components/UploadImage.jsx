@@ -36,7 +36,7 @@ export default function UploadImage({
         return;
       }
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const url = getUploadUrl(resolvedSrc);
 
       try {

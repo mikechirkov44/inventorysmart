@@ -493,6 +493,7 @@ function EquipmentDetail() {
             <EquipmentInstructions
               equipmentId={id}
               instructionPdf={equipment.instructionPdf}
+              instructionPdfUrl={equipment.instructionPdfUrl}
               instructionMd={equipment.instructionMd}
               onUpdate={async () => {
                 try {

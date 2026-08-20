@@ -43,7 +43,7 @@ async function recordLogin(req, overrides) {
  */
 router.post('/login', async (req, res) => {
   try {
-    const { username, password, companyName } = req.body;
+    const { username, password, companyName, rememberMe = false } = req.body;
     if (!username || !password) {
       await recordLogin(req, { success: false, failureReason: 'missing_credentials' });
       return res.status(400).json({ error: 'Введите логин и пароль' });
@@ -103,7 +103,7 @@ router.post('/login', async (req, res) => {
         permissions
       },
       User.JWT_SECRET,
-      { expiresIn: User.JWT_EXPIRES }
+      { expiresIn: rememberMe === true ? '30d' : User.JWT_EXPIRES }
     );
 
     await recordLogin(req, {

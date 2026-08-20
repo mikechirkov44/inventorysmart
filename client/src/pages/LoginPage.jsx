@@ -17,6 +17,7 @@ function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +72,7 @@ function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(username, password, companyName);
+      await login(username, password, companyName, rememberMe);
     } catch {
       setError('Неверное имя пользователя, пароль или наименование компании');
     } finally {
@@ -138,6 +139,17 @@ function LoginPage() {
                   placeholder="Введите пароль"
                 />
               </div>
+              <label className="login-remember">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
+                <span>
+                  <strong>Запомнить меня</strong>
+                  <small>Не выходить из системы 30 дней</small>
+                </span>
+              </label>
               <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
                 {loading ? 'Вход...' : 'Войти'} {!loading && <ArrowRight size={16} />}
               </button>
