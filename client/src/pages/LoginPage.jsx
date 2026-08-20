@@ -73,8 +73,14 @@ function LoginPage() {
     setLoading(true);
     try {
       await login(username, password, companyName, rememberMe);
-    } catch {
-      setError('Неверное имя пользователя, пароль или наименование компании');
+    } catch (err) {
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Не удалось подключиться к серверу. Проверьте адрес API и доступность сети.');
+      } else {
+        setError('Не удалось выполнить вход. Попробуйте ещё раз.');
+      }
     } finally {
       setLoading(false);
     }

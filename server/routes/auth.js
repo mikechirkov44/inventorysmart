@@ -44,16 +44,18 @@ async function recordLogin(req, overrides) {
 router.post('/login', async (req, res) => {
   try {
     const { username, password, companyName, rememberMe = false } = req.body;
-    if (!username || !password) {
+    const normalizedUsername = String(username || '').trim();
+    const normalizedCompanyName = String(companyName || '').trim();
+    if (!normalizedUsername || !password) {
       await recordLogin(req, { success: false, failureReason: 'missing_credentials' });
       return res.status(400).json({ error: 'Введите логин и пароль' });
     }
-    if (!companyName || !companyName.trim()) {
+    if (!normalizedCompanyName) {
       await recordLogin(req, { success: false, failureReason: 'missing_company' });
       return res.status(400).json({ error: 'Введите наименование компании' });
     }
 
-    const user = await User.findByUsername(username);
+    const user = await User.findByUsername(normalizedUsername);
     if (!user || !User.verifyPassword(password, user.password_hash)) {
       await recordLogin(req, {
         companyId: user?.company_id,
@@ -80,7 +82,7 @@ router.post('/login', async (req, res) => {
     }
 
     const actualCompanyName = companies[0].company_name;
-    if (actualCompanyName.trim().toLowerCase() !== companyName.trim().toLowerCase()) {
+    if (actualCompanyName.trim().toLocaleLowerCase('ru') !== normalizedCompanyName.toLocaleLowerCase('ru')) {
       await recordLogin(req, { companyId: user.company_id, userId: user.id, employeeId: user.employee_id, success: false, failureReason: 'invalid_company' });
       return res.status(403).json({ error: 'Неверное наименование компании' });
     }

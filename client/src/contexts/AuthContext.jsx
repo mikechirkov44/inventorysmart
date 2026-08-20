@@ -48,7 +48,12 @@ export function AuthProvider({ children }) {
    * @returns {Promise<Object>} Данные пользователя
    */
   const login = async (username, password, companyName, rememberMe = false) => {
-    const res = await api.post('/auth/login', { username, password, companyName, rememberMe });
+    const res = await api.post('/auth/login', {
+      username: username.trim(),
+      password,
+      companyName: companyName.trim(),
+      rememberMe,
+    });
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
     const storage = rememberMe ? localStorage : sessionStorage;
