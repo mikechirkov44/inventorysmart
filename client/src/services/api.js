@@ -136,6 +136,7 @@ export const notificationsAPI = {
   getUnreadCount: () => api.get('/notifications/unread-count'),
   markRead: (id) => api.put(`/notifications/${id}/read`),
   markAllRead: () => api.put('/notifications/read-all'),
+  deleteAll: () => api.delete('/notifications/all'),
 };
 
 /** API для работы с инцидентами (поломками) */

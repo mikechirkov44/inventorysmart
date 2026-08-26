@@ -46,6 +46,18 @@ module.exports = {
     return rows.map(mapRow);
   },
 
+  /** Получает уведомления пользователей одной компании. */
+  findAllForCompany: async (companyId) => {
+    const { rows } = await query(
+      `SELECT n.* FROM notifications n
+       INNER JOIN users u ON u.id = n.user_id
+       WHERE u.company_id = $1
+       ORDER BY n.created_at DESC`,
+      [companyId],
+    );
+    return rows.map(mapRow);
+  },
+
   /**
    * Находит уведомление по ID.
    * @async
@@ -193,6 +205,31 @@ module.exports = {
 
   markAllRead: async (userId) => {
     await query('UPDATE notifications SET read = true, read_at = NOW() WHERE user_id = $1 AND read = false', [userId]);
+  },
+
+  markAllReadForCompany: async (companyId) => {
+    await query(
+      `UPDATE notifications n SET read = true, read_at = NOW()
+       FROM users u
+       WHERE n.user_id = u.id AND u.company_id = $1 AND n.read = false`,
+      [companyId],
+    );
+  },
+
+  /** Удаляет все уведомления пользователя. */
+  removeAllForUser: async (userId) => {
+    const { rowCount } = await query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+    return rowCount;
+  },
+
+  /** Удаляет все уведомления пользователей одной компании. */
+  removeAllForCompany: async (companyId) => {
+    const { rowCount } = await query(
+      `DELETE FROM notifications n USING users u
+       WHERE n.user_id = u.id AND u.company_id = $1`,
+      [companyId],
+    );
+    return rowCount;
   },
 
   /**

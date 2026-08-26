@@ -26,7 +26,7 @@ router.get('/', requirePermission('settings', 'view'), async (req, res) => {
     const isAdmin = userPermissions.settings === 'full';
 
     if (isAdmin) {
-      const all = await Notification.findAll();
+      const all = await Notification.findAllForCompany(req.user.companyId);
       return res.json(all);
     }
 
@@ -143,12 +143,30 @@ router.put('/read-all', requirePermission('settings', 'edit'), async (req, res) 
     const userPermissions = req.user.permissions || {};
     const isAdmin = userPermissions.settings === 'full';
     if (isAdmin) {
-      const { query } = require('../db');
-      await query('UPDATE notifications SET read = true, read_at = NOW() WHERE read = false');
+      await Notification.markAllReadForCompany(req.user.companyId);
     } else {
       await Notification.markAllRead(req.user.id);
     }
     res.json({ ok: true });
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @route DELETE /notifications/all
+ * @description Удаление всех доступных текущему пользователю уведомлений.
+ * Администратор удаляет уведомления только своей компании.
+ */
+router.delete('/all', requirePermission('settings', 'edit'), async (req, res) => {
+  try {
+    const userPermissions = req.user.permissions || {};
+    const isAdmin = userPermissions.settings === 'full';
+    const deleted = isAdmin
+      ? await Notification.removeAllForCompany(req.user.companyId)
+      : await Notification.removeAllForUser(req.user.id);
+    res.json({ ok: true, deleted });
   } catch (error) {
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

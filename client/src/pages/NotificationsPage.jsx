@@ -17,6 +17,8 @@ import {
 import ActionsMenu from '../components/ActionsMenu';
 import { formatDateTime } from '../utils/date';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { useConfirm } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 
 const TYPE_LABELS = {
   incident: 'Инцидент',
@@ -56,8 +58,11 @@ function getNotificationActions(n, { markRead, markUnread, deleteNotification })
 
 export default function NotificationsPage() {
   const { refreshUnreadCount } = useNotifications();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -106,6 +111,28 @@ export default function NotificationsPage() {
     } catch {}
   };
 
+  const deleteAllNotifications = async () => {
+    const confirmed = await confirm({
+      title: 'Удалить все уведомления?',
+      message: 'Все уведомления будут удалены без возможности восстановления.',
+      type: 'danger',
+      confirmText: 'Удалить все',
+    });
+    if (!confirmed) return;
+
+    setDeletingAll(true);
+    try {
+      await api.delete('/notifications/all');
+      setNotifications([]);
+      await refreshUnreadCount();
+      toast.success('Готово', 'Все уведомления удалены');
+    } catch {
+      toast.error('Ошибка', 'Не удалось удалить уведомления');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const actionHandlers = { markRead, markUnread, deleteNotification };
 
   if (loading) return <SkeletonTable rows={8} cols={4} />;
@@ -114,9 +141,14 @@ export default function NotificationsPage() {
     <div className="notifications-page">
       <PageHeader icon={Bell} title="Уведомления">
         {notifications.length > 0 && (
-          <button onClick={markAllRead} className="btn btn-small btn-secondary">
-            Отметить все прочитанными
-          </button>
+          <div className="header-actions">
+            <button onClick={markAllRead} className="btn btn-small btn-secondary">
+              Отметить все прочитанными
+            </button>
+            <button onClick={deleteAllNotifications} className="btn btn-small btn-danger" disabled={deletingAll}>
+              <Trash2 size={14} /> {deletingAll ? 'Удаление...' : 'Удалить все'}
+            </button>
+          </div>
         )}
       </PageHeader>
 
