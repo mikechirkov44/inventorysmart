@@ -26,6 +26,7 @@ const FREQUENCY_OPTIONS = [
   { value: 90, label: '1 раз в 3 месяца' },
   { value: 180, label: '1 раз в 6 месяцев' },
   { value: 365, label: '1 раз в год' },
+  { value: 545, label: '1 раз в 1 год и 6 месяцев' },
 ];
 
 function getFrequencyLabel(days) {

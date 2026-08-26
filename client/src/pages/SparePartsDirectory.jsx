@@ -21,6 +21,7 @@ import {
 } from '../components/MobileDataCard';
 import CustomSelect from '../components/CustomSelect';
 import ActionsMenu from '../components/ActionsMenu';
+import { getFrequencyLabel } from '../utils/frequency';
 
 /** Компонент справочника запасных частей */
 function SparePartsDirectory() {
@@ -315,7 +316,7 @@ function SparePartsDirectory() {
                     return (
                       <label key={w.id} className="checkbox-item selected">
                         <input type="checkbox" checked={true} onChange={() => toggleWorkLink(w.id)} />
-                        <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
+                        <span className="checkbox-label">{w.name}<span className="checkbox-hint">{getFrequencyLabel(w.frequencyDays)}</span></span>
                         <input type="number" min="0" value={wl ? wl.quantity : 0} onChange={(e) => updateWorkQuantity(w.id, e.target.value)} className="work-qty-input" title="Расход за 1 работу" />
                       </label>
                     );
@@ -331,7 +332,7 @@ function SparePartsDirectory() {
                   {filteredWk.filter(w => !formData.workLinks.some(wl => wl.workId === w.id)).map(w => (
                     <label key={w.id} className="checkbox-item">
                       <input type="checkbox" checked={false} onChange={() => { toggleWorkLink(w.id); setWkSearch(''); }} />
-                      <span className="checkbox-label">{w.name}<span className="checkbox-hint">каждые {w.frequencyDays} дн.</span></span>
+                      <span className="checkbox-label">{w.name}<span className="checkbox-hint">{getFrequencyLabel(w.frequencyDays)}</span></span>
                     </label>
                   ))}
                 </div>
