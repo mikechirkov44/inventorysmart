@@ -10,6 +10,7 @@ import { analyticsAPI, sparePartsAPI, equipmentAPI, incidentsAPI, roomsAPI, comp
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import { formatDate, toDateInputValue } from '../utils/date';
+import { buildRoomFilterOptions } from './analyticsFilters';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
@@ -369,7 +370,7 @@ function EquipmentReport() {
             { value: 'needs_repair', label: 'Требует ремонта' },
             { value: 'reserve', label: 'Резерв' }
           ]} />
-          <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все помещения" options={rooms.map(r => ({ value: r.id, label: r.name }))} />
+          <CustomSelect value={filterRoom} onChange={setFilterRoom} placeholder="Все помещения" options={buildRoomFilterOptions(rooms)} />
         </div>
         <div className="filter-summary">Найдено: <strong>{filtered.length}</strong> из {equipment.length}</div>
       </div>
