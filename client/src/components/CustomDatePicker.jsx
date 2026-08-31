@@ -35,7 +35,7 @@ function parseDateValue(value) {
   return new Date(y, m - 1, d);
 }
 
-export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.ММ.ГГГГ', className = '' }) {
+export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.ММ.ГГГГ', className = '', ariaLabel }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(parseDateValue(value) || new Date());
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
@@ -153,6 +153,7 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
         ref={triggerRef}
         type="button"
         className={`cs-trigger ${open ? 'cs-open' : ''}`}
+        aria-label={ariaLabel}
         onClick={() => { if (!open) updatePosition(); setOpen(!open); }}
       >
         <span className={!displayValue ? 'cs-placeholder' : ''}>

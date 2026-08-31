@@ -10,6 +10,7 @@ import api, {
 } from '../services/api';
 import { useToast } from '../components/Toast';
 import CustomSelect from '../components/CustomSelect';
+import CustomDatePicker from '../components/CustomDatePicker';
 import { useConfirm } from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/Skeleton';
 import PageHeader from '../components/PageHeader';
@@ -741,7 +742,12 @@ function IncidentsPage() {
                     {!isResolved && (
                       <div className="incident-new-action">
                         <input type="text" value={newActionDesc} onChange={(e) => setNewActionDesc(e.target.value)} placeholder="Описание мероприятия" />
-                        <input type="date" value={newActionDue} onChange={(e) => setNewActionDue(e.target.value)} />
+                        <CustomDatePicker
+                          value={newActionDue}
+                          onChange={setNewActionDue}
+                          placeholder="Срок выполнения"
+                          ariaLabel="Срок выполнения мероприятия"
+                        />
                         <CustomSelect
                           value={newActionAssignee}
                           onChange={setNewActionAssignee}

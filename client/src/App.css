@@ -4744,8 +4744,7 @@ input, textarea, select { font-family: inherit; }
   align-items: center;
 }
 
-.incident-new-action input[type="text"],
-.incident-new-action input[type="date"] {
+.incident-new-action input[type="text"] {
   padding: 8px 10px;
   border: 1px solid var(--gray-200);
   border-radius: 6px;
@@ -4931,21 +4930,6 @@ input, textarea, select { font-family: inherit; }
 }
 
 .filter-group.flex-1 { flex: 1; }
-
-.filter-group input[type="date"] {
-  padding: 7px 8px;
-  border: 1px solid var(--gray-300);
-  border-radius: 6px;
-  font-size: 12px;
-  background: white;
-  font-family: inherit;
-  max-width: 160px;
-}
-
-.filter-group input[type="date"]:focus {
-  outline: none;
-  border-color: var(--primary);
-}
 
 .quick-periods {
   display: flex;

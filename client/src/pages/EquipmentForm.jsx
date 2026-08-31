@@ -9,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 import CustomSelect from '../components/CustomSelect';
+import CustomDatePicker from '../components/CustomDatePicker';
 import { Upload, FolderTree } from 'lucide-react';
 import UploadImage from '../components/UploadImage';
 import EquipmentWorkModal from '../components/EquipmentWorkModal';
@@ -249,7 +250,11 @@ function EquipmentForm() {
             <div className="form-row">
               <div className="form-group">
                 <label>Дата ввода в эксплуатацию</label>
-                <input type="date" name="commissioningDate" value={formData.commissioningDate} onChange={handleChange} />
+                <CustomDatePicker
+                  value={formData.commissioningDate}
+                  onChange={(value) => setFormData((current) => ({ ...current, commissioningDate: value }))}
+                  ariaLabel="Дата ввода в эксплуатацию"
+                />
               </div>
               <div className="form-group">
                 {/* Empty spacer for alignment */}
