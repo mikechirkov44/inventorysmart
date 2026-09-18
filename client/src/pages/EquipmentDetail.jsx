@@ -128,8 +128,8 @@ function EquipmentDetail() {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .qr-card { text-align: center; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px; }
         .qr-card img { width: 200px; height: 200px; image-rendering: pixelated; }
-        .qr-card h2 { margin-top: 16px; font-size: 16px; font-weight: 600; }
-        .qr-card p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        .qr-card h2 { margin-top: 16px; max-width: 320px; font-size: 24px; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
+        .qr-card p { max-width: 320px; font-size: 18px; line-height: 1.3; color: #000; margin-top: 8px; overflow-wrap: anywhere; }
         @media print { body { padding: 0; } .qr-card { border: none; } }
       </style></head><body>
         <div class="qr-card">
@@ -179,12 +179,12 @@ function EquipmentDetail() {
         return lines.length ? lines : [''];
       };
 
-      const nameFont = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      const invFont = '400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const nameFont = '600 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const invFont = '400 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       const nameLines = wrapText(measureCtx, name, cardWidth - padding * 2, nameFont);
       const invLines = wrapText(measureCtx, inventory, cardWidth - padding * 2, invFont);
-      const nameLineHeight = 24;
-      const invLineHeight = 20;
+      const nameLineHeight = 30;
+      const invLineHeight = 24;
       const textBlockHeight = nameLines.length * nameLineHeight + 8 + invLines.length * invLineHeight;
       const cardHeight = padding + qrSize + gap + textBlockHeight + padding;
 
@@ -199,8 +199,8 @@ function EquipmentDetail() {
       const qrX = (cardWidth - qrSize) / 2;
       ctx.drawImage(image, qrX, padding, qrSize, qrSize);
 
-      let textY = padding + qrSize + gap + 18;
-      ctx.fillStyle = '#111827';
+      let textY = padding + qrSize + gap + 24;
+      ctx.fillStyle = '#000000';
       ctx.font = nameFont;
       ctx.textAlign = 'center';
       nameLines.forEach((line) => {
@@ -209,7 +209,7 @@ function EquipmentDetail() {
       });
 
       textY += 4;
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = '#000000';
       ctx.font = invFont;
       invLines.forEach((line) => {
         ctx.fillText(line, cardWidth / 2, textY);
