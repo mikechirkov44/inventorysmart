@@ -126,11 +126,12 @@ function EquipmentDetail() {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .qr-card { text-align: center; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px; }
-        .qr-card img { width: 200px; height: 200px; image-rendering: pixelated; }
-        .qr-card h2 { margin-top: 16px; max-width: 320px; font-size: 24px; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
-        .qr-card p { max-width: 320px; font-size: 18px; line-height: 1.3; color: #000; margin-top: 8px; overflow-wrap: anywhere; }
-        @media print { body { padding: 0; } .qr-card { border: none; } }
+        @page { size: A4; margin: 10mm; }
+        .qr-card { text-align: center; width: 190mm; break-inside: avoid; color: #000; }
+        .qr-card img { display: block; width: 190mm; height: 190mm; image-rendering: pixelated; }
+        .qr-card h2 { margin-top: 4mm; font-size: 22pt; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
+        .qr-card p { font-size: 18pt; line-height: 1.3; color: #000; margin-top: 2mm; overflow-wrap: anywhere; }
+        @media print { body { min-height: 277mm; background: #fff; } }
       </style></head><body>
         <div class="qr-card">
           <img src="${qrData.qrImage}" alt="QR" />
