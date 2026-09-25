@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWallFromPoints, editorReducer, initialEditorState, statusPresentation, snap } from './mapEditor.js';
+import { createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, statusPresentation, snap } from './mapEditor.js';
 
 test('snap rounds coordinates to the editor grid', () => assert.equal(snap(27, 20), 20));
 test('status presentation has a safe fallback', () => {
@@ -36,4 +36,19 @@ test('equipment cards receive defaults and can be resized', () => {
   state = editorReducer(state, { type: 'resizePlacement', equipmentId: 'eq-2', width: 260, height: 120 });
   assert.equal(state.present.placements[0].width, 260);
   assert.equal(state.present.placements[0].height, 120);
+});
+test('rectangle tool creates four independent wall segments', () => {
+  const walls = createWallRectangle({ x: 21, y: 19 }, { x: 221, y: 139 }, () => `wall-${Math.random()}`);
+  assert.equal(walls.length, 4);
+  assert.deepEqual(walls.map((wall) => wall.geometry), [
+    { x1: 20, y1: 20, x2: 220, y2: 20 },
+    { x1: 220, y1: 20, x2: 220, y2: 140 },
+    { x1: 220, y1: 140, x2: 20, y2: 140 },
+    { x1: 20, y1: 140, x2: 20, y2: 20 },
+  ]);
+});
+test('wall endpoints can be moved independently', () => {
+  let state = editorReducer(initialEditorState, { type: 'load', elements: [{ id: 'wall-1', type: 'wall', geometry: { x1: 20, y1: 20, x2: 100, y2: 20 } }], placements: [] });
+  state = editorReducer(state, { type: 'moveWallEndpoint', id: 'wall-1', endpoint: 'end', x: 140, y: 60 });
+  assert.deepEqual(state.present.elements[0].geometry, { x1: 20, y1: 20, x2: 140, y2: 60 });
 });

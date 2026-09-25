@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Building2, Edit3, LocateFixed, Minus, Plus, Save, Trash2 } from 'lucide-react';
-import { equipmentMapAPI, roomsAPI } from '../services/api';
+import { equipmentMapAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import EquipmentMapPreview from '../components/equipment-map/EquipmentMapPreview';
 import MapToolbar from '../components/equipment-map/MapToolbar';
 import UnplacedEquipmentPanel from '../components/equipment-map/UnplacedEquipmentPanel';
-import { createWallFromPoints, editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
+import { createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
 
 const newId = () => crypto.randomUUID();
 
@@ -18,18 +18,18 @@ function EquipmentMap() {
   const [buildingId, setBuildingId] = useState('');
   const [floorId, setFloorId] = useState('');
   const [floor, setFloor] = useState(null);
-  const [rooms, setRooms] = useState([]);
   const [unplaced, setUnplaced] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [tool, setTool] = useState('select');
-  const [roomId, setRoomId] = useState('');
+  const [labelText, setLabelText] = useState('');
   const [selected, setSelected] = useState(null);
   const [preview, setPreview] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [saveState, setSaveState] = useState('saved');
   const [wallPreview, setWallPreview] = useState(null);
+  const [rectanglePreview, setRectanglePreview] = useState(null);
   const [editor, dispatch] = useReducer(editorReducer, initialEditorState);
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -50,7 +50,6 @@ function EquipmentMap() {
 
   useEffect(() => {
     refreshBuildings().catch(() => { setLoading(false); toast.error('Ошибка', 'Не удалось загрузить карту'); });
-    roomsAPI.getAll().then(({ data }) => setRooms(data)).catch(() => setRooms([]));
   }, [refreshBuildings, toast]);
 
   const loadFloor = useCallback(async () => {
@@ -59,7 +58,10 @@ function EquipmentMap() {
     try {
       const { data } = await equipmentMapAPI.getFloor(floorId);
       setFloor(data);
-      dispatch({ type: 'load', elements: data.elements, placements: data.placements });
+      const elements = data.elements.flatMap((item) => item.type === 'room'
+        ? createWallRectangle(item.geometry, { x: item.geometry.x + item.geometry.width, y: item.geometry.y + item.geometry.height }, newId)
+        : [item]);
+      dispatch({ type: 'load', elements, placements: data.placements });
       setSaveState('saved'); setSelected(null); setPreview(null);
     } catch { toast.error('Ошибка', 'Не удалось загрузить этаж'); }
     finally { setLoading(false); }
@@ -96,12 +98,9 @@ function EquipmentMap() {
     if (!editing || event.target.closest?.('[data-map-object]')) return;
     if (suppressWallClick.current) { suppressWallClick.current = false; return; }
     const point = clientPoint(event);
-    if (tool === 'room') {
-      if (!roomId) return toast.info('Выберите помещение', 'Сначала выберите помещение в панели инструментов');
-      const room = rooms.find((item) => item.id === roomId);
-      dispatch({ type: 'addElement', element: { id: newId(), type: 'room', roomId, roomName: room?.name, geometry: { x: point.x, y: point.y, width: 260, height: 160 }, style: {}, label: '' } });
-    } else if (tool === 'label') {
-      const label = window.prompt('Текст метки'); if (label?.trim()) dispatch({ type: 'addElement', element: { id: newId(), type: 'label', label: label.trim(), geometry: point, style: {} } });
+    if (tool === 'label') {
+      if (!labelText.trim()) return toast.info('Введите текст метки', 'Поле находится рядом с кнопкой «Метка»');
+      dispatch({ type: 'addElement', element: { id: newId(), type: 'label', label: labelText.trim(), geometry: point, style: {} } });
     } else if (tool === 'wall') {
       if (!wallStart.current) { wallStart.current = point; setWallPreview({ start: point, end: point }); }
       else {
@@ -113,25 +112,27 @@ function EquipmentMap() {
   };
 
   const canvasPointerDown = (event) => {
-    if (!editing || tool !== 'wall' || event.target.closest?.('[data-map-object]')) return;
+    if (!editing || !['wall', 'rectangle'].includes(tool) || event.target.closest?.('[data-map-object]')) return;
     const point = clientPoint(event);
-    wallGesture.current = { start: point, current: point, moved: false };
-    setWallPreview({ start: point, end: point });
+    wallGesture.current = { tool, start: point, current: point, moved: false };
+    if (tool === 'wall') setWallPreview({ start: point, end: point });
+    else setRectanglePreview({ start: point, end: point });
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const pointerDown = (event, kind, id) => {
-    event.stopPropagation(); setSelected({ kind: kind === 'resize' ? 'element' : kind, id });
+    event.stopPropagation(); setSelected({ kind: ['resize', 'wallStart', 'wallEnd'].includes(kind) ? 'element' : kind, id });
     if (!editing || tool !== 'select') return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
     dragRef.current = { kind, id };
   };
   const pointerMove = (event) => {
-    if (wallGesture.current && editing && tool === 'wall') {
+    if (wallGesture.current && editing && ['wall', 'rectangle'].includes(tool)) {
       const point = clientPoint(event);
       wallGesture.current.current = point;
       wallGesture.current.moved ||= Math.abs(point.x - wallGesture.current.start.x) >= 20 || Math.abs(point.y - wallGesture.current.start.y) >= 20;
-      setWallPreview({ start: wallGesture.current.start, end: point });
+      if (wallGesture.current.tool === 'wall') setWallPreview({ start: wallGesture.current.start, end: point });
+      else setRectanglePreview({ start: wallGesture.current.start, end: point });
       return;
     }
     if (wallStart.current && editing && tool === 'wall') setWallPreview({ start: wallStart.current, end: clientPoint(event) });
@@ -141,6 +142,8 @@ function EquipmentMap() {
     else if (kind === 'resize') {
       const item = editor.present.elements.find((entry) => entry.id === id);
       if (item) dispatch({ type: 'resizeElement', id, width: Math.max(40, point.x - item.geometry.x), height: Math.max(40, point.y - item.geometry.y) });
+    } else if (kind === 'wallStart' || kind === 'wallEnd') {
+      dispatch({ type: 'moveWallEndpoint', id, endpoint: kind === 'wallStart' ? 'start' : 'end', x: point.x, y: point.y });
     } else if (kind === 'equipmentResize') {
       const item = editor.present.placements.find((entry) => entry.equipmentId === id);
       if (item) dispatch({
@@ -158,12 +161,17 @@ function EquipmentMap() {
     if (wallGesture.current) {
       const gesture = wallGesture.current;
       if (gesture.moved) {
-        const wall = createWallFromPoints(gesture.start, gesture.current, newId());
-        if (wall) dispatch({ type: 'addElement', element: wall });
+        if (gesture.tool === 'rectangle') {
+          const walls = createWallRectangle(gesture.start, gesture.current, newId);
+          if (walls.length) dispatch({ type: 'addElements', elements: walls });
+        } else {
+          const wall = createWallFromPoints(gesture.start, gesture.current, newId());
+          if (wall) dispatch({ type: 'addElement', element: wall });
+        }
         wallStart.current = null; suppressWallClick.current = true;
       }
       wallGesture.current = null;
-      if (gesture.moved) setWallPreview(null);
+      if (gesture.moved) { setWallPreview(null); setRectanglePreview(null); }
     }
     dragRef.current = null;
   };
@@ -178,6 +186,10 @@ function EquipmentMap() {
   const deleteSelected = () => {
     if (!selected) return;
     dispatch(selected.kind === 'element' ? { type: 'deleteElement', id: selected.id } : { type: 'removePlacement', equipmentId: selected.id }); setSelected(null);
+  };
+  const changeTool = (nextTool) => {
+    setTool(nextTool); wallStart.current = null; wallGesture.current = null;
+    setWallPreview(null); setRectanglePreview(null);
   };
 
   const addBuilding = async () => {
@@ -199,13 +211,6 @@ function EquipmentMap() {
     const name = window.prompt('Название этажа', floor.name); if (!name?.trim() || name.trim() === floor.name) return;
     try { await equipmentMapAPI.updateFloor(floor.id, { name }); await refreshBuildings(buildingId, floor.id); } catch (error) { toast.error('Не удалось переименовать этаж', error.response?.data?.error || 'Ошибка'); }
   };
-  const createRoom = async () => {
-    const name = window.prompt('Название помещения'); if (!name?.trim()) return;
-    try {
-      const { data } = await roomsAPI.create({ name: name.trim(), building: activeBuilding?.name || '', floor: floor?.name || '' });
-      setRooms((current) => [...current, data].sort((a, b) => a.name.localeCompare(b.name))); setRoomId(data.id);
-    } catch (error) { toast.error('Не удалось создать помещение', error.response?.data?.error || 'Ошибка'); }
-  };
   const deleteFloor = async () => {
     if (!floorId || !window.confirm('Удалить этаж? Оборудование вернётся в список «Не размещено».')) return;
     setEditing(false);
@@ -217,7 +222,6 @@ function EquipmentMap() {
     await equipmentMapAPI.deleteBuilding(buildingId); await refreshBuildings(); setFloor(null);
   };
 
-  const roomNames = useMemo(() => Object.fromEntries(rooms.map((item) => [item.id, item.name])), [rooms]);
   const viewWidth = (floor?.canvasWidth || 1600) / zoom; const viewHeight = (floor?.canvasHeight || 900) / zoom;
 
   if (loading && !floor && buildings.length) return <div className="map-loading">Загрузка карты…</div>;
@@ -245,23 +249,24 @@ function EquipmentMap() {
       {!buildings.length ? <div className="map-empty"><Building2 size={42} /><h2>Карта ещё не создана</h2><p>Добавьте первое здание, затем создайте этаж и расставьте оборудование.</p>{isAdmin && <button className="btn btn-primary" onClick={addBuilding}>Создать здание</button>}</div>
       : !floorId ? <div className="map-empty"><Building2 size={42} /><h2>В здании пока нет этажей</h2>{isAdmin && <button className="btn btn-primary" onClick={addFloor}>Добавить этаж</button>}</div>
       : <>
-        {editing && <MapToolbar tool={tool} setTool={setTool} rooms={rooms} roomId={roomId} setRoomId={setRoomId} onCreateRoom={createRoom} onUndo={() => dispatch({ type: 'undo' })} canUndo={editor.past.length > 0} onDelete={deleteSelected} />}
+        {editing && <MapToolbar tool={tool} setTool={changeTool} labelText={labelText} setLabelText={setLabelText} onUndo={() => dispatch({ type: 'undo' })} canUndo={editor.past.length > 0} onDelete={deleteSelected} hasSelection={Boolean(selected)} />}
         <div className="map-workspace">
           <div className="map-canvas-wrap" onDragOver={(event) => editing && event.preventDefault()} onDrop={dropEquipment}>
             <svg ref={svgRef} className="map-canvas" viewBox={`0 0 ${viewWidth} ${viewHeight}`} onClick={canvasClick} onPointerDown={canvasPointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="План этажа">
               <defs><pattern id="map-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" /></pattern></defs>
               <rect width="100%" height="100%" className="map-grid-bg" />
               {wallPreview && <line className="map-wall-preview" x1={wallPreview.start.x} y1={wallPreview.start.y} x2={wallPreview.end.x} y2={wallPreview.end.y} />}
-              {editor.present.elements.map((item) => item.type === 'room' ? (
-                <g key={item.id} data-map-object className={`map-room ${selected?.id === item.id ? 'selected' : ''}`} onPointerDown={(event) => pointerDown(event, 'element', item.id)}>
-                  <rect x={item.geometry.x} y={item.geometry.y} width={item.geometry.width} height={item.geometry.height} rx="8" />
-                  <text x={item.geometry.x + 14} y={item.geometry.y + 25}>{item.roomName || roomNames[item.roomId] || 'Помещение'}</text>
-                  {editing && selected?.id === item.id && <circle className="map-resize-handle" cx={item.geometry.x + item.geometry.width} cy={item.geometry.y + item.geometry.height} r="10" onPointerDown={(event) => pointerDown(event, 'resize', item.id)} />}
-                </g>
-              ) : item.type === 'wall' ? <line key={item.id} data-map-object className={`map-wall ${selected?.id === item.id ? 'selected' : ''}`} {...item.geometry} onPointerDown={(event) => pointerDown(event, 'element', item.id)} />
+              {rectanglePreview && <rect className="map-rectangle-preview" x={Math.min(rectanglePreview.start.x, rectanglePreview.end.x)} y={Math.min(rectanglePreview.start.y, rectanglePreview.end.y)} width={Math.abs(rectanglePreview.end.x - rectanglePreview.start.x)} height={Math.abs(rectanglePreview.end.y - rectanglePreview.start.y)} />}
+              {editor.present.elements.map((item) => item.type === 'wall' ? <g key={item.id} data-map-object>
+                <line className={`map-wall ${selected?.id === item.id ? 'selected' : ''}`} {...item.geometry} onPointerDown={(event) => pointerDown(event, 'element', item.id)} />
+                {editing && selected?.id === item.id && <>
+                  <circle className="map-wall-handle" cx={item.geometry.x1} cy={item.geometry.y1} r="11" onPointerDown={(event) => pointerDown(event, 'wallStart', item.id)} />
+                  <circle className="map-wall-handle" cx={item.geometry.x2} cy={item.geometry.y2} r="11" onPointerDown={(event) => pointerDown(event, 'wallEnd', item.id)} />
+                </>}
+              </g>
                 : <text key={item.id} data-map-object className={`map-label ${selected?.id === item.id ? 'selected' : ''}`} x={item.geometry.x} y={item.geometry.y} onPointerDown={(event) => pointerDown(event, 'element', item.id)}>{item.label}</text>)}
               {editor.present.placements.map((placement) => { const equipment = placement.equipment; if (!equipment) return null; const status = statusPresentation(equipment.status); const width = placement.width || 180; const height = placement.height || 80; return (
-                <g key={placement.equipmentId} data-map-object tabIndex="0" role="button" aria-label={`${equipment.name}, ${status.label}`} className={`map-equipment-marker ${status.className} ${selected?.id === placement.equipmentId ? 'selected' : ''}`} transform={`translate(${placement.x} ${placement.y})`} onPointerDown={(event) => pointerDown(event, 'equipment', placement.equipmentId)} onClick={(event) => { event.stopPropagation(); if (!editing) setPreview({ equipment, roomName: roomNames[equipment.roomId] }); }}>
+                <g key={placement.equipmentId} data-map-object tabIndex="0" role="button" aria-label={`${equipment.name}, ${status.label}`} className={`map-equipment-marker ${status.className} ${selected?.id === placement.equipmentId ? 'selected' : ''}`} transform={`translate(${placement.x} ${placement.y})`} onPointerDown={(event) => pointerDown(event, 'equipment', placement.equipmentId)} onClick={(event) => { event.stopPropagation(); if (!editing) setPreview({ equipment, roomName: null }); }}>
                   <rect className="map-equipment-card" width={width} height={height} rx="10" />
                   <rect className="map-equipment-status-bar" width="7" height={height} rx="4" />
                   <path transform="translate(22 22)" d="M-7-6h14v12H-7zM-3-10h6v4h-6z" />
