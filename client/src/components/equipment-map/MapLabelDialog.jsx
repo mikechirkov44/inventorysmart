@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Tag } from 'lucide-react';
 
-export default function MapLabelDialog({ onClose, onSubmit }) {
-  const [name, setName] = useState('');
+export default function MapLabelDialog({ onClose, onSubmit, initialName = '', editingLabel = false }) {
+  const [name, setName] = useState(initialName);
   const form = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -23,7 +23,7 @@ export default function MapLabelDialog({ onClose, onSubmit }) {
     <div className="confirm-overlay" onClick={onClose}>
       <form ref={form} className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="map-label-title" onKeyDown={keyDown} onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); if (name.trim()) onSubmit(name.trim()); }}>
         <div className="confirm-icon confirm-icon-info"><Tag size={24} /></div>
-        <h3 id="map-label-title" className="confirm-title">Новая метка</h3>
+        <h3 id="map-label-title" className="confirm-title">{editingLabel ? 'Название метки' : 'Новая метка'}</h3>
         <p className="confirm-message">Название появится в выбранном месте на плане.</p>
         <div className="form-group" style={{ textAlign: 'left' }}>
           <label htmlFor="map-label-name">Название метки</label>
@@ -31,7 +31,7 @@ export default function MapLabelDialog({ onClose, onSubmit }) {
         </div>
         <div className="confirm-actions">
           <button type="button" className="btn" onClick={onClose}>Отмена</button>
-          <button type="submit" className="btn btn-primary" disabled={!name.trim()}>Добавить</button>
+          <button type="submit" className="btn btn-primary" disabled={!name.trim()}>{editingLabel ? 'Сохранить' : 'Добавить'}</button>
         </div>
       </form>
     </div>, document.body,

@@ -2354,6 +2354,45 @@ input, textarea, select { font-family: inherit; }
 .map-empty h2 { margin: 12px 0 4px; color: var(--gray-900); }
 .map-empty p { margin: 0 0 16px; }
 .map-loading { padding: 80px; color: var(--gray-500); text-align: center; }
+.map-stage { position: relative; min-width: 0; }
+.map-stage .map-canvas-wrap { height: 100%; }
+.map-stage .map-canvas { height: 620px; min-height: 540px; background: var(--gray-50); user-select: none; }
+.map-grid-bg { stroke: var(--gray-300); }
+.map-sidebar { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.map-properties { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 16px; background: var(--white); border: 1px solid var(--primary); border-radius: 12px; color: var(--gray-800); }
+.map-properties-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.map-properties-heading h3 { margin: 0; font-size: 15px; }
+.map-properties strong { overflow-wrap: anywhere; }
+.map-properties p, .map-panel-help { margin: 0; font-size: 12px; line-height: 1.6; color: var(--gray-500); }
+.map-panel-help { margin-bottom: 12px; }
+.map-unplaced-item { width: 100%; text-align: left; font-family: inherit; }
+.map-unplaced-item:hover, .map-unplaced-item.is-selected { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--white)); }
+.map-toolbar { flex-wrap: wrap; }
+.map-instruction { padding: 9px 14px; font-size: 13px; color: var(--gray-700); background: var(--gray-50); border-radius: 0 0 10px 10px; }
+.map-wall-hit { stroke: transparent; stroke-width: 24; cursor: move; }
+.map-mode-select .map-wall, .map-mode-select .map-label, .map-mode-select .map-equipment-marker { cursor: move; }
+.map-mode-wall .map-canvas, .map-mode-rectangle .map-canvas, .map-mode-label .map-canvas, .map-mode-opening .map-canvas { cursor: crosshair; }
+.map-mode-wall .map-canvas *, .map-mode-rectangle .map-canvas *, .map-mode-label .map-canvas *, .map-mode-opening .map-canvas * { cursor: inherit; }
+.map-guide { pointer-events: none; }
+.map-guide circle { fill: var(--primary); stroke: var(--white); stroke-width: 2; }
+.map-opening-preview { stroke: var(--danger, #ef4444); stroke-width: 14; stroke-linecap: butt; }
+.map-navigation { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 7px; padding: 5px; border: 1px solid var(--gray-200); border-radius: 10px; background: var(--white); box-shadow: var(--shadow-sm); }
+.map-navigation span { min-width: 44px; text-align: center; color: var(--gray-700); font-size: 12px; }
+.map-navigation-hint { position: absolute; right: 12px; bottom: 22px; color: var(--gray-500); background: var(--white); padding: 4px 8px; border-radius: 6px; pointer-events: none; font-size: 11px; }
+.is-panning .map-canvas, .is-panning .map-canvas * { cursor: grab !important; }
+.map-management { position: relative; color: var(--gray-600); font-size: 12px; }
+.map-management summary { cursor: pointer; padding: 10px; }
+.map-management > div { position: absolute; top: 100%; left: 0; z-index: 20; display: grid; gap: 8px; min-width: 230px; padding: 12px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; box-shadow: var(--shadow-lg); }
+.map-save-state.saved { color: var(--gray-600); }
+.equipment-map .map-label { font-size: 24px; }
+.equipment-map .map-label.selected { stroke: none; fill: var(--primary); text-decoration: underline; }
+.equipment-map .map-equipment-name { font-size: 20px; }
+.equipment-map .map-equipment-number { font-size: 16px; }
+:root[data-theme="dark"] .equipment-map .btn:not(.btn-primary) { background: var(--gray-100); color: var(--gray-800); border-color: var(--gray-300); }
+:root[data-theme="dark"] .equipment-map .btn:not(.btn-primary):hover { background: var(--gray-200); }
+:root[data-theme="dark"] .equipment-map .btn.btn-danger-outline { color: #fca5a5; }
+:root[data-theme="dark"] .equipment-map .map-label.selected { fill: var(--nav-accent-soft, #c4b5fd); }
+@media (max-width: 1100px) { .map-navigation-hint { display: none; } }
 
 @media (max-width: 980px) {
   .equipment-map.is-editing .map-workspace { grid-template-columns: 1fr; }

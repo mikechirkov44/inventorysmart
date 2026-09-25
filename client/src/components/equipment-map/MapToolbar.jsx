@@ -1,23 +1,18 @@
-import { BoxSelect, MousePointer2, Redo2, Tag, Undo2 } from 'lucide-react';
+import { BoxSelect, MousePointer2, Minus, Tag, Undo2, Redo2 } from 'lucide-react';
 
+const TOOLS = [['select', 'Выбор', MousePointer2], ['wall', 'Стена', Minus], ['rectangle', 'Прямоугольник', BoxSelect], ['label', 'Метка', Tag]];
 const HINTS = {
-  select: 'Нажмите объект, чтобы переместить, изменить размер или удалить его',
-  wall: 'Зажмите мышь на карте и протяните до конца стены',
-  rectangle: 'Зажмите мышь и растяните прямоугольник — получится четыре отдельные стены',
-  label: 'Нажмите нужное место на карте — откроется окно названия метки',
+  select: 'Нажмите объект, чтобы выделить. Потяните за него, чтобы переместить.',
+  wall: 'Нажмите начало стены, затем конец. Esc — отмена.',
+  rectangle: 'Зажмите мышь и растяните прямоугольник из четырёх стен.',
+  label: 'Нажмите место на плане и введите название.',
+  opening: 'Укажите начало и конец проёма на выбранной стене. Esc — отмена.',
 };
-
-export default function MapToolbar({ tool, setTool, onUndo, canUndo, onDelete, hasSelection }) {
-  return (
-    <aside className="map-toolbar" aria-label="Инструменты карты">
-      <button type="button" className={`btn btn-small ${tool === 'select' ? 'btn-primary' : ''}`} onClick={() => setTool('select')}><MousePointer2 size={15} /> Выбор</button>
-      <button type="button" title="Зажмите кнопку мыши и протяните стену или укажите начало и конец двумя кликами" className={`btn btn-small ${tool === 'wall' ? 'btn-primary' : ''}`} onClick={() => setTool('wall')}><Redo2 size={15} /> Стена</button>
-      <button type="button" className={`btn btn-small ${tool === 'rectangle' ? 'btn-primary' : ''}`} onClick={() => setTool('rectangle')}><BoxSelect size={15} /> Прямоугольник</button>
-      <button type="button" className={`btn btn-small ${tool === 'label' ? 'btn-primary' : ''}`} onClick={() => setTool('label')}><Tag size={15} /> Метка</button>
-      <span className="map-tool-hint">{HINTS[tool]}</span>
-      <span className="map-toolbar-spacer" />
-      <button type="button" className="btn btn-small" disabled={!canUndo} onClick={onUndo}><Undo2 size={15} /> Отменить</button>
-      <button type="button" className="btn btn-small btn-danger-outline" disabled={!hasSelection} onClick={onDelete}>Удалить выбранное</button>
-    </aside>
-  );
+export default function MapToolbar({ tool, setTool, placing, onUndo, onRedo, canUndo, canRedo }) {
+  return <div className="map-tools-container"><aside className="map-toolbar" aria-label="Инструменты карты">
+    {TOOLS.map(([value, label, Icon]) => <button key={value} type="button" aria-pressed={tool === value && !placing} className={`btn btn-small ${tool === value && !placing ? 'btn-primary' : ''}`} onClick={() => setTool(value)}><Icon size={17} />{label}</button>)}
+    <span className="map-toolbar-spacer" />
+    <button className="btn btn-small" title="Ctrl+Z" disabled={!canUndo} onClick={onUndo}><Undo2 size={17} />Отменить</button>
+    <button className="btn btn-small" title="Ctrl+Shift+Z" disabled={!canRedo} onClick={onRedo}><Redo2 size={17} />Повторить</button>
+  </aside><div className="map-instruction" role="status">{placing ? 'Нажмите на плане, чтобы поставить выбранное оборудование. Esc — отмена.' : HINTS[tool]}</div></div>;
 }

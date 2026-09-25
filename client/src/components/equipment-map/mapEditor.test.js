@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as map from './mapEditor.js';
 import { createMapId, createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, statusPresentation, snap } from './mapEditor.js';
 
 test('map IDs work on HTTP without randomUUID and remain valid UUID v4', () => {
@@ -58,4 +59,44 @@ test('wall endpoints can be moved independently', () => {
   let state = editorReducer(initialEditorState, { type: 'load', elements: [{ id: 'wall-1', type: 'wall', geometry: { x1: 20, y1: 20, x2: 100, y2: 20 } }], placements: [] });
   state = editorReducer(state, { type: 'moveWallEndpoint', id: 'wall-1', endpoint: 'end', x: 140, y: 60 });
   assert.deepEqual(state.present.elements[0].geometry, { x1: 20, y1: 20, x2: 140, y2: 60 });
+});
+
+test('one committed drag undoes in one step and can be redone', () => {
+  let state = editorReducer(initialEditorState, { type: 'load', elements: [], placements: [] });
+  state = editorReducer(state, { type: 'commit', present: { elements: [{ id: 'label', type: 'label', label: 'Цех', geometry: { x: 100, y: 80 } }], placements: [] } });
+  assert.equal(state.present.elements.length, 1);
+  state = editorReducer(state, { type: 'undo' });
+  assert.equal(state.present.elements.length, 0);
+  state = editorReducer(state, { type: 'redo' });
+  assert.equal(state.present.elements[0].label, 'Цех');
+});
+
+test('late save acknowledgement does not clear newer changes', () => {
+  let state = editorReducer(initialEditorState, { type: 'load' });
+  const snapshot = state.present;
+  state = editorReducer(state, { type: 'addElement', element: { id: 'new' } });
+  state = editorReducer(state, { type: 'saved', snapshot });
+  assert.equal(state.dirty, true);
+});
+
+test('opening splits a diagonal wall at projected points, irrespective of click order', () => {
+  assert.equal(typeof map.cutWall, 'function');
+  const wall = { id: 'w', type: 'wall', geometry: { x1: 0, y1: 0, x2: 200, y2: 200 }, style: {} };
+  const parts = map.cutWall(wall, { x: 140, y: 160 }, { x: 40, y: 60 }, () => 'new');
+  assert.deepEqual(parts.map(p => p.geometry), [
+    { x1: 0, y1: 0, x2: 50, y2: 50 }, { x1: 150, y1: 150, x2: 200, y2: 200 },
+  ]);
+  assert.equal(map.cutWall(wall, { x: 40, y: 40 }, { x: 40, y: 40 }, () => 'new'), null);
+});
+
+test('resizing from north-west preserves the opposite corner and respects bounds', () => {
+  assert.equal(typeof map.resizeEquipment, 'function');
+  const item = { x: 200, y: 200, width: 180, height: 80 };
+  assert.deepEqual(map.resizeEquipment(item, 'nw', { x: 100, y: 100 }, { width: 1600, height: 900 }), { x: 100, y: 100, width: 280, height: 180 });
+  assert.deepEqual(map.resizeEquipment(item, 'se', { x: 2000, y: 2000 }, { width: 600, height: 400 }), { x: 200, y: 200, width: 400, height: 200 });
+});
+
+test('resolved off-grid wall endpoints stay connected after an opening', () => {
+  const wall = createWallFromPoints({ x: 50, y: 50 }, { x: 200, y: 50 }, 'new', false);
+  assert.deepEqual(wall.geometry, { x1: 50, y1: 50, x2: 200, y2: 50 });
 });
