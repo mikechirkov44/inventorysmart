@@ -106,7 +106,7 @@ function requireAdministrator(req, res, next) {
     || req.user.role === 'superadmin'
     || String(req.user.positionName || '').trim().toLowerCase() === 'администратор';
   if (!isAdministrator) {
-    return res.status(403).json({ error: 'Настраивать KPI может только администратор' });
+    return res.status(403).json({ error: 'Это действие доступно только администратору' });
   }
   return next();
 }

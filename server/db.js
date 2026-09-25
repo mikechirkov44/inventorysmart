@@ -654,6 +654,60 @@ async function migrate() {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS use_rca BOOLEAN DEFAULT true`);
     });
 
+    await withSavepoint(client, 'equipment_map', async () => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS map_buildings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_map_buildings_company_name
+          ON map_buildings(company_id, LOWER(name));
+        CREATE TABLE IF NOT EXISTS map_floors (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID NOT NULL,
+          building_id UUID NOT NULL REFERENCES map_buildings(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          canvas_width INTEGER NOT NULL DEFAULT 1600 CHECK (canvas_width BETWEEN 400 AND 5000),
+          canvas_height INTEGER NOT NULL DEFAULT 900 CHECK (canvas_height BETWEEN 300 AND 5000),
+          version INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_map_floors_building_name
+          ON map_floors(building_id, LOWER(name));
+        CREATE TABLE IF NOT EXISTS map_elements (
+          id UUID PRIMARY KEY,
+          company_id UUID NOT NULL,
+          floor_id UUID NOT NULL REFERENCES map_floors(id) ON DELETE CASCADE,
+          type VARCHAR(20) NOT NULL CHECK (type IN ('room', 'wall', 'label')),
+          room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
+          geometry JSONB NOT NULL DEFAULT '{}',
+          style JSONB NOT NULL DEFAULT '{}',
+          label VARCHAR(120) NOT NULL DEFAULT '',
+          z_index INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_map_elements_floor ON map_elements(company_id, floor_id);
+        CREATE TABLE IF NOT EXISTS equipment_map_placements (
+          equipment_id UUID PRIMARY KEY REFERENCES equipment(id) ON DELETE CASCADE,
+          company_id UUID NOT NULL,
+          floor_id UUID NOT NULL REFERENCES map_floors(id) ON DELETE CASCADE,
+          x NUMERIC NOT NULL,
+          y NUMERIC NOT NULL,
+          rotation NUMERIC NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_equipment_map_floor ON equipment_map_placements(company_id, floor_id);
+      `);
+    });
+
     await withSavepoint(client, 'activity_history', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS login_history (

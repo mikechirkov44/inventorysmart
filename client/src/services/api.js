@@ -56,6 +56,20 @@ export const equipmentAPI = {
   updateInstructionMd: (id, content) => api.put(`/equipment/${id}/instruction-md`, { content }),
 };
 
+/** API интерактивной карты оборудования */
+export const equipmentMapAPI = {
+  getBuildings: () => api.get('/equipment-map/buildings'),
+  createBuilding: (data) => api.post('/equipment-map/buildings', data),
+  updateBuilding: (id, data) => api.patch(`/equipment-map/buildings/${id}`, data),
+  deleteBuilding: (id) => api.delete(`/equipment-map/buildings/${id}`),
+  createFloor: (buildingId, data) => api.post(`/equipment-map/buildings/${buildingId}/floors`, data),
+  updateFloor: (id, data) => api.patch(`/equipment-map/floors/${id}`, data),
+  deleteFloor: (id) => api.delete(`/equipment-map/floors/${id}`),
+  getFloor: (id) => api.get(`/equipment-map/floors/${id}`),
+  saveLayout: (id, data) => api.put(`/equipment-map/floors/${id}/layout`, data),
+  getUnplaced: (search = '') => api.get('/equipment-map/unplaced-equipment', { params: { search } }),
+};
+
 /** API для работы с категориями оборудования */
 export const equipmentCategoriesAPI = {
   getAll: () => api.get('/equipment-categories'),
