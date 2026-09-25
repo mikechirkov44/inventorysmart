@@ -5,10 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import EquipmentMapPreview from '../components/equipment-map/EquipmentMapPreview';
 import MapToolbar from '../components/equipment-map/MapToolbar';
+import MapLabelDialog from '../components/equipment-map/MapLabelDialog';
 import UnplacedEquipmentPanel from '../components/equipment-map/UnplacedEquipmentPanel';
-import { createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
-
-const newId = () => crypto.randomUUID();
+import { createMapId as newId, createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
 
 function EquipmentMap() {
   const { user } = useAuth();
@@ -23,7 +22,7 @@ function EquipmentMap() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [tool, setTool] = useState('select');
-  const [labelText, setLabelText] = useState('');
+  const [pendingLabel, setPendingLabel] = useState(null);
   const [selected, setSelected] = useState(null);
   const [preview, setPreview] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -99,8 +98,7 @@ function EquipmentMap() {
     if (suppressWallClick.current) { suppressWallClick.current = false; return; }
     const point = clientPoint(event);
     if (tool === 'label') {
-      if (!labelText.trim()) return toast.info('Введите текст метки', 'Поле находится рядом с кнопкой «Метка»');
-      dispatch({ type: 'addElement', element: { id: newId(), type: 'label', label: labelText.trim(), geometry: point, style: {} } });
+      setPendingLabel(point);
     } else if (tool === 'wall') {
       if (!wallStart.current) { wallStart.current = point; setWallPreview({ start: point, end: point }); }
       else {
@@ -122,7 +120,11 @@ function EquipmentMap() {
 
   const pointerDown = (event, kind, id) => {
     event.stopPropagation(); setSelected({ kind: ['resize', 'wallStart', 'wallEnd'].includes(kind) ? 'element' : kind, id });
-    if (!editing || tool !== 'select') return;
+    if (!editing) return;
+    // A visible resize handle must work regardless of the last drawing tool.
+    const directManipulation = ['equipment', 'equipmentResize', 'wallStart', 'wallEnd'].includes(kind);
+    if (tool !== 'select' && !directManipulation) return;
+    if (tool !== 'select') changeTool('select');
     event.currentTarget.setPointerCapture?.(event.pointerId);
     dragRef.current = { kind, id };
   };
@@ -188,6 +190,7 @@ function EquipmentMap() {
     dispatch(selected.kind === 'element' ? { type: 'deleteElement', id: selected.id } : { type: 'removePlacement', equipmentId: selected.id }); setSelected(null);
   };
   const changeTool = (nextTool) => {
+    suppressWallClick.current = false;
     setTool(nextTool); wallStart.current = null; wallGesture.current = null;
     setWallPreview(null); setRectanglePreview(null);
   };
@@ -249,7 +252,7 @@ function EquipmentMap() {
       {!buildings.length ? <div className="map-empty"><Building2 size={42} /><h2>Карта ещё не создана</h2><p>Добавьте первое здание, затем создайте этаж и расставьте оборудование.</p>{isAdmin && <button className="btn btn-primary" onClick={addBuilding}>Создать здание</button>}</div>
       : !floorId ? <div className="map-empty"><Building2 size={42} /><h2>В здании пока нет этажей</h2>{isAdmin && <button className="btn btn-primary" onClick={addFloor}>Добавить этаж</button>}</div>
       : <>
-        {editing && <MapToolbar tool={tool} setTool={changeTool} labelText={labelText} setLabelText={setLabelText} onUndo={() => dispatch({ type: 'undo' })} canUndo={editor.past.length > 0} onDelete={deleteSelected} hasSelection={Boolean(selected)} />}
+        {editing && <MapToolbar tool={tool} setTool={changeTool} onUndo={() => dispatch({ type: 'undo' })} canUndo={editor.past.length > 0} onDelete={deleteSelected} hasSelection={Boolean(selected)} />}
         <div className="map-workspace">
           <div className="map-canvas-wrap" onDragOver={(event) => editing && event.preventDefault()} onDrop={dropEquipment}>
             <svg ref={svgRef} className="map-canvas" viewBox={`0 0 ${viewWidth} ${viewHeight}`} onClick={canvasClick} onPointerDown={canvasPointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="План этажа">
@@ -272,7 +275,7 @@ function EquipmentMap() {
                   <path transform="translate(22 22)" d="M-7-6h14v12H-7zM-3-10h6v4h-6z" />
                   <text className="map-equipment-name" x="40" y="24">{equipment.name.length > Math.max(12, Math.floor(width / 9)) ? `${equipment.name.slice(0, Math.max(12, Math.floor(width / 9)))}…` : equipment.name}</text>
                   <text className="map-equipment-number" x="18" y={Math.min(height - 17, 55)}>{equipment.inventoryNumber || 'Без инв. номера'}</text>
-                  {editing && selected?.id === placement.equipmentId && <circle className="map-resize-handle" cx={width} cy={height} r="10" onPointerDown={(event) => pointerDown(event, 'equipmentResize', placement.equipmentId)} />}
+                  {editing && selected?.id === placement.equipmentId && <circle className="map-resize-handle" cx={width} cy={height} r="14" onPointerDown={(event) => pointerDown(event, 'equipmentResize', placement.equipmentId)}><title>Потяните за угол, чтобы изменить размер</title></circle>}
                 </g>); })}
             </svg>
             {preview && <EquipmentMapPreview {...preview} onClose={() => setPreview(null)} />}
@@ -281,6 +284,10 @@ function EquipmentMap() {
         </div>
         <div className="map-legend"><span><i className="map-status-working" />Работает</span><span><i className="map-status-reserve" />Резерв</span><span><i className="map-status-repair" />В ремонте</span><span><i className="map-status-alert" />Требует внимания</span></div>
       </>}
+      {pendingLabel && <MapLabelDialog onClose={() => setPendingLabel(null)} onSubmit={(label) => {
+        dispatch({ type: 'addElement', element: { id: newId(), type: 'label', label, geometry: pendingLabel, style: {} } });
+        setPendingLabel(null);
+      }} />}
     </section>
   );
 }

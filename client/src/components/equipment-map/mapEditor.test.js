@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, statusPresentation, snap } from './mapEditor.js';
+import { createMapId, createWallFromPoints, createWallRectangle, editorReducer, initialEditorState, statusPresentation, snap } from './mapEditor.js';
+
+test('map IDs work on HTTP without randomUUID and remain valid UUID v4', () => {
+  const source = { getRandomValues: (bytes) => globalThis.crypto.getRandomValues(bytes) };
+  const ids = Array.from({ length: 100 }, () => createMapId(source));
+  assert.equal(new Set(ids).size, 100);
+  for (const id of ids) assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+});
 
 test('snap rounds coordinates to the editor grid', () => assert.equal(snap(27, 20), 20));
 test('status presentation has a safe fallback', () => {
