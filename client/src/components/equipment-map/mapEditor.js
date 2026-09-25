@@ -1,6 +1,12 @@
 export const GRID_SIZE = 20;
 export const snap = (value, grid = GRID_SIZE) => Math.round(Number(value) / grid) * grid;
 
+export function createWallFromPoints(start, end, id) {
+  const x1 = snap(start.x); const y1 = snap(start.y); const x2 = snap(end.x); const y2 = snap(end.y);
+  if (x1 === x2 && y1 === y2) return null;
+  return { id, type: 'wall', geometry: { x1, y1, x2, y2 }, style: {} };
+}
+
 const STATUS = {
   working: { label: 'Работает', className: 'map-status-working' },
   reserve: { label: 'Резерв', className: 'map-status-reserve' },
@@ -33,8 +39,9 @@ export function editorReducer(state, action) {
   if (action.type === 'deleteElement') return push(state, { ...state.present, elements: state.present.elements.filter((item) => item.id !== action.id) });
   if (action.type === 'placeEquipment') {
     const current = state.present.placements.find((item) => item.equipmentId === action.placement.equipmentId) || {};
-    return push(state, { ...state.present, placements: [...state.present.placements.filter((item) => item.equipmentId !== action.placement.equipmentId), { rotation: 0, ...current, ...action.placement }] });
+    return push(state, { ...state.present, placements: [...state.present.placements.filter((item) => item.equipmentId !== action.placement.equipmentId), { rotation: 0, width: 180, height: 80, ...current, ...action.placement }] });
   }
+  if (action.type === 'resizePlacement') return push(state, { ...state.present, placements: state.present.placements.map((item) => item.equipmentId === action.equipmentId ? { ...item, width: action.width, height: action.height } : item) });
   if (action.type === 'removePlacement') return push(state, { ...state.present, placements: state.present.placements.filter((item) => item.equipmentId !== action.equipmentId) });
   return state;
 }

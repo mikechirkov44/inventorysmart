@@ -700,11 +700,15 @@ async function migrate() {
           floor_id UUID NOT NULL REFERENCES map_floors(id) ON DELETE CASCADE,
           x NUMERIC NOT NULL,
           y NUMERIC NOT NULL,
+          width NUMERIC NOT NULL DEFAULT 180,
+          height NUMERIC NOT NULL DEFAULT 80,
           rotation NUMERIC NOT NULL DEFAULT 0,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_equipment_map_floor ON equipment_map_placements(company_id, floor_id);
+        ALTER TABLE equipment_map_placements ADD COLUMN IF NOT EXISTS width NUMERIC NOT NULL DEFAULT 180;
+        ALTER TABLE equipment_map_placements ADD COLUMN IF NOT EXISTS height NUMERIC NOT NULL DEFAULT 80;
       `);
     });
 

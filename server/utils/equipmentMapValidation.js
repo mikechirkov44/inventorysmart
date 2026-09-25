@@ -67,9 +67,14 @@ function validateLayoutPayload(payload, bounds) {
     const equipmentId = id(item.equipmentId, `Оборудование ${index + 1}`);
     if (seen.has(equipmentId)) throw new MapValidationError('Повторное размещение оборудования');
     seen.add(equipmentId);
+    const widthValue = item.width === undefined ? 180 : number(item.width, 'width', 100, 500);
+    const heightValue = item.height === undefined ? 80 : number(item.height, 'height', 60, 300);
+    const x = number(item.x, 'x', 0, width);
+    const y = number(item.y, 'y', 0, height);
+    if (x + widthValue > width || y + heightValue > height) throw new MapValidationError('Карточка оборудования выходит за границы плана');
     return {
       equipmentId,
-      x: number(item.x, 'x', 0, width), y: number(item.y, 'y', 0, height),
+      x, y, width: widthValue, height: heightValue,
       rotation: typeof item.rotation === 'number' && Number.isFinite(item.rotation) ? Math.max(-360, Math.min(360, item.rotation)) : 0,
     };
   });

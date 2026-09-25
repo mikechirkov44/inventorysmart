@@ -53,13 +53,13 @@ async function getFloor(companyId, id) {
   const [{ rows: elements }, { rows: placements }] = await Promise.all([
     query(`SELECT me.*, r.name AS room_name FROM map_elements me LEFT JOIN rooms r ON r.id = me.room_id
       WHERE me.floor_id = $1 AND me.company_id = $2 ORDER BY me.z_index, me.created_at`, [id, companyId]),
-    query(`SELECT p.x, p.y, p.rotation, e.* FROM equipment_map_placements p JOIN equipment e ON e.id = p.equipment_id
+    query(`SELECT p.x, p.y, p.width AS placement_width, p.height AS placement_height, p.rotation, e.* FROM equipment_map_placements p JOIN equipment e ON e.id = p.equipment_id
       WHERE p.floor_id = $1 AND p.company_id = $2 ORDER BY e.name`, [id, companyId]),
   ]);
   return {
     ...mapFloor(floors[0]),
     elements: elements.map((row) => ({ id: row.id, type: row.type, roomId: row.room_id, roomName: row.room_name, geometry: row.geometry, style: row.style, label: row.label, zIndex: row.z_index })),
-    placements: placements.map((row) => ({ equipmentId: row.id, x: Number(row.x), y: Number(row.y), rotation: Number(row.rotation), equipment: equipmentSummary(row) })),
+    placements: placements.map((row) => ({ equipmentId: row.id, x: Number(row.x), y: Number(row.y), width: Number(row.placement_width), height: Number(row.placement_height), rotation: Number(row.rotation), equipment: equipmentSummary(row) })),
   };
 }
 
@@ -72,9 +72,11 @@ async function listUnplaced(companyId, search = '') {
 }
 
 function containingRoom(elements, placement) {
+  const centerX = placement.x + placement.width / 2;
+  const centerY = placement.y + placement.height / 2;
   return elements.find((element) => element.type === 'room'
-    && placement.x >= element.geometry.x && placement.x <= element.geometry.x + element.geometry.width
-    && placement.y >= element.geometry.y && placement.y <= element.geometry.y + element.geometry.height)?.roomId || null;
+    && centerX >= element.geometry.x && centerX <= element.geometry.x + element.geometry.width
+    && centerY >= element.geometry.y && centerY <= element.geometry.y + element.geometry.height)?.roomId || null;
 }
 
 async function saveLayout(companyId, floorId, layout) {
@@ -107,9 +109,9 @@ async function saveLayout(companyId, floorId, layout) {
     }
     await client.query('DELETE FROM equipment_map_placements WHERE floor_id = $1 AND company_id = $2', [floorId, companyId]);
     for (const placement of layout.placements) {
-      await client.query(`INSERT INTO equipment_map_placements (equipment_id, company_id, floor_id, x, y, rotation)
-        VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (equipment_id) DO UPDATE SET company_id=EXCLUDED.company_id, floor_id=EXCLUDED.floor_id, x=EXCLUDED.x, y=EXCLUDED.y, rotation=EXCLUDED.rotation, updated_at=NOW()`,
-      [placement.equipmentId, companyId, floorId, placement.x, placement.y, placement.rotation]);
+      await client.query(`INSERT INTO equipment_map_placements (equipment_id, company_id, floor_id, x, y, width, height, rotation)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (equipment_id) DO UPDATE SET company_id=EXCLUDED.company_id, floor_id=EXCLUDED.floor_id, x=EXCLUDED.x, y=EXCLUDED.y, width=EXCLUDED.width, height=EXCLUDED.height, rotation=EXCLUDED.rotation, updated_at=NOW()`,
+      [placement.equipmentId, companyId, floorId, placement.x, placement.y, placement.width, placement.height, placement.rotation]);
       const roomId = containingRoom(layout.elements, placement);
       if (roomId) await client.query('UPDATE equipment SET room_id = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3', [roomId, placement.equipmentId, companyId]);
     }

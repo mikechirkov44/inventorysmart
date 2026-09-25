@@ -2305,13 +2305,17 @@ input, textarea, select { font-family: inherit; }
 .map-room text, .map-label { fill: var(--gray-800); font-size: 17px; font-weight: 700; pointer-events: none; }
 .map-label { pointer-events: auto; cursor: pointer; }
 .map-wall { stroke: var(--gray-800); stroke-width: 8; stroke-linecap: round; cursor: pointer; }
+.map-wall-preview { stroke: var(--primary); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 14 9; pointer-events: none; }
 .map-room.selected rect, .map-wall.selected, .map-label.selected { stroke: var(--primary); stroke-width: 5; }
 .map-resize-handle { fill: var(--primary); stroke: var(--white); stroke-width: 3; cursor: nwse-resize; }
 .map-equipment-marker { cursor: pointer; outline: none; }
-.map-equipment-marker circle { fill: currentColor; stroke: var(--white); stroke-width: 4; filter: drop-shadow(0 3px 5px rgba(15,23,42,.25)); }
-.map-equipment-marker path { fill: var(--white); stroke: none; pointer-events: none; }
-.map-equipment-marker text { fill: var(--gray-900); font-size: 15px; font-weight: 700; paint-order: stroke; stroke: var(--white); stroke-width: 5px; stroke-linejoin: round; pointer-events: none; }
-.map-equipment-marker.selected circle { stroke: var(--primary); stroke-width: 7; }
+.map-equipment-card { fill: var(--white); stroke: var(--gray-300); stroke-width: 2; filter: drop-shadow(0 4px 7px rgba(15,23,42,.15)); }
+.map-equipment-status-bar { fill: currentColor; stroke: none; }
+.map-equipment-marker path { fill: currentColor; stroke: none; pointer-events: none; }
+.map-equipment-marker text { fill: var(--gray-900); pointer-events: none; }
+.map-equipment-name { font-size: 15px; font-weight: 700; }
+.map-equipment-number { fill: var(--gray-500) !important; font-size: 12px; font-weight: 600; }
+.map-equipment-marker.selected .map-equipment-card { stroke: var(--primary); stroke-width: 5; }
 .map-status-working { color: #10b981; background-color: #10b981; }
 .map-status-reserve { color: #64748b; background-color: #64748b; }
 .map-status-repair { color: #ef4444; background-color: #ef4444; }

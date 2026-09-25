@@ -31,7 +31,7 @@ test('rejects non-finite and out-of-bounds geometry', () => {
 test('rejects duplicate equipment placements', () => {
   assert.throws(() => validateLayoutPayload({ version: 0, elements: [], placements: [
     { equipmentId: uuid(2), x: 1, y: 1 }, { equipmentId: uuid(2), x: 2, y: 2 },
-  ] }, { width: 100, height: 100 }), /повтор/i);
+  ] }, { width: 500, height: 400 }), /повтор/i);
 });
 
 test('rejects duplicate element ids and overlapping rooms', () => {
@@ -43,4 +43,11 @@ test('rejects duplicate element ids and overlapping rooms', () => {
 test('rejects oversized layouts', () => {
   const elements = Array.from({ length: 501 }, (_, index) => ({ id: uuid(index + 1), type: 'label', label: 'x', geometry: { x: 1, y: 1 } }));
   assert.throws(() => validateLayoutPayload({ version: 0, elements, placements: [] }, { width: 100, height: 100 }), /500/);
+});
+
+test('normalises equipment block size and rejects blocks outside the floor', () => {
+  const result = validateLayoutPayload({ version: 0, elements: [], placements: [{ equipmentId: uuid(8), x: 10, y: 20, width: 220, height: 100 }] }, { width: 500, height: 400 });
+  assert.equal(result.placements[0].width, 220);
+  assert.equal(result.placements[0].height, 100);
+  assert.throws(() => validateLayoutPayload({ version: 0, elements: [], placements: [{ equipmentId: uuid(8), x: 450, y: 20, width: 180, height: 80 }] }, { width: 500, height: 400 }), /границ/i);
 });

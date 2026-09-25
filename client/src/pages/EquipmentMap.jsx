@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast';
 import EquipmentMapPreview from '../components/equipment-map/EquipmentMapPreview';
 import MapToolbar from '../components/equipment-map/MapToolbar';
 import UnplacedEquipmentPanel from '../components/equipment-map/UnplacedEquipmentPanel';
-import { editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
+import { createWallFromPoints, editorReducer, initialEditorState, snap, statusPresentation } from '../components/equipment-map/mapEditor';
 
 const newId = () => crypto.randomUUID();
 
@@ -29,10 +29,13 @@ function EquipmentMap() {
   const [preview, setPreview] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [saveState, setSaveState] = useState('saved');
+  const [wallPreview, setWallPreview] = useState(null);
   const [editor, dispatch] = useReducer(editorReducer, initialEditorState);
   const svgRef = useRef(null);
   const dragRef = useRef(null);
   const wallStart = useRef(null);
+  const wallGesture = useRef(null);
+  const suppressWallClick = useRef(false);
 
   const activeBuilding = buildings.find((item) => item.id === buildingId);
   const refreshBuildings = useCallback(async (preferredBuilding, preferredFloor) => {
@@ -91,6 +94,7 @@ function EquipmentMap() {
 
   const canvasClick = (event) => {
     if (!editing || event.target.closest?.('[data-map-object]')) return;
+    if (suppressWallClick.current) { suppressWallClick.current = false; return; }
     const point = clientPoint(event);
     if (tool === 'room') {
       if (!roomId) return toast.info('Выберите помещение', 'Сначала выберите помещение в панели инструментов');
@@ -99,9 +103,21 @@ function EquipmentMap() {
     } else if (tool === 'label') {
       const label = window.prompt('Текст метки'); if (label?.trim()) dispatch({ type: 'addElement', element: { id: newId(), type: 'label', label: label.trim(), geometry: point, style: {} } });
     } else if (tool === 'wall') {
-      if (!wallStart.current) wallStart.current = point;
-      else { dispatch({ type: 'addElement', element: { id: newId(), type: 'wall', geometry: { x1: wallStart.current.x, y1: wallStart.current.y, x2: point.x, y2: point.y }, style: {} } }); wallStart.current = null; }
+      if (!wallStart.current) { wallStart.current = point; setWallPreview({ start: point, end: point }); }
+      else {
+        const wall = createWallFromPoints(wallStart.current, point, newId());
+        if (wall) dispatch({ type: 'addElement', element: wall });
+        wallStart.current = null; setWallPreview(null);
+      }
     } else setSelected(null);
+  };
+
+  const canvasPointerDown = (event) => {
+    if (!editing || tool !== 'wall' || event.target.closest?.('[data-map-object]')) return;
+    const point = clientPoint(event);
+    wallGesture.current = { start: point, current: point, moved: false };
+    setWallPreview({ start: point, end: point });
+    event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const pointerDown = (event, kind, id) => {
@@ -111,22 +127,52 @@ function EquipmentMap() {
     dragRef.current = { kind, id };
   };
   const pointerMove = (event) => {
+    if (wallGesture.current && editing && tool === 'wall') {
+      const point = clientPoint(event);
+      wallGesture.current.current = point;
+      wallGesture.current.moved ||= Math.abs(point.x - wallGesture.current.start.x) >= 20 || Math.abs(point.y - wallGesture.current.start.y) >= 20;
+      setWallPreview({ start: wallGesture.current.start, end: point });
+      return;
+    }
+    if (wallStart.current && editing && tool === 'wall') setWallPreview({ start: wallStart.current, end: clientPoint(event) });
     if (!dragRef.current || !editing) return;
     const point = clientPoint(event); const { kind, id } = dragRef.current;
     if (kind === 'element') dispatch({ type: 'moveElement', id, x: point.x, y: point.y });
     else if (kind === 'resize') {
       const item = editor.present.elements.find((entry) => entry.id === id);
       if (item) dispatch({ type: 'resizeElement', id, width: Math.max(40, point.x - item.geometry.x), height: Math.max(40, point.y - item.geometry.y) });
+    } else if (kind === 'equipmentResize') {
+      const item = editor.present.placements.find((entry) => entry.equipmentId === id);
+      if (item) dispatch({
+        type: 'resizePlacement', equipmentId: id,
+        width: Math.max(100, Math.min(500, (floor?.canvasWidth || 1600) - item.x, point.x - item.x)),
+        height: Math.max(60, Math.min(300, (floor?.canvasHeight || 900) - item.y, point.y - item.y)),
+      });
+    } else {
+      const item = editor.present.placements.find((entry) => entry.equipmentId === id);
+      const width = item?.width || 180; const height = item?.height || 80;
+      dispatch({ type: 'placeEquipment', placement: { equipmentId: id, x: Math.max(0, Math.min((floor?.canvasWidth || 1600) - width, point.x)), y: Math.max(0, Math.min((floor?.canvasHeight || 900) - height, point.y)) } });
     }
-    else dispatch({ type: 'placeEquipment', placement: { equipmentId: id, x: point.x, y: point.y } });
   };
-  const pointerUp = () => { dragRef.current = null; };
+  const pointerUp = () => {
+    if (wallGesture.current) {
+      const gesture = wallGesture.current;
+      if (gesture.moved) {
+        const wall = createWallFromPoints(gesture.start, gesture.current, newId());
+        if (wall) dispatch({ type: 'addElement', element: wall });
+        wallStart.current = null; suppressWallClick.current = true;
+      }
+      wallGesture.current = null;
+      if (gesture.moved) setWallPreview(null);
+    }
+    dragRef.current = null;
+  };
   const dropEquipment = (event) => {
     if (!editing) return; event.preventDefault();
     const equipmentId = event.dataTransfer.getData('application/x-equipment-id'); if (!equipmentId) return;
     const item = unplaced.find((entry) => entry.id === equipmentId);
     const point = clientPoint(event);
-    dispatch({ type: 'placeEquipment', placement: { equipmentId, x: point.x, y: point.y, equipment: item } });
+    dispatch({ type: 'placeEquipment', placement: { equipmentId, x: Math.max(0, Math.min((floor?.canvasWidth || 1600) - 180, point.x)), y: Math.max(0, Math.min((floor?.canvasHeight || 900) - 80, point.y)), width: 180, height: 80, equipment: item } });
     setUnplaced((current) => current.filter((entry) => entry.id !== equipmentId));
   };
   const deleteSelected = () => {
@@ -202,9 +248,10 @@ function EquipmentMap() {
         {editing && <MapToolbar tool={tool} setTool={setTool} rooms={rooms} roomId={roomId} setRoomId={setRoomId} onCreateRoom={createRoom} onUndo={() => dispatch({ type: 'undo' })} canUndo={editor.past.length > 0} onDelete={deleteSelected} />}
         <div className="map-workspace">
           <div className="map-canvas-wrap" onDragOver={(event) => editing && event.preventDefault()} onDrop={dropEquipment}>
-            <svg ref={svgRef} className="map-canvas" viewBox={`0 0 ${viewWidth} ${viewHeight}`} onClick={canvasClick} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="План этажа">
+            <svg ref={svgRef} className="map-canvas" viewBox={`0 0 ${viewWidth} ${viewHeight}`} onClick={canvasClick} onPointerDown={canvasPointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="План этажа">
               <defs><pattern id="map-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" /></pattern></defs>
               <rect width="100%" height="100%" className="map-grid-bg" />
+              {wallPreview && <line className="map-wall-preview" x1={wallPreview.start.x} y1={wallPreview.start.y} x2={wallPreview.end.x} y2={wallPreview.end.y} />}
               {editor.present.elements.map((item) => item.type === 'room' ? (
                 <g key={item.id} data-map-object className={`map-room ${selected?.id === item.id ? 'selected' : ''}`} onPointerDown={(event) => pointerDown(event, 'element', item.id)}>
                   <rect x={item.geometry.x} y={item.geometry.y} width={item.geometry.width} height={item.geometry.height} rx="8" />
@@ -213,9 +260,14 @@ function EquipmentMap() {
                 </g>
               ) : item.type === 'wall' ? <line key={item.id} data-map-object className={`map-wall ${selected?.id === item.id ? 'selected' : ''}`} {...item.geometry} onPointerDown={(event) => pointerDown(event, 'element', item.id)} />
                 : <text key={item.id} data-map-object className={`map-label ${selected?.id === item.id ? 'selected' : ''}`} x={item.geometry.x} y={item.geometry.y} onPointerDown={(event) => pointerDown(event, 'element', item.id)}>{item.label}</text>)}
-              {editor.present.placements.map((placement) => { const equipment = placement.equipment; if (!equipment) return null; const status = statusPresentation(equipment.status); return (
+              {editor.present.placements.map((placement) => { const equipment = placement.equipment; if (!equipment) return null; const status = statusPresentation(equipment.status); const width = placement.width || 180; const height = placement.height || 80; return (
                 <g key={placement.equipmentId} data-map-object tabIndex="0" role="button" aria-label={`${equipment.name}, ${status.label}`} className={`map-equipment-marker ${status.className} ${selected?.id === placement.equipmentId ? 'selected' : ''}`} transform={`translate(${placement.x} ${placement.y})`} onPointerDown={(event) => pointerDown(event, 'equipment', placement.equipmentId)} onClick={(event) => { event.stopPropagation(); if (!editing) setPreview({ equipment, roomName: roomNames[equipment.roomId] }); }}>
-                  <circle r="20" /><path d="M-7-6h14v12H-7zM-3-10h6v4h-6z" /><text x="27" y="5">{equipment.name.length > 26 ? `${equipment.name.slice(0, 26)}…` : equipment.name}</text>
+                  <rect className="map-equipment-card" width={width} height={height} rx="10" />
+                  <rect className="map-equipment-status-bar" width="7" height={height} rx="4" />
+                  <path transform="translate(22 22)" d="M-7-6h14v12H-7zM-3-10h6v4h-6z" />
+                  <text className="map-equipment-name" x="40" y="24">{equipment.name.length > Math.max(12, Math.floor(width / 9)) ? `${equipment.name.slice(0, Math.max(12, Math.floor(width / 9)))}…` : equipment.name}</text>
+                  <text className="map-equipment-number" x="18" y={Math.min(height - 17, 55)}>{equipment.inventoryNumber || 'Без инв. номера'}</text>
+                  {editing && selected?.id === placement.equipmentId && <circle className="map-resize-handle" cx={width} cy={height} r="10" onPointerDown={(event) => pointerDown(event, 'equipmentResize', placement.equipmentId)} />}
                 </g>); })}
             </svg>
             {preview && <EquipmentMapPreview {...preview} onClose={() => setPreview(null)} />}
