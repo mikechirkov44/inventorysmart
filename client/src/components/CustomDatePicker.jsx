@@ -213,7 +213,7 @@ export default function CustomDatePicker({ value, onChange, placeholder = 'ДД.
             <button type="button" className="calendar-action" onClick={handleToday}>Сегодня</button>
           </div>
         </div>,
-        document.body
+        wrapperRef.current?.closest('dialog') || document.body
       )}
     </div>
   );

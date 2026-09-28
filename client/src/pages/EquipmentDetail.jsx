@@ -3,7 +3,8 @@
  * @description Карточка оборудования: основная информация, QR-код, плановые работы, ЗИП, история ремонтов.
  */
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import EquipmentMonitoring from '../components/monitoring/EquipmentMonitoring';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI, commonFaultsAPI } from '../services/api';
 const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
 import EquipmentInstructions from '../components/EquipmentInstructions';
@@ -44,6 +45,7 @@ const STATUS_MAP = {
 
 function EquipmentDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState(null);
   const [workOrders, setWorkOrders] = useState([]);
@@ -509,6 +511,7 @@ function EquipmentDetail() {
           </div>
           </div>
 
+          <EquipmentMonitoring key={`${id}:${searchParams.get('monitoringDate') || ''}`} equipmentId={id} initialDate={searchParams.get('monitoringDate')} />
           <div className={`detail-history-section history-section ${historyExpanded ? 'expanded' : 'collapsed'}`}>
             <button
               type="button"

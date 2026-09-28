@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import {
-  MoreHorizontal, X, LogOut, Settings, HelpCircle, Bell, Download, Building2, User,
+  MoreHorizontal, X, LogOut, Settings, HelpCircle, Bell, Download, Building2, User, Activity,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { companyAPI } from '../services/api';
@@ -76,6 +76,7 @@ export default function MobileMoreMenu({ unreadCount = 0 }) {
             </div>
 
             <nav className="mobile-more-links">
+              {canView('equipment') && <NavLink to="/monitoring" onClick={() => setOpen(false)}><Activity size={18} /> Мониторинг</NavLink>}
               {canView('settings') && (
                 <NavLink to="/settings" onClick={() => setOpen(false)}>
                   <Settings size={18} /> Настройки

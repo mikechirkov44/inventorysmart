@@ -30,6 +30,8 @@ import { ConfirmProvider } from './components/ConfirmModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LicenseBanner from './components/LicenseBanner';
 import MobileMoreMenu from './components/MobileMoreMenu';
+import { Activity } from 'lucide-react';
+const MonitoringPage = lazy(() => import('./pages/MonitoringPage'));
 import NotificationBell from './components/NotificationBell';
 import { applyThemeColor, applyThemeMode } from './utils/theme';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -199,6 +201,7 @@ function AppNav({ collapsed, onToggle }) {
       <ul className="nav-links">
         <li><NavLink to="/" end><LayoutDashboard size={18} />{!collapsed && <span>Главная</span>}</NavLink></li>
         <DirDropdown collapsed={collapsed} />
+        {canView('equipment') && <li className="nav-item-desktop-only"><NavLink to="/monitoring" title={collapsed ? 'Мониторинг' : undefined} aria-label="Мониторинг"><Activity size={18} />{!collapsed && <span>Мониторинг</span>}</NavLink></li>}
         {canView('workOrders') && <li><NavLink to="/work-orders"><ClipboardList size={18} />{!collapsed && <span>Журнал</span>}</NavLink></li>}
         {canView('sparePartsReceipts') && <li><NavLink to="/spare-parts-receipts"><FileText size={18} />{!collapsed && <span>Документы</span>}</NavLink></li>}
         {canView('scanner') && <li><NavLink to="/scan"><ScanLine size={18} />{!collapsed && <span>QR-сканер</span>}</NavLink></li>}
@@ -286,6 +289,7 @@ function AppRoutes() {
       <Route path="/equipment" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentDetail /></PageWrapper></ProtectedRoute>} />
+      <Route path="/monitoring" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><MonitoringPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
       <Route path="/scan" element={<ProtectedRoute requiredPermission="scanner"><PageWrapper><QRScanner /></PageWrapper></ProtectedRoute>} />
