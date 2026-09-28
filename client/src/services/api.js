@@ -276,12 +276,15 @@ export const kpiIndicatorsAPI = {
 /** API мониторинга станков. Демо-данные остаются на клиенте, если связь не включена. */
 export const monitoringAPI = {
   live: () => api.get('/monitoring/live'),
+  statuses: () => api.get('/monitoring/statuses'),
   getLink: (equipmentId) => api.get(`/monitoring/links/${equipmentId}`),
   saveLink: (equipmentId, data) => api.put(`/monitoring/links/${equipmentId}`, data),
   testLink: (equipmentId, data) => api.post(`/monitoring/links/${equipmentId}/test`, data),
-  getDay: (equipmentId, date) => api.get('/monitoring/day', { params: { equipmentId, date } }),
-  getRange: (equipmentIds, from, to) => api.get('/monitoring/range', { params: { equipmentIds: equipmentIds.join(','), from, to } }),
+  getDay: (equipmentId, date, mode = 'day') => api.get('/monitoring/day', { params: { equipmentId, date, mode } }),
+  getRange: (equipmentIds, from, to, mode = 'day') => api.get('/monitoring/range', { params: { equipmentIds: equipmentIds.join(','), from, to, mode } }),
   getSnapshot: (equipmentId) => api.get('/monitoring/snapshot', { params: { equipmentId } }),
+  downtime: (equipmentId) => api.get(`/monitoring/downtime/${equipmentId}`),
+  assignDowntime: (id, causeId) => api.put(`/monitoring/downtime/${id}`, { causeId }),
 };
 
 /** API для управления наработкой оборудования */

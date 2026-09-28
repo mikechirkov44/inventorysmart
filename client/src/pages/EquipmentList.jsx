@@ -12,6 +12,7 @@ import { SkeletonCardGrid } from '../components/Skeleton';
 import ActionsMenu from '../components/ActionsMenu';
 import UploadImage from '../components/UploadImage';
 import EmptyState from '../components/EmptyState';
+import { MachineStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 
 /** Маппинг статусов оборудования на метки и CSS-классы */
 const STATUS_MAP = {
@@ -30,6 +31,7 @@ function EquipmentList({ embedded }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [viewingEquipment, setViewingEquipment] = useState(null);
+  const machineStatuses = useMachineStatuses();
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -182,6 +184,7 @@ function EquipmentList({ embedded }) {
                               </div>
                             )}
                             <div className="card-status-row">
+                              {machineStatuses[item.id] && <MachineStatusBadge status={machineStatuses[item.id]} />}
                               <span className={`status-badge ${st.className}`}>{st.label}</span>
                               <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                                 <ActionsMenu items={[

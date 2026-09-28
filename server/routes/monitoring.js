@@ -65,10 +65,40 @@ router.post('/links/:equipmentId/test', requirePermission('equipment', 'edit'), 
   }
 });
 
+router.get('/statuses', requirePermission('equipment', 'view'), async (req, res) => {
+  try {
+    res.json(await EquipmentMonitor.listStatuses(req.user.companyId));
+  } catch (error) {
+    console.error('Monitoring statuses error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.get('/downtime/:equipmentId', requirePermission('equipment', 'view'), async (req, res) => {
+  try {
+    res.json(await EquipmentMonitor.downtimeFor(req.user.companyId, req.params.equipmentId));
+  } catch (error) {
+    console.error('Monitoring downtime error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.put('/downtime/:id', requirePermission('equipment', 'edit'), async (req, res) => {
+  try {
+    const saved = await EquipmentMonitor.assignCause(req.user.companyId, req.params.id, req.body.causeId);
+    if (!saved) return res.status(404).json({ error: 'Простой или причина не найдены' });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Monitoring cause error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 router.get('/day', requirePermission('equipment', 'view'), async (req, res) => {
   try {
     if (!datePattern.test(req.query.date || '')) return res.status(400).json({ error: 'Некорректная дата' });
-    const day = await EquipmentMonitor.day(req.user.companyId, req.query.equipmentId, req.query.date);
+    const mode = req.query.mode === 'shift' ? 'shift' : 'day';
+    const day = await EquipmentMonitor.day(req.user.companyId, req.query.equipmentId, req.query.date, new Date(), mode);
     if (!day) return res.status(404).json({ error: 'Подключение не настроено' });
     res.json(day);
   } catch (error) {
@@ -84,6 +114,7 @@ router.get('/range', requirePermission('equipment', 'view'), async (req, res) =>
       return res.status(400).json({ error: 'Укажите корректный период' });
     }
     const ids = String(req.query.equipmentIds || '').split(',').filter(Boolean);
+    const mode = req.query.mode === 'shift' ? 'shift' : 'day';
     const live = new Set(await EquipmentMonitor.listLiveIds(req.user.companyId));
     const rows = [];
     for (const equipmentId of ids.filter((id) => live.has(id))) {
@@ -95,7 +126,7 @@ router.get('/range', requirePermission('equipment', 'view'), async (req, res) =>
         cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
       const days = [];
-      for (const date of dates) days.push(await EquipmentMonitor.day(req.user.companyId, equipmentId, date));
+      for (const date of dates) days.push(await EquipmentMonitor.day(req.user.companyId, equipmentId, date, new Date(), mode));
       rows.push({ equipmentId, days });
     }
     res.json(rows);

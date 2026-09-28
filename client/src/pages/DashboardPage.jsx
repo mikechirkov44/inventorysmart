@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  LayoutDashboard, Wrench, ClipboardList, AlertTriangle, Package,
+  LayoutDashboard, Wrench, ClipboardList, AlertTriangle, Package, Activity,
   ScanLine, Plus, BarChart3, TrendingUp, Clock, Zap, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +16,7 @@ import { SkeletonPage } from '../components/Skeleton';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 import { formatDate } from '../utils/date';
 import { getTaskScanPath } from '../utils/taskScan';
+import { statusSummary, useMachineStatuses } from '../components/monitoring/machineStatus';
 
 const TODAY_STATUS_LABELS = {
   today: 'На сегодня',
@@ -41,6 +42,8 @@ function KpiCard({ icon: Icon, label, value, sub, to, color = 'primary' }) {
 
 export default function DashboardPage() {
   const { user, canView } = useAuth();
+  const machineStatuses = useMachineStatuses(canView('equipment'));
+  const machines = statusSummary(canView('equipment') ? machineStatuses : {});
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     equipment: 0,
@@ -149,6 +152,16 @@ export default function DashboardPage() {
       <div className="kpi-grid">
         {canView('equipment') && (
           <KpiCard icon={Wrench} label="Оборудование" value={stats.equipment} to="/equipment" />
+        )}
+        {canView('equipment') && (
+          <KpiCard
+            icon={Activity}
+            label="Станки онлайн"
+            value={machines.total}
+            sub={machines.total ? `работа ${machines.working} · авария ${machines.fault} · нет связи ${machines.offline}` : 'нет подключённых станков'}
+            color={machines.fault || machines.offline ? 'danger' : 'primary'}
+            to="/monitoring"
+          />
         )}
         {canView('workOrders') && (
           <KpiCard

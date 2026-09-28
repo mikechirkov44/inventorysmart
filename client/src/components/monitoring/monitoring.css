@@ -51,7 +51,13 @@
 .monitor-snapshot { display: grid; gap: 4px; font-size: 12px; }
 .monitor-snapshot > span { display: flex; align-items: center; gap: 6px; }
 .monitor-snapshot small { color: var(--gray-500); font-size: 11px; }
-.monitor-snapshot i, .monitor-breakdown i, .monitor-legend i { width: 9px; height: 9px; flex-shrink: 0; display: inline-block; border-radius: 3px; }
+.monitor-snapshot i, .monitor-breakdown i, .monitor-legend i, .machine-status i { width: 9px; height: 9px; flex-shrink: 0; display: inline-block; border-radius: 3px; }
+.machine-status { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: var(--gray-100); color: var(--gray-700); font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.monitor-reasons { display: grid; gap: 10px; margin: 14px 0; padding: 14px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; }
+.monitor-reasons h3 { margin: 0; font-size: 14px; }
+.monitor-reasons form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.monitor-reasons form > span { min-width: 160px; font-size: 13px; }
+.monitor-reasons .cs-wrapper { min-width: 180px; width: 220px; }
 .monitor-metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 18px; }
 .monitor-metric { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 12px; background: var(--gray-50); }
 .monitor-metric span, .monitor-metric small { color: var(--gray-500); font-size: 12px; }

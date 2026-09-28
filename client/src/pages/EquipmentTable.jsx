@@ -15,6 +15,7 @@ import ActionsMenu from '../components/ActionsMenu';
 import { useTableSettings } from '../hooks/useTableSettings';
 import TableColumnManager from '../components/TableColumnManager';
 import UploadImage from '../components/UploadImage';
+import { MachineStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -37,6 +38,7 @@ const DEFAULT_COLUMNS = [
 ];
 
 function EquipmentTable({ embedded }) {
+  const machineStatuses = useMachineStatuses();
   /** Состояние данных, фильтров, сортировки */
   const [equipment, setEquipment] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -254,6 +256,7 @@ function EquipmentTable({ embedded }) {
                             return (
                               <td key={col.key}>
                                 <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
+                                {machineStatuses[item.id] && <div><MachineStatusBadge status={machineStatuses[item.id]} /></div>}
                               </td>
                             );
                           case 'inventoryNumber':
@@ -318,6 +321,7 @@ function EquipmentTable({ embedded }) {
                 <div key={item.id} className="mobile-data-card">
                   <div className="mobile-data-card-title">
                     <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
+                    {machineStatuses[item.id] && <MachineStatusBadge status={machineStatuses[item.id]} />}
                   </div>
                   <div className="mobile-data-card-row">
                     <span className="mobile-data-card-label">Инв. №</span>

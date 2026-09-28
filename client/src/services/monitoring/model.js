@@ -29,3 +29,16 @@ export const displayDate = value => validDate(value) ? `${value.slice(8, 10)}.${
 export const minutesLabel = minutes => `${Math.floor(minutes / 60)} ч ${Math.round(minutes % 60)} мин`;
 export const timeLabel = minute => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 export const loadLabel = value => value == null ? 'Нет данных' : `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+const MODE_KEY = 'monitoring-view';
+export function readMonitoringMode() {
+  try { return localStorage.getItem(MODE_KEY) === 'shift' ? 'shift' : 'day'; } catch { return 'day'; }
+}
+export function writeMonitoringMode(mode) {
+  const next = mode === 'shift' ? 'shift' : 'day';
+  try { localStorage.setItem(MODE_KEY, next); } catch { /* ignore */ }
+  window.dispatchEvent(new Event('monitoring-mode'));
+  return next;
+}
+export function isHourUnit(unit) {
+  return /^(ч|час|часа|часов|моточас|моточаса|моточасов|моточасы|h|hr|hrs|hour|hours)\.?$/i.test(String(unit || '').trim());
+}

@@ -42,23 +42,23 @@ export async function monitoringDemoEnabled() {
   return demoEnabled;
 }
 
-async function liveDay(equipmentId, date) {
-  const response = await monitoringAPI.getDay(equipmentId, date);
+async function liveDay(equipmentId, date, mode) {
+  const response = await monitoringAPI.getDay(equipmentId, date, mode);
   return response.data;
 }
 
 export const monitoringSource = {
-  async getDay(equipmentId, date, now = new Date()) {
+  async getDay(equipmentId, date, now = new Date(), mode = 'day') {
     await ensureContext();
     if (!liveIds.has(equipmentId)) return fallbackSource().getDay(equipmentId, date, now);
-    return liveDay(equipmentId, date);
+    return liveDay(equipmentId, date, mode);
   },
-  async getRange(equipmentIds, from, to, now = new Date()) {
+  async getRange(equipmentIds, from, to, now = new Date(), mode = 'day') {
     await ensureContext();
     const live = equipmentIds.filter((id) => liveIds.has(id));
     const offline = equipmentIds.filter((id) => !liveIds.has(id));
     const [liveRows, offlineRows] = await Promise.all([
-      live.length ? monitoringAPI.getRange(live, from, to).then((response) => response.data) : [],
+      live.length ? monitoringAPI.getRange(live, from, to, mode).then((response) => response.data) : [],
       offline.length ? fallbackSource().getRange(offline, from, to, now) : [],
     ]);
     const byId = new Map([...liveRows, ...offlineRows].map((row) => [row.equipmentId, row]));

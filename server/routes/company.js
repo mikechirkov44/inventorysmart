@@ -9,6 +9,7 @@ const router = express.Router();
 const Company = require('../models/company');
 const { authenticate, requirePermission } = require('../middleware/auth');
 const { verifyLicense } = require('../utils/license');
+const { validateMonitoringPrefs } = require('../utils/monitoringOps');
 const { imageUpload } = require('../utils/upload');
 
 function maskApiKey(apiKey) {
@@ -81,6 +82,14 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
     if (req.body.monitoringDemoEnabled !== undefined) {
       data.monitoringDemoEnabled = req.body.monitoringDemoEnabled === 'true' || req.body.monitoringDemoEnabled === true;
     }
+    if (req.body.monitoringAlertMinutes !== undefined || req.body.shiftStart !== undefined || req.body.shiftEnd !== undefined) {
+      const existing = await Company.get(req.user.companyId);
+      Object.assign(data, validateMonitoringPrefs({
+        monitoringAlertMinutes: req.body.monitoringAlertMinutes ?? existing.monitoringAlertMinutes,
+        shiftStart: req.body.shiftStart ?? existing.shiftStart,
+        shiftEnd: req.body.shiftEnd ?? existing.shiftEnd,
+      }));
+    }
     if (req.file) {
       data.logo = req.file.filename;
     }
@@ -88,6 +97,7 @@ router.put('/', authenticate, requirePermission('settings', 'edit'), imageUpload
     const company = await Company.update(data);
     res.json(company);
   } catch (error) {
+    if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });
     console.error('Route error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }

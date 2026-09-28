@@ -7,6 +7,7 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import EquipmentMonitoring from '../components/monitoring/EquipmentMonitoring';
 import EquipmentConnection from '../components/monitoring/EquipmentConnection';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI, commonFaultsAPI } from '../services/api';
+import { isHourUnit } from '../services/monitoring/model';
 const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
 import EquipmentInstructions from '../components/EquipmentInstructions';
 import { useToast } from '../components/Toast';
@@ -71,6 +72,16 @@ function EquipmentDetail() {
   /** Загрузка всех данных оборудования при изменении ID */
   useEffect(() => {
     fetchData();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    const timer = setInterval(() => {
+      operatingHoursAPI.getByEquipmentId(id)
+        .then((response) => setOperatingHours(response.data?.data || null))
+        .catch(() => {});
+    }, 15000);
+    return () => clearInterval(timer);
   }, [id]);
 
   /** Параллельная загрузка данных оборудования, нарядов, QR, ЗИП, инцидентов, моточасов, типовых неисправностей */
@@ -403,6 +414,9 @@ function EquipmentDetail() {
                     <span className="oh-badge">
                       {operatingHours.currentValue} {operatingHours.unit}
                     </span>
+                    {isHourUnit(operatingHours.unit) && (
+                      <span className="oh-intervals-count">обновляется по работе станка</span>
+                    )}
                     {operatingHours.intervals?.length > 0 && (
                       <span className="oh-intervals-count">
                         {operatingHours.intervals.length} интервал(ов) ТО

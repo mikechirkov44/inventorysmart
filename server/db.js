@@ -658,6 +658,12 @@ async function migrate() {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS monitoring_demo_enabled BOOLEAN DEFAULT true`);
     });
 
+    await withSavepoint(client, 'company_monitoring_ops', async () => {
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS monitoring_alert_minutes INTEGER DEFAULT 5`);
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS shift_start VARCHAR(5) DEFAULT '08:00'`);
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS shift_end VARCHAR(5) DEFAULT '20:00'`);
+    });
+
     await withSavepoint(client, 'equipment_map', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS map_buildings (
@@ -787,6 +793,24 @@ async function migrate() {
       `);
       await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS protocol VARCHAR(20) NOT NULL DEFAULT 'modbus'`);
       await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS signal TEXT NOT NULL DEFAULT ''`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS last_success_at TIMESTAMPTZ`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS alert_since TIMESTAMPTZ`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS alert_notified BOOLEAN NOT NULL DEFAULT false`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS alert_incident_id UUID`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS hours_remainder NUMERIC(12,6) NOT NULL DEFAULT 0`);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS equipment_monitor_downtime (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID NOT NULL,
+          equipment_id UUID NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+          state VARCHAR(20) NOT NULL,
+          started_at TIMESTAMPTZ NOT NULL,
+          ended_at TIMESTAMPTZ,
+          cause_id UUID REFERENCES causes(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_equipment_monitor_downtime_open ON equipment_monitor_downtime(equipment_id, started_at DESC)`);
     });
 
     await client.query('COMMIT');

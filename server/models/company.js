@@ -27,6 +27,9 @@ function mapRow(row) {
     allowInspectionWithoutQr: row.allow_inspection_without_qr,
     useRca: row.use_rca !== false,
     monitoringDemoEnabled: row.monitoring_demo_enabled !== false,
+    monitoringAlertMinutes: Number(row.monitoring_alert_minutes) || 5,
+    shiftStart: row.shift_start || '08:00',
+    shiftEnd: row.shift_end || '20:00',
     licenseKey: row.license_key || '',
     apiEnabled: row.api_enabled,
     apiKey: row.api_key || '',
@@ -179,6 +182,9 @@ module.exports = {
     if (data.allowInspectionWithoutQr !== undefined) mapped.allow_inspection_without_qr = data.allowInspectionWithoutQr;
     if (data.useRca !== undefined) mapped.use_rca = data.useRca;
     if (data.monitoringDemoEnabled !== undefined) mapped.monitoring_demo_enabled = data.monitoringDemoEnabled;
+    if (data.monitoringAlertMinutes !== undefined) mapped.monitoring_alert_minutes = data.monitoringAlertMinutes;
+    if (data.shiftStart !== undefined) mapped.shift_start = data.shiftStart;
+    if (data.shiftEnd !== undefined) mapped.shift_end = data.shiftEnd;
     if (data.licenseKey !== undefined) mapped.license_key = data.licenseKey;
     if (data.apiEnabled !== undefined) mapped.api_enabled = data.apiEnabled;
     if (data.apiKey !== undefined) mapped.api_key = data.apiKey;

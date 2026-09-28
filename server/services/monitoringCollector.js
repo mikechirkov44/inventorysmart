@@ -1,19 +1,24 @@
 const EquipmentMonitor = require('../models/equipmentMonitor');
+const { applyPollEffects } = require('./monitoringEffects');
 const { readMachineState } = require('./machineReader');
 
 const due = new Map();
 let timer = null;
 
 async function pollLink(link, reader) {
+  let reading;
   try {
-    const reading = await readMachineState(link, reader);
-    await EquipmentMonitor.recordPoll(link, { state: reading.state, value: reading.value, error: null });
-    return reading;
+    reading = await readMachineState(link, reader);
   } catch (error) {
-    const message = error.message || 'Нет ответа от шлюза';
-    await EquipmentMonitor.recordPoll(link, { state: 'unknown', value: null, error: message });
-    return { state: 'unknown', error: message };
+    reading = { state: 'unknown', value: null, error: error.message || 'Нет ответа от шлюза' };
   }
+  const context = await EquipmentMonitor.recordPoll(link, reading);
+  try {
+    await applyPollEffects(link, reading, context);
+  } catch (error) {
+    console.error('Monitoring effects error:', error);
+  }
+  return reading;
 }
 
 async function pollDueLinks(reader, now = Date.now()) {

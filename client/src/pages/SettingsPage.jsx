@@ -703,6 +703,9 @@ function SettingsPage() {
     allowInspectionWithoutQr: true,
     useRca: true,
     monitoringDemoEnabled: true,
+    monitoringAlertMinutes: 5,
+    shiftStart: '08:00',
+    shiftEnd: '20:00',
   });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -753,6 +756,9 @@ function SettingsPage() {
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
         useRca: res.data.useRca !== false,
         monitoringDemoEnabled: res.data.monitoringDemoEnabled !== false,
+        monitoringAlertMinutes: res.data.monitoringAlertMinutes || 5,
+        shiftStart: res.data.shiftStart || '08:00',
+        shiftEnd: res.data.shiftEnd || '20:00',
       });
       if (res.data.logo) {
         setLogoPreview(null);
@@ -791,6 +797,9 @@ function SettingsPage() {
       formData.append('allowInspectionWithoutQr', companyData.allowInspectionWithoutQr);
       formData.append('useRca', companyData.useRca);
       formData.append('monitoringDemoEnabled', companyData.monitoringDemoEnabled);
+      formData.append('monitoringAlertMinutes', companyData.monitoringAlertMinutes);
+      formData.append('shiftStart', companyData.shiftStart);
+      formData.append('shiftEnd', companyData.shiftEnd);
       if (logoFile) {
         formData.append('logo', logoFile);
       }
@@ -1105,6 +1114,47 @@ function SettingsPage() {
                   />
                   <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
                     При выключении станки без подключения показывают «Нет данных». Подключённое оборудование продолжает показывать реальные интервалы.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="monitoring-alert-minutes">Порог аварии и потери связи, мин</label>
+                  <input
+                    id="monitoring-alert-minutes"
+                    type="number"
+                    min="1"
+                    max="240"
+                    value={companyData.monitoringAlertMinutes}
+                    disabled={isSettingsReadOnly}
+                    onChange={(event) => setCompanyData({ ...companyData, monitoringAlertMinutes: event.target.value })}
+                  />
+                  <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
+                    Если станок в аварии или без связи дольше этого времени, создаётся уведомление. Авария также открывает инцидент. Простой и авария этой длительности просят указать причину.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="shift-start">Начало смены</label>
+                  <input
+                    id="shift-start"
+                    type="time"
+                    value={companyData.shiftStart}
+                    disabled={isSettingsReadOnly}
+                    onChange={(event) => setCompanyData({ ...companyData, shiftStart: event.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="shift-end">Конец смены</label>
+                  <input
+                    id="shift-end"
+                    type="time"
+                    value={companyData.shiftEnd}
+                    disabled={isSettingsReadOnly}
+                    onChange={(event) => setCompanyData({ ...companyData, shiftEnd: event.target.value })}
+                  />
+                  <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
+                    Загрузка в режиме «Смена» считается только внутри этого окна. Если конец раньше начала, смена переходит через полночь.
                   </span>
                 </div>
               </div>

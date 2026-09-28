@@ -291,6 +291,18 @@ module.exports = {
    * @param {string} companyId - ID компании
    * @returns {Promise<Array>} Список наработок
    */
+  addValue: async (equipmentId, delta) => {
+    if (!(delta > 0)) return null;
+    const { rows } = await query(
+      `UPDATE equipment_operating_hours
+       SET current_value = current_value + $2, updated_at = NOW()
+       WHERE equipment_id = $1
+       RETURNING *`,
+      [equipmentId, delta],
+    );
+    return mapOperatingHoursRow(rows[0]);
+  },
+
   getAllByCompany: async (companyId) => {
     const { rows } = await query(
       'SELECT * FROM equipment_operating_hours WHERE company_id = $1',
