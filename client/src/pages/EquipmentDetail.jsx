@@ -131,8 +131,8 @@ function EquipmentDetail() {
         @page { size: A4; margin: 10mm; }
         .qr-card { text-align: center; width: 190mm; break-inside: avoid; color: #000; }
         .qr-card img { display: block; width: 190mm; height: 190mm; image-rendering: pixelated; }
-        .qr-card h2 { margin-top: 4mm; font-size: 22pt; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
-        .qr-card p { font-size: 18pt; line-height: 1.3; color: #000; margin-top: 2mm; overflow-wrap: anywhere; }
+        .qr-card h2 { margin-top: 4mm; font-size: 26pt; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
+        .qr-card p { font-size: 23pt; line-height: 1.3; color: #000; margin-top: 2mm; overflow-wrap: anywhere; }
         @media print { body { min-height: 277mm; background: #fff; } }
       </style></head><body>
         <div class="qr-card">
