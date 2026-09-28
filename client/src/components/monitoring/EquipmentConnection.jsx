@@ -77,7 +77,12 @@ export default function EquipmentConnection({ equipmentId }) {
       </div>
       <div className="monitor-connection-grid">
         <label className="monitor-connection-check">
-          <input type="checkbox" checked={form.enabled} onChange={(event) => setField('enabled', event.target.checked)} />
+          <span className={`custom-checkbox ${form.enabled ? 'checked' : ''}`}>
+            <input type="checkbox" checked={form.enabled} onChange={(event) => setField('enabled', event.target.checked)} />
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 8L6.5 11.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
           Опрашивать станок
         </label>
         <label>Адрес шлюза<input value={form.host} onChange={(event) => setField('host', event.target.value)} placeholder="192.168.1.50" /></label>

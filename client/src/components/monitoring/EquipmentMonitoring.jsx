@@ -7,8 +7,10 @@ import { MONITORING_STATES, displayDate, loadLabel, monitoringToday, shiftDate, 
 import MonitoringDay from './MonitoringDay';
 import './monitoring.css';
 
+const REFRESH_MS = 5000;
+
 export default function EquipmentMonitoring({ equipmentId, initialDate, onDateChange, compact = false }) {
-  const [date, setDate] = useState(() => validDate(initialDate) ? initialDate : shiftDate(monitoringToday(), -1));
+  const [date, setDate] = useState(() => validDate(initialDate) ? initialDate : monitoringToday());
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
@@ -18,15 +20,29 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
   }, [compact]);
   useEffect(() => {
     let cancelled = false;
-    setData(null); setError(false);
-    const now = new Date();
-    Promise.all([
-      monitoringSource.getDay(equipmentId, date, now),
-      monitoringSource.getRange([equipmentId], shiftDate(date, -6), date, now),
-      monitoringSource.getSnapshot(equipmentId, now),
-    ]).then(([day, range, snapshot]) => { if (!cancelled) setData({ day, days: range[0].days, snapshot }); })
-      .catch(() => { if (!cancelled) setError(true); });
-    return () => { cancelled = true; };
+    let requestId = 0;
+    const load = (silent) => {
+      const id = ++requestId;
+      const now = new Date();
+      const viewingToday = date === monitoringToday(now);
+      if (!silent) { setData(null); setError(false); }
+      const dayPromise = !silent || viewingToday ? monitoringSource.getDay(equipmentId, date, now) : null;
+      const rangePromise = !silent || viewingToday ? monitoringSource.getRange([equipmentId], shiftDate(date, -6), date, now) : null;
+      Promise.all([dayPromise, rangePromise, monitoringSource.getSnapshot(equipmentId, now)])
+        .then(([day, range, snapshot]) => {
+          if (cancelled || id !== requestId) return;
+          if (!day || !range?.[0]) {
+            setData((current) => (current ? { ...current, snapshot } : current));
+            return;
+          }
+          setError(false);
+          setData({ day, days: range[0].days, snapshot });
+        })
+        .catch(() => { if (!cancelled && id === requestId && !silent) setError(true); });
+    };
+    load(false);
+    const timer = setInterval(() => load(true), REFRESH_MS);
+    return () => { cancelled = true; clearInterval(timer); };
   }, [equipmentId, date, reload]);
   const state = data && MONITORING_STATES[data.snapshot.state];
   return <section id={compact ? undefined : 'equipment-monitoring'} className={`monitor-panel ${compact ? 'is-compact' : ''}`} aria-label="Мониторинг оборудования">
