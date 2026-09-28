@@ -3,7 +3,7 @@ const router = express.Router();
 const EquipmentMonitor = require('../models/equipmentMonitor');
 const { requirePermission } = require('../middleware/auth');
 const { validateMonitorLink } = require('../utils/monitoringTimeline');
-const { readGatewayState } = require('../services/modbusReader');
+const { readMachineState } = require('../services/machineReader');
 const { pollLink } = require('../services/monitoringCollector');
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,11 +24,13 @@ router.get('/links/:equipmentId', requirePermission('equipment', 'view'), async 
       equipmentId: req.params.equipmentId,
       enabled: false,
       host: '',
+      protocol: 'modbus',
       port: 502,
       unitId: 1,
       registerAddress: 0,
+      signal: '',
       pollIntervalSec: 30,
-      template: 'gateway_status',
+      template: 'modbus',
       lastState: null,
       lastError: null,
     });
@@ -55,7 +57,7 @@ router.put('/links/:equipmentId', requirePermission('equipment', 'edit'), async 
 router.post('/links/:equipmentId/test', requirePermission('equipment', 'edit'), async (req, res) => {
   try {
     const link = validateMonitorLink({ ...req.body, enabled: true });
-    const reading = await readGatewayState(link);
+    const reading = await readMachineState(link);
     res.json({ ok: true, ...reading });
   } catch (error) {
     if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });

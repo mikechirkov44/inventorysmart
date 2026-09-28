@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { decodeGatewayValue, buildDayFromSamples, validateMonitorLink } = require('../utils/monitoringTimeline');
+const {
+  decodeGatewayValue, buildDayFromSamples, validateMonitorLink,
+  decodeMtconnectDocument, decodeFocasStatus,
+} = require('../utils/monitoringTimeline');
 
 test('gateway register maps 0-3 and treats other values as unknown', () => {
   assert.equal(decodeGatewayValue(0), 'off');
@@ -38,6 +41,32 @@ test('future day has no utilization', () => {
   });
   assert.equal(day.elapsedMinutes, 0);
   assert.equal(day.utilization, null);
+});
+
+test('mtconnect execution and emergency stop map onto machine states', () => {
+  const active = decodeMtconnectDocument('<Execution>ACTIVE</Execution><EmergencyStop>ARMED</EmergencyStop>');
+  assert.equal(active.state, 'working');
+  const fault = decodeMtconnectDocument('<Execution>ACTIVE</Execution><EmergencyStop>TRIGGERED</EmergencyStop>');
+  assert.equal(fault.state, 'fault');
+  const stopped = decodeMtconnectDocument('<Availability>AVAILABLE</Availability><Execution>STOPPED</Execution>');
+  assert.equal(stopped.state, 'off');
+  const down = decodeMtconnectDocument('<Availability>UNAVAILABLE</Availability>');
+  assert.equal(down.state, 'unknown');
+});
+
+test('focas alarm overrides a running program and a stop is idle', () => {
+  assert.equal(decodeFocasStatus({ run: 2, alarm: 0, emergency: 0 }), 'working');
+  assert.equal(decodeFocasStatus({ run: 2, alarm: 1, emergency: 0 }), 'fault');
+  assert.equal(decodeFocasStatus({ run: 0, alarm: 0, emergency: 0 }), 'idle');
+  assert.equal(decodeFocasStatus({ run: 1, alarm: 0, emergency: 1 }), 'fault');
+});
+
+test('opc ua link requires a node id and unknown protocols are rejected', () => {
+  assert.throws(() => validateMonitorLink({ enabled: true, protocol: 'opcua', host: '10.0.0.8', signal: '' }), /NodeId/);
+  assert.throws(() => validateMonitorLink({ enabled: true, protocol: 'ethernet', host: '10.0.0.8' }), /протокол/i);
+  const link = validateMonitorLink({ enabled: true, protocol: 'mtconnect', host: 'agent.local', port: 5000, signal: 'Mill' });
+  assert.equal(link.protocol, 'mtconnect');
+  assert.equal(link.signal, 'Mill');
 });
 
 test('link validation rejects an enabled connection without a host', () => {

@@ -3,13 +3,30 @@ import { Cable, RefreshCw } from 'lucide-react';
 import { monitoringAPI } from '../../services/api';
 import { invalidateMonitoringSource } from '../../services/monitoring/source';
 import { useToast } from '../Toast';
+import CustomSelect from '../CustomSelect';
+
+const PROTOCOLS = [
+  { value: 'modbus', label: 'Modbus TCP' },
+  { value: 'mtconnect', label: 'MTConnect' },
+  { value: 'opcua', label: 'OPC UA' },
+  { value: 'focas', label: 'Fanuc FOCAS' },
+];
+const DEFAULT_PORTS = { modbus: 502, mtconnect: 5000, opcua: 4840, focas: 8193 };
+const HINTS = {
+  modbus: 'Регистр 0 — выключено, 1 — простой, 2 — работа, 3 — авария.',
+  mtconnect: 'Агент MTConnect: ACTIVE — работа, READY — простой, STOPPED — выключено, INTERRUPTED — авария. Пустое устройство читает /current.',
+  opcua: 'Один узел без шифрования. Число 0–3 или текст working, idle, off, fault.',
+  focas: 'Порт 8193, cnc_statinfo. Авария — авария, пуск — работа, стоп и удержание — простой. На сервере нужна библиотека Fanuc libfwlib32.',
+};
 
 const EMPTY = {
   enabled: false,
+  protocol: 'modbus',
   host: '',
   port: 502,
   unitId: 1,
   registerAddress: 0,
+  signal: '',
   pollIntervalSec: 30,
 };
 
@@ -30,12 +47,19 @@ export default function EquipmentConnection({ equipmentId }) {
   }, [equipmentId]);
 
   const setField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const setProtocol = (protocol) => setForm((current) => {
+    const knownPorts = Object.values(DEFAULT_PORTS);
+    const port = knownPorts.includes(Number(current.port)) ? DEFAULT_PORTS[protocol] : current.port;
+    return { ...current, protocol, port };
+  });
 
   const save = async () => {
     setSaving(true);
     try {
       const response = await monitoringAPI.saveLink(equipmentId, {
         ...form,
+        protocol: form.protocol || 'modbus',
+        signal: form.signal || '',
         port: Number(form.port),
         unitId: Number(form.unitId),
         registerAddress: Number(form.registerAddress),
@@ -59,9 +83,12 @@ export default function EquipmentConnection({ equipmentId }) {
         port: Number(form.port),
         unitId: Number(form.unitId),
         registerAddress: Number(form.registerAddress),
+        protocol: form.protocol || 'modbus',
+        signal: form.signal || '',
         pollIntervalSec: Number(form.pollIntervalSec),
       });
-      toast.success(`Связь есть. Регистр ${response.data.value}, состояние: ${response.data.state}`);
+      const reading = response.data.value == null || response.data.value === '' ? 'без числового значения' : `значение ${response.data.value}`;
+      toast.success(`Связь есть. ${reading}, состояние: ${response.data.state}`);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Шлюз не ответил');
     }
@@ -72,7 +99,7 @@ export default function EquipmentConnection({ equipmentId }) {
       <div className="monitor-panel-header">
         <div>
           <h2><Cable size={20} />Подключение к станку</h2>
-          <p className="monitor-muted">Modbus TCP, шаблон шлюза: регистр 0 — выключено, 1 — простой, 2 — работа, 3 — авария. Без подключения график остаётся демонстрационным.</p>
+          <p className="monitor-muted">{HINTS[form.protocol] || HINTS.modbus} Без подключения график остаётся демонстрационным, если демо не отключено в настройках.</p>
         </div>
       </div>
       <div className="monitor-connection-grid">
@@ -85,10 +112,18 @@ export default function EquipmentConnection({ equipmentId }) {
           </span>
           Опрашивать станок
         </label>
-        <label>Адрес шлюза<input value={form.host} onChange={(event) => setField('host', event.target.value)} placeholder="192.168.1.50" /></label>
+        <div className="monitor-connection-field">
+          <span>Протокол</span>
+          <CustomSelect value={form.protocol || 'modbus'} onChange={setProtocol} options={PROTOCOLS} />
+        </div>
+        <label>Адрес<input value={form.host} onChange={(event) => setField('host', event.target.value)} placeholder="192.168.1.50" /></label>
         <label>Порт<input type="number" value={form.port} onChange={(event) => setField('port', event.target.value)} /></label>
-        <label>Unit ID<input type="number" value={form.unitId} onChange={(event) => setField('unitId', event.target.value)} /></label>
-        <label>Адрес регистра<input type="number" value={form.registerAddress} onChange={(event) => setField('registerAddress', event.target.value)} /></label>
+        {form.protocol === 'modbus' && <>
+          <label>Unit ID<input type="number" value={form.unitId} onChange={(event) => setField('unitId', event.target.value)} /></label>
+          <label>Адрес регистра<input type="number" value={form.registerAddress} onChange={(event) => setField('registerAddress', event.target.value)} /></label>
+        </>}
+        {form.protocol === 'mtconnect' && <label>Устройство или путь<input value={form.signal || ''} onChange={(event) => setField('signal', event.target.value)} placeholder="/current" /></label>}
+        {form.protocol === 'opcua' && <label>NodeId<input value={form.signal || ''} onChange={(event) => setField('signal', event.target.value)} placeholder="ns=2;s=Machine.Status" /></label>}
         <label>Опрос, сек<input type="number" value={form.pollIntervalSec} onChange={(event) => setField('pollIntervalSec', event.target.value)} /></label>
       </div>
       <div className="monitor-connection-actions">

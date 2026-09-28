@@ -12,11 +12,13 @@ function mapLink(row) {
     unitId: row.unit_id,
     registerAddress: row.register_address,
     pollIntervalSec: row.poll_interval_sec,
+    protocol: row.protocol || 'modbus',
+    signal: row.signal || '',
     lastState: row.last_state,
     lastValue: row.last_value,
     lastPolledAt: row.last_polled_at,
     lastError: row.last_error,
-    template: 'gateway_status',
+    template: row.protocol || 'modbus',
   };
 }
 
@@ -47,14 +49,15 @@ const EquipmentMonitor = {
     if (!equipment.rows[0]) return null;
     const result = await query(
       `INSERT INTO equipment_monitor_links
-        (equipment_id, company_id, enabled, host, port, unit_id, register_address, poll_interval_sec, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        (equipment_id, company_id, enabled, host, port, unit_id, register_address, poll_interval_sec, protocol, signal, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
        ON CONFLICT (equipment_id) DO UPDATE SET
         enabled = EXCLUDED.enabled, host = EXCLUDED.host, port = EXCLUDED.port,
         unit_id = EXCLUDED.unit_id, register_address = EXCLUDED.register_address,
-        poll_interval_sec = EXCLUDED.poll_interval_sec, updated_at = NOW()
+        poll_interval_sec = EXCLUDED.poll_interval_sec, protocol = EXCLUDED.protocol,
+        signal = EXCLUDED.signal, updated_at = NOW()
        RETURNING *`,
-      [equipmentId, companyId, link.enabled, link.host, link.port, link.unitId, link.registerAddress, link.pollIntervalSec],
+      [equipmentId, companyId, link.enabled, link.host, link.port, link.unitId, link.registerAddress, link.pollIntervalSec, link.protocol, link.signal || ''],
     );
     return mapLink(result.rows[0]);
   },
@@ -103,6 +106,7 @@ const EquipmentMonitor = {
       samples,
       now,
       pollIntervalSec: link.pollIntervalSec,
+      source: link.protocol || 'modbus',
     });
   },
 
@@ -113,7 +117,7 @@ const EquipmentMonitor = {
     const fresh = link.lastPolledAt && now.getTime() - new Date(link.lastPolledAt).getTime() <= staleMs;
     return {
       equipmentId,
-      source: 'modbus',
+      source: link.protocol || 'modbus',
       asOf: (link.lastPolledAt ? new Date(link.lastPolledAt) : now).toISOString(),
       state: fresh ? (link.lastState || 'unknown') : 'unknown',
       lastError: link.lastError,

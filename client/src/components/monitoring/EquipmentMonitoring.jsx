@@ -8,6 +8,12 @@ import MonitoringDay from './MonitoringDay';
 import './monitoring.css';
 
 const REFRESH_MS = 5000;
+const MACHINE_CAPTION = {
+  modbus: 'Показания по Modbus TCP.',
+  mtconnect: 'Показания по MTConnect.',
+  opcua: 'Показания по OPC UA.',
+  focas: 'Показания по Fanuc FOCAS.',
+};
 
 export default function EquipmentMonitoring({ equipmentId, initialDate, onDateChange, compact = false }) {
   const [date, setDate] = useState(() => validDate(initialDate) ? initialDate : monitoringToday());
@@ -47,7 +53,7 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
   const state = data && MONITORING_STATES[data.snapshot.state];
   return <section id={compact ? undefined : 'equipment-monitoring'} className={`monitor-panel ${compact ? 'is-compact' : ''}`} aria-label="Мониторинг оборудования">
     <div className="monitor-panel-header">
-      <div><h2><Activity size={21} />Загрузка оборудования</h2><p className="monitor-muted">{data?.day.source === 'modbus' ? <><span className="monitor-demo-badge">Станок</span> Показания с Modbus-шлюза.</> : data?.day.source === 'none' ? <><span className="monitor-demo-badge">Нет связи</span> Демо-данные отключены. Подключите станок, чтобы видеть интервалы.</> : <><span className="monitor-demo-badge">Демо-данные</span> Пример работы мониторинга. Не показания станка.</>}</p></div>
+      <div><h2><Activity size={21} />Загрузка оборудования</h2><p className="monitor-muted">{MACHINE_CAPTION[data?.day.source] ? <><span className="monitor-demo-badge">Станок</span> {MACHINE_CAPTION[data.day.source]}</> : data?.day.source === 'none' ? <><span className="monitor-demo-badge">Нет связи</span> Демо-данные отключены. Подключите станок, чтобы видеть интервалы.</> : <><span className="monitor-demo-badge">Демо-данные</span> Пример работы мониторинга. Не показания станка.</>}</p></div>
       {!compact && <Link className="btn btn-small" to="/monitoring">Общий мониторинг</Link>}
     </div>
     <div className="monitor-day-controls">

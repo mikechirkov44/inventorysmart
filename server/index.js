@@ -199,6 +199,9 @@ async function start() {
   app.use('/api/activity-history', activityHistoryRoutes);
   app.use('/api/equipment-map', equipmentMapRoutes);
   app.use('/api/monitoring', monitoringRoutes);
+  if (process.env.MONITORING_SIMULATOR === 'true') {
+    require('./services/modbusSimulator').startModbusSimulator();
+  }
   require('./services/monitoringCollector').startMonitoringCollector();
 
   // Global error handler — never leak internals

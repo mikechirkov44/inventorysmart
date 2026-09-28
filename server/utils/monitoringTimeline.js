@@ -1,11 +1,68 @@
 const MONITORING_STATES = ['working', 'idle', 'off', 'fault', 'unknown'];
 const GATEWAY_VALUE_MAP = { 0: 'off', 1: 'idle', 2: 'working', 3: 'fault' };
+const MONITOR_PROTOCOLS = ['modbus', 'mtconnect', 'opcua', 'focas'];
+const PROTOCOL_PORTS = { modbus: 502, mtconnect: 5000, opcua: 4840, focas: 8193 };
+const NAMED_STATE_MAP = {
+  active: 'working', working: 'working', run: 'working', running: 'working',
+  ready: 'idle', idle: 'idle', hold: 'idle', feed_hold: 'idle', feedhold: 'idle',
+  optional_stop: 'idle', program_stopped: 'idle', program_completed: 'idle',
+  stopped: 'off', stop: 'off', off: 'off',
+  interrupted: 'fault', fault: 'fault', alarm: 'fault', error: 'fault', triggered: 'fault',
+  unavailable: 'unknown', unknown: 'unknown',
+};
 
 function decodeGatewayValue(value) {
   const numeric = Number(value);
   return Object.prototype.hasOwnProperty.call(GATEWAY_VALUE_MAP, numeric)
     ? GATEWAY_VALUE_MAP[numeric]
     : 'unknown';
+}
+
+function decodeNamedState(value) {
+  const text = String(value ?? '').trim().toLowerCase();
+  return NAMED_STATE_MAP[text] || 'unknown';
+}
+
+function tagText(xml, tag) {
+  const match = String(xml || '').match(new RegExp(`<${tag}\\b[^>]*>([^<]*)<\\/${tag}>`, 'i'));
+  return match ? match[1].trim() : '';
+}
+
+function decodeMtconnectDocument(xml) {
+  const emergency = tagText(xml, 'EmergencyStop');
+  const availability = tagText(xml, 'Availability');
+  const execution = tagText(xml, 'Execution');
+  if (emergency.toUpperCase() === 'TRIGGERED') return { value: 'TRIGGERED', state: 'fault' };
+  if (!execution && availability.toUpperCase() === 'UNAVAILABLE') return { value: 'UNAVAILABLE', state: 'unknown' };
+  if (!execution) return { value: null, state: 'unknown' };
+  return { value: execution, state: decodeNamedState(execution) };
+}
+
+function mtconnectPath(signal) {
+  const raw = String(signal || '').trim();
+  if (!raw || raw === '/current') return '/current';
+  if (raw.startsWith('/')) {
+    if (!/^\/[A-Za-z0-9._~/-]*$/.test(raw) || raw.includes('..')) {
+      const error = new Error('Некорректный путь MTConnect');
+      error.statusCode = 400;
+      throw error;
+    }
+    return raw.endsWith('/current') ? raw : `${raw.replace(/\/$/, '')}/current`;
+  }
+  if (!/^[A-Za-z0-9._~-]+$/.test(raw)) {
+    const error = new Error('Некорректное имя устройства MTConnect');
+    error.statusCode = 400;
+    throw error;
+  }
+  return `/${raw}/current`;
+}
+
+/** cnc_statinfo: авария важнее режима. Стоп программы — это простой, связь при обрыве сюда не попадает. */
+function decodeFocasStatus({ run, alarm, emergency } = {}) {
+  if (Number(emergency) !== 0 || Number(alarm) !== 0) return 'fault';
+  if (run === 2 || run === 3) return 'working';
+  if (run === 0 || run === 1) return 'idle';
+  return 'unknown';
 }
 
 function moscowDayStart(date) {
@@ -92,11 +149,18 @@ function buildDayFromSamples({
 }
 
 function validateMonitorLink(input = {}) {
+  const protocol = String(input.protocol || 'modbus');
   const host = String(input.host || '').trim();
-  const port = Number(input.port ?? 502);
+  const port = Number(input.port ?? PROTOCOL_PORTS[protocol] ?? 502);
   const unitId = Number(input.unitId ?? 1);
   const registerAddress = Number(input.registerAddress ?? 0);
   const pollIntervalSec = Number(input.pollIntervalSec ?? 30);
+  const signal = String(input.signal || '').trim();
+  if (!MONITOR_PROTOCOLS.includes(protocol)) {
+    const error = new Error('Неизвестный протокол подключения');
+    error.statusCode = 400;
+    throw error;
+  }
   if (input.enabled && !host) {
     const error = new Error('Укажите IP-адрес или имя шлюза');
     error.statusCode = 400;
@@ -127,19 +191,38 @@ function validateMonitorLink(input = {}) {
     error.statusCode = 400;
     throw error;
   }
+  if (protocol === 'opcua' && input.enabled && !signal) {
+    const error = new Error('Укажите NodeId OPC UA');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (signal.length > 255) {
+    const error = new Error('Слишком длинный идентификатор сигнала');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (protocol === 'mtconnect') mtconnectPath(signal);
   return {
     enabled: Boolean(input.enabled),
+    protocol,
     host,
     port,
     unitId,
     registerAddress,
     pollIntervalSec,
+    signal,
   };
 }
 
 module.exports = {
   GATEWAY_VALUE_MAP,
+  MONITOR_PROTOCOLS,
+  PROTOCOL_PORTS,
   decodeGatewayValue,
+  decodeNamedState,
+  decodeMtconnectDocument,
+  decodeFocasStatus,
+  mtconnectPath,
   buildDayFromSamples,
   validateMonitorLink,
 };

@@ -1,12 +1,12 @@
 const EquipmentMonitor = require('../models/equipmentMonitor');
-const { readGatewayState } = require('./modbusReader');
+const { readMachineState } = require('./machineReader');
 
 const due = new Map();
 let timer = null;
 
 async function pollLink(link, reader) {
   try {
-    const reading = await readGatewayState(link, reader);
+    const reading = await readMachineState(link, reader);
     await EquipmentMonitor.recordPoll(link, { state: reading.state, value: reading.value, error: null });
     return reading;
   } catch (error) {

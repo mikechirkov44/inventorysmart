@@ -785,6 +785,8 @@ async function migrate() {
         CREATE INDEX IF NOT EXISTS idx_equipment_monitor_samples_day
           ON equipment_monitor_samples(equipment_id, observed_at);
       `);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS protocol VARCHAR(20) NOT NULL DEFAULT 'modbus'`);
+      await client.query(`ALTER TABLE equipment_monitor_links ADD COLUMN IF NOT EXISTS signal TEXT NOT NULL DEFAULT ''`);
     });
 
     await client.query('COMMIT');

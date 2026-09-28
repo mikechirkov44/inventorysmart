@@ -34,6 +34,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SUPERADMIN_USERNAME=${SUPERADMIN_USERNAME:-superadmin}
       - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+      - MONITORING_SIMULATOR=true
+      - FOCAS_LIBRARY=/usr/local/lib/libfwlib32.so
     depends_on:
       db:
         condition: service_healthy
