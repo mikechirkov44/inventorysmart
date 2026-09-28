@@ -127,13 +127,12 @@ function EquipmentDetail() {
       <html><head><title>QR — ${equipment.name}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        @page { size: A4; margin: 10mm; }
-        .qr-card { text-align: center; width: 190mm; break-inside: avoid; color: #000; }
-        .qr-card img { display: block; width: 190mm; height: 190mm; image-rendering: pixelated; }
-        .qr-card h2 { margin-top: 4mm; font-size: 26pt; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #000; }
-        .qr-card p { font-size: 23pt; line-height: 1.3; color: #000; margin-top: 2mm; overflow-wrap: anywhere; }
-        @media print { body { min-height: 277mm; background: #fff; } }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 297mm; padding: 10mm; background: #000; color: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        @page { size: A4; margin: 0; }
+        .qr-card { text-align: center; width: 190mm; break-inside: avoid; color: #fff; }
+        .qr-card img { display: block; width: 190mm; height: 190mm; padding: 2mm; background: #fff; border-radius: 6mm; image-rendering: pixelated; }
+        .qr-card h2 { margin-top: 4mm; font-size: 26pt; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; color: #fff; }
+        .qr-card p { font-size: 23pt; line-height: 1.3; color: #fff; margin-top: 2mm; overflow-wrap: anywhere; }
       </style></head><body>
         <div class="qr-card">
           <img src="${qrData.qrImage}" alt="QR" />
@@ -152,9 +151,10 @@ function EquipmentDetail() {
 
     const image = new Image();
     image.onload = () => {
-      const padding = 32;
-      const qrSize = Math.max(image.width, 280);
-      const gap = 16;
+      const padding = 118; // Outer page margin: 10 mm at 300 dpi.
+      const qrPadding = 24; // White QR padding: 2 mm at 300 dpi.
+      const qrSize = 2244; // 190 mm white square, including padding.
+      const gap = 47;
       const name = equipment.name || 'Оборудование';
       const inventory = equipment.inventoryNumber
         ? `Инв. номер: ${equipment.inventoryNumber}`
@@ -171,39 +171,57 @@ function EquipmentDetail() {
         let current = '';
         words.forEach((word) => {
           const next = current ? `${current} ${word}` : word;
-          if (ctx.measureText(next).width <= maxWidth || !current) {
+          if (ctx.measureText(next).width <= maxWidth) {
             current = next;
           } else {
-            lines.push(current);
-            current = word;
+            if (current) lines.push(current);
+            current = '';
+            for (const char of word) {
+              if (current && ctx.measureText(current + char).width > maxWidth) {
+                lines.push(current);
+                current = '';
+              }
+              current += char;
+            }
           }
         });
         if (current) lines.push(current);
         return lines.length ? lines : [''];
       };
 
-      const nameFont = '600 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      const invFont = '400 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const nameFont = '600 108px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const invFont = '400 96px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       const nameLines = wrapText(measureCtx, name, cardWidth - padding * 2, nameFont);
       const invLines = wrapText(measureCtx, inventory, cardWidth - padding * 2, invFont);
-      const nameLineHeight = 30;
-      const invLineHeight = 24;
-      const textBlockHeight = nameLines.length * nameLineHeight + 8 + invLines.length * invLineHeight;
-      const cardHeight = padding + qrSize + gap + textBlockHeight + padding;
+      const nameLineHeight = 135;
+      const invLineHeight = 125;
+      const textBlockHeight = nameLines.length * nameLineHeight + 24 + invLines.length * invLineHeight;
+      const cardHeight = 3508;
+      const top = (cardHeight - qrSize - gap - textBlockHeight) / 2;
+      if (top < padding) {
+        toast.error('Ошибка', 'Подпись слишком длинная для листа A4');
+        return;
+      }
 
       const canvas = document.createElement('canvas');
       canvas.width = cardWidth;
       canvas.height = cardHeight;
       const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const qrX = (cardWidth - qrSize) / 2;
-      ctx.drawImage(image, qrX, padding, qrSize, qrSize);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(qrX, top, qrSize, qrSize, 71); // 6 mm outer corners; QR remains square.
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, qrX + qrPadding, top + qrPadding, qrSize - qrPadding * 2, qrSize - qrPadding * 2);
 
-      let textY = padding + qrSize + gap + 24;
-      ctx.fillStyle = '#000000';
+      let textY = top + qrSize + gap;
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#ffffff';
       ctx.font = nameFont;
       ctx.textAlign = 'center';
       nameLines.forEach((line) => {
@@ -211,8 +229,8 @@ function EquipmentDetail() {
         textY += nameLineHeight;
       });
 
-      textY += 4;
-      ctx.fillStyle = '#000000';
+      textY += 24;
+      ctx.fillStyle = '#ffffff';
       ctx.font = invFont;
       invLines.forEach((line) => {
         ctx.fillText(line, cardWidth / 2, textY);
@@ -236,7 +254,7 @@ function EquipmentDetail() {
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-      }, 'image/jpeg', 0.92);
+      }, 'image/jpeg', 0.98);
     };
     image.onerror = () => toast.error('Ошибка', 'Не удалось загрузить QR-код');
     image.src = qrData.qrImage;

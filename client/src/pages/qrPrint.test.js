@@ -10,9 +10,14 @@ test('printed QR keeps A4 geometry and emits enlarged equipment captions', () =>
     { open: () => ({ document: { write: value => { html = value; }, close() {} } }) },
     { qrImage: 'data:image/png;base64,test' }, { name: 'Насос', inventoryNumber: 'ИТ-1' },
   );
-  assert.match(html, /@page\s*\{\s*size:\s*A4;\s*margin:\s*10mm/);
+  assert.match(html, /@page\s*\{\s*size:\s*A4;\s*margin:\s*0/);
   assert.match(html, /width:\s*190mm;\s*height:\s*190mm/);
   assert.match(html, /\.qr-card h2\s*\{[^}]*font-size:\s*26pt/);
   assert.match(html, /\.qr-card p\s*\{[^}]*font-size:\s*23pt/);
   assert.match(html, /Инв\. номер: ИТ-1/);
+  assert.match(html, /body\s*\{[^}]*background:\s*#000/);
+  assert.match(html, /\.qr-card img\s*\{[^}]*padding:\s*2mm[^}]*background:\s*#fff/);
+  assert.match(html, /\.qr-card h2\s*\{[^}]*color:\s*#fff/);
+  assert.match(html, /\.qr-card p\s*\{[^}]*color:\s*#fff/);
+  assert.match(html, /print-color-adjust:\s*exact/);
 });
