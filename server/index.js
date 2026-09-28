@@ -171,6 +171,7 @@ async function start() {
   const overdueReasonsRoutes = require('./routes/overdueReasons');
   const activityHistoryRoutes = require('./routes/activityHistory');
   const equipmentMapRoutes = require('./routes/equipmentMap');
+  const monitoringRoutes = require('./routes/monitoring');
 
   app.use('/api/equipment', equipmentRoutes);
   app.use('/api/equipment-categories', equipmentCategoryRoutes);
@@ -197,6 +198,8 @@ async function start() {
   app.use('/api/kpi-indicators', kpiIndicatorsRoutes);
   app.use('/api/activity-history', activityHistoryRoutes);
   app.use('/api/equipment-map', equipmentMapRoutes);
+  app.use('/api/monitoring', monitoringRoutes);
+  require('./services/monitoringCollector').startMonitoringCollector();
 
   // Global error handler — never leak internals
   app.use((err, req, res, next) => {

@@ -752,6 +752,37 @@ async function migrate() {
       await client.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(company_id, resource, resource_id)');
     });
 
+    await withSavepoint(client, 'equipment_monitor', async () => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS equipment_monitor_links (
+          equipment_id UUID PRIMARY KEY REFERENCES equipment(id) ON DELETE CASCADE,
+          company_id UUID NOT NULL,
+          enabled BOOLEAN NOT NULL DEFAULT false,
+          host VARCHAR(255) NOT NULL DEFAULT '',
+          port INTEGER NOT NULL DEFAULT 502,
+          unit_id INTEGER NOT NULL DEFAULT 1,
+          register_address INTEGER NOT NULL DEFAULT 0,
+          poll_interval_sec INTEGER NOT NULL DEFAULT 30,
+          last_state VARCHAR(20),
+          last_value INTEGER,
+          last_polled_at TIMESTAMPTZ,
+          last_error TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_equipment_monitor_links_company ON equipment_monitor_links(company_id);
+        CREATE TABLE IF NOT EXISTS equipment_monitor_samples (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_id UUID NOT NULL,
+          equipment_id UUID NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+          state VARCHAR(20) NOT NULL,
+          observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_equipment_monitor_samples_day
+          ON equipment_monitor_samples(equipment_id, observed_at);
+      `);
+    });
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully');
   } catch (err) {

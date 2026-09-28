@@ -31,7 +31,7 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
   const state = data && MONITORING_STATES[data.snapshot.state];
   return <section id={compact ? undefined : 'equipment-monitoring'} className={`monitor-panel ${compact ? 'is-compact' : ''}`} aria-label="Мониторинг оборудования">
     <div className="monitor-panel-header">
-      <div><h2><Activity size={21} />Загрузка оборудования</h2><p className="monitor-muted"><span className="monitor-demo-badge">Демо-данные</span> Пример работы мониторинга. Не показания станка.</p></div>
+      <div><h2><Activity size={21} />Загрузка оборудования</h2><p className="monitor-muted">{data?.day.source === 'modbus' ? <><span className="monitor-demo-badge">Станок</span> Показания с Modbus-шлюза.</> : <><span className="monitor-demo-badge">Демо-данные</span> Пример работы мониторинга. Не показания станка.</>}</p></div>
       {!compact && <Link className="btn btn-small" to="/monitoring">Общий мониторинг</Link>}
     </div>
     <div className="monitor-day-controls">
@@ -41,7 +41,7 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
         <button className="btn btn-small" aria-label="Следующий день" disabled={date >= monitoringToday()} onClick={() => setDate(shiftDate(date, 1))}><ChevronRight size={17} /></button>
         <button className="btn btn-small" onClick={() => setDate(monitoringToday())}>Сегодня</button>
       </div>
-      {state && <div className="monitor-snapshot"><span><i className={state.className} />Сейчас (демо): <strong>{state.label}</strong></span><small>Снимок на {new Date(data.snapshot.asOf).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' })} МСК · Не онлайн</small></div>}
+      {state && <div className="monitor-snapshot"><span><i className={state.className} />Сейчас{data.snapshot.source === 'modbus' ? '' : ' (демо)'}: <strong>{state.label}</strong></span><small>Снимок на {new Date(data.snapshot.asOf).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' })} МСК{data.snapshot.source === 'modbus' ? '' : ' · Не онлайн'}</small></div>}
     </div>
     {error ? <div className="monitor-empty" role="alert">Не удалось загрузить мониторинг.<button className="btn" onClick={() => setReload(value => value + 1)}>Повторить</button></div> : !data ? <div className="monitor-empty" role="status">Загрузка показателей…</div> : <>
       <MonitoringDay key={`${equipmentId}:${date}`} day={data.day} />
