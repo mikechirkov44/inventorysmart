@@ -94,7 +94,11 @@ function segmentNeedsReason(segment, now, thresholdMinutes) {
 }
 
 function isHourUnit(unit) {
-  return HOUR_UNITS.has(String(unit || '').trim().toLowerCase().replace(/\.$/, ''));
+  const text = String(unit || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!text) return false;
+  if (HOUR_UNITS.has(text)) return true;
+  if (text.includes('моточас') || text.includes('м/ч')) return true;
+  return /(^|[^a-zа-яё])час(а|ов|ы)?(?![a-zа-яё])/i.test(text);
 }
 
 function workingHoursDelta({ previousState, gapMs, staleMs }) {

@@ -40,5 +40,9 @@ export function writeMonitoringMode(mode) {
   return next;
 }
 export function isHourUnit(unit) {
-  return /^(ч|час|часа|часов|моточас|моточаса|моточасов|моточасы|h|hr|hrs|hour|hours)\.?$/i.test(String(unit || '').trim());
+  const text = String(unit || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!text) return false;
+  if (/^(ч|час|часа|часов|моточас|моточаса|моточасов|моточасы|h|hr|hrs|hour|hours)$/i.test(text)) return true;
+  if (text.includes('моточас') || text.includes('м/ч')) return true;
+  return /(^|[^a-zа-яё])час(а|ов|ы)?(?![a-zа-яё])/i.test(text);
 }

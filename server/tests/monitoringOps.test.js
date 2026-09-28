@@ -77,6 +77,7 @@ test('a reason is required only after the threshold and until it is set', () => 
 
 test('motor hours accumulate only while the machine was working', () => {
   assert.equal(isHourUnit('моточасы'), true);
+  assert.equal(isHourUnit('Моточасы (м/ч)'), true);
   assert.equal(isHourUnit('км'), false);
   assert.equal(workingHoursDelta({ previousState: 'idle', gapMs: 60000, staleMs: 60000 }), 0);
   assert.equal(workingHoursDelta({ previousState: 'working', gapMs: 30000, staleMs: 60000 }), 30000 / 3600000);
