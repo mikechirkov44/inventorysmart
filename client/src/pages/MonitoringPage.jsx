@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Activity, Search, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { equipmentAPI, roomsAPI } from '../services/api';
-import { monitoringSource } from '../services/monitoring/source';
+import { monitoringDemoEnabled, monitoringSource } from '../services/monitoring/source';
 import { dateRange, displayDate, loadLabel, monitoringToday, shiftDate } from '../services/monitoring/model';
 import CustomDatePicker from '../components/CustomDatePicker';
 import CustomSelect from '../components/CustomSelect';
@@ -26,11 +26,17 @@ export default function MonitoringPage() {
   const [rows, setRows] = useState(null);
   const [dataError, setDataError] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [demoEnabled, setDemoEnabled] = useState(true);
   useEffect(() => {
     let cancelled = false; setLoading(true); setError(false);
     Promise.all([equipmentAPI.getAll(), roomsAPI.getAll().catch(() => ({ data: [] }))]).then(([items, roomList]) => {
       if (!cancelled) { setEquipment(items.data); setRooms(roomList.data); }
     }).catch(() => { if (!cancelled) setError(true); }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [retry]);
+  useEffect(() => {
+    let cancelled = false;
+    monitoringDemoEnabled().then((enabled) => { if (!cancelled) setDemoEnabled(enabled); });
     return () => { cancelled = true; };
   }, [retry]);
   const filtered = useMemo(() => equipment.filter(item =>
@@ -52,8 +58,8 @@ export default function MonitoringPage() {
   const reset = () => { setPeriod(initialPeriod()); setSearch(''); setRoomId(''); setCategory(''); setPage(0); };
   const setDays = count => { const to = shiftDate(monitoringToday(), -1); setPeriod({ from: shiftDate(to, 1 - count), to }); };
   return <div className="monitor-page">
-    <div className="header"><h1><Activity size={24} />Мониторинг</h1><span className="monitor-demo-badge">Демо без связи</span></div>
-    <div className="monitor-demo-notice"><Activity size={19} /><div><strong>Загрузка оборудования</strong><p>Станки без подключения показывают демо-график. У оборудования с Modbus TCP в карточке отображаются реальные интервалы. Статусы справочника и моточасы не изменяются.</p></div></div>
+    <div className="header"><h1><Activity size={24} />Мониторинг</h1><span className="monitor-demo-badge">{demoEnabled ? 'Демо без связи' : 'Только станки'}</span></div>
+    <div className="monitor-demo-notice"><Activity size={19} /><div><strong>Загрузка оборудования</strong><p>{demoEnabled ? 'Станки без подключения показывают демо-график. У оборудования с Modbus TCP в карточке отображаются реальные интервалы. Статусы справочника и моточасы не изменяются.' : 'Демо-данные отключены. Станки без подключения показывают «Нет данных». Подключённые по Modbus TCP показывают реальные интервалы.'}</p></div></div>
     <section className="monitor-filters" aria-label="Фильтры мониторинга">
       <div className="monitor-period"><label>С даты<CustomDatePicker value={period.from} onChange={value => setPeriod(old => ({ ...old, from: value }))} ariaLabel="Начало периода" /></label><label>По дату<CustomDatePicker value={period.to} onChange={value => setPeriod(old => ({ ...old, to: value }))} ariaLabel="Конец периода" /></label><div className="monitor-presets"><button className="btn btn-small" onClick={() => setDays(7)}>7 дней</button><button className="btn btn-small" onClick={() => setDays(14)}>14 дней</button><button className="btn btn-small" onClick={() => setDays(30)}>30 дней</button></div></div>
       <div className="monitor-filter-row"><label className="monitor-search"><Search size={17} /><input aria-label="Поиск оборудования" placeholder="Название или инвентарный номер" value={search} onChange={event => { setSearch(event.target.value); setPage(0); }} /></label><CustomSelect value={roomId} onChange={value => { setRoomId(value); setPage(0); }} options={[{ value: '', label: 'Все помещения' }, ...rooms.map(room => ({ value: room.id, label: room.name }))]} /><CustomSelect value={category} onChange={value => { setCategory(value); setPage(0); }} options={[{ value: '', label: 'Все категории' }, ...[...new Set(equipment.map(item => item.categoryName).filter(Boolean))].sort().map(name => ({ value: name, label: name }))]} /><button className="btn btn-small" onClick={reset}><RotateCcw size={15} />Сбросить</button></div>

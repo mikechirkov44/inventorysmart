@@ -32,6 +32,18 @@ test('today contains no future readings and snapshot agrees with timeline', asyn
   assert.equal(snapshot.source, 'demo');
 });
 
+test('disabled demo fills elapsed time with unknown and never reports the machine as off', async () => {
+  const day = await module.emptyMonitoringSource.getDay('machine-a', '2026-09-27', now);
+  assert.equal(day.source, 'none');
+  assert.equal(day.utilization, null);
+  assert.equal(day.minutes.unknown, 1440);
+  assert.equal(day.minutes.off, 0);
+  assert.equal(day.minutes.working, 0);
+  const snapshot = await module.emptyMonitoringSource.getSnapshot('machine-a', now);
+  assert.equal(snapshot.state, 'unknown');
+  assert.equal(snapshot.source, 'none');
+});
+
 test('future and midnight days do not display fabricated zero utilization', async () => {
   assert.ok(module.demoMonitoringSource);
   const day = await module.demoMonitoringSource.getDay('machine-a', '2026-09-29', now);

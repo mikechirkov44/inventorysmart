@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { companyAPI, usersAPI, positionsAPI, jobPositionsAPI, employeesAPI, licenseAPI } from '../services/api';
+import { invalidateMonitoringSource } from '../services/monitoring/source';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, Server, CheckCircle, XCircle, Shield, Settings, Copy, Pencil, Trash2, Key } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -701,6 +702,7 @@ function SettingsPage() {
     timezone: 'Europe/Moscow',
     allowInspectionWithoutQr: true,
     useRca: true,
+    monitoringDemoEnabled: true,
   });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -750,6 +752,7 @@ function SettingsPage() {
         timezone: res.data.timezone || 'Europe/Moscow',
         allowInspectionWithoutQr: res.data.allowInspectionWithoutQr,
         useRca: res.data.useRca !== false,
+        monitoringDemoEnabled: res.data.monitoringDemoEnabled !== false,
       });
       if (res.data.logo) {
         setLogoPreview(null);
@@ -787,11 +790,13 @@ function SettingsPage() {
       formData.append('timezone', companyData.timezone);
       formData.append('allowInspectionWithoutQr', companyData.allowInspectionWithoutQr);
       formData.append('useRca', companyData.useRca);
+      formData.append('monitoringDemoEnabled', companyData.monitoringDemoEnabled);
       if (logoFile) {
         formData.append('logo', logoFile);
       }
 
       await companyAPI.update(formData);
+      invalidateMonitoringSource();
       toast.success('Изменения сохранены');
       fetchCompany();
     } catch (err) {
@@ -1088,6 +1093,18 @@ function SettingsPage() {
                   />
                   <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
                     При выключении инциденты работают в упрощённом режиме: без расследования RCA, 5 почему и корректирующих мероприятий. Причина указывается при закрытии.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <Toggle
+                    checked={companyData.monitoringDemoEnabled}
+                    onChange={(checked) => setCompanyData({ ...companyData, monitoringDemoEnabled: checked })}
+                    label="Показывать демо-данные мониторинга"
+                    disabled={isSettingsReadOnly}
+                  />
+                  <span className="form-hint" style={{ marginTop: 4, display: 'block' }}>
+                    При выключении станки без подключения показывают «Нет данных». Подключённое оборудование продолжает показывать реальные интервалы.
                   </span>
                 </div>
               </div>

@@ -26,6 +26,7 @@ function mapRow(row) {
     timezone: row.timezone,
     allowInspectionWithoutQr: row.allow_inspection_without_qr,
     useRca: row.use_rca !== false,
+    monitoringDemoEnabled: row.monitoring_demo_enabled !== false,
     licenseKey: row.license_key || '',
     apiEnabled: row.api_enabled,
     apiKey: row.api_key || '',
@@ -177,6 +178,7 @@ module.exports = {
     if (data.timezone !== undefined) mapped.timezone = data.timezone;
     if (data.allowInspectionWithoutQr !== undefined) mapped.allow_inspection_without_qr = data.allowInspectionWithoutQr;
     if (data.useRca !== undefined) mapped.use_rca = data.useRca;
+    if (data.monitoringDemoEnabled !== undefined) mapped.monitoring_demo_enabled = data.monitoringDemoEnabled;
     if (data.licenseKey !== undefined) mapped.license_key = data.licenseKey;
     if (data.apiEnabled !== undefined) mapped.api_enabled = data.apiEnabled;
     if (data.apiKey !== undefined) mapped.api_key = data.apiKey;

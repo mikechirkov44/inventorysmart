@@ -16,10 +16,14 @@ function stateAt(equipmentId, date, minute) {
   if (slot === 24 || random < 24 + profile * 6) return 'idle';
   return 'working';
 }
+function elapsedMinutesOf(date, now) {
+  const today = monitoringToday(now);
+  return date < today ? 1440 : date > today ? 0 : Math.floor((now.getTime() - Date.parse(`${date}T00:00:00+03:00`)) / 60000);
+}
+
 function buildDay(equipmentId, date, now) {
   if (!equipmentId || !validDate(date)) throw new Error('Некорректное оборудование или дата');
-  const today = monitoringToday(now);
-  const elapsedMinutes = date < today ? 1440 : date > today ? 0 : Math.floor((now.getTime() - Date.parse(`${date}T00:00:00+03:00`)) / 60000);
+  const elapsedMinutes = elapsedMinutesOf(date, now);
   const intervals = [];
   const minutes = { working: 0, idle: 0, off: 0, fault: 0, unknown: 0 };
   for (let startMinute = 0; startMinute < elapsedMinutes; startMinute += 30) {
@@ -48,5 +52,34 @@ export const demoMonitoringSource = {
   async getSnapshot(equipmentId, now = new Date()) {
     const day = buildDay(equipmentId, monitoringToday(now), now);
     return { equipmentId, source: 'demo', asOf: now.toISOString(), state: day.intervals.at(-1)?.state || 'unknown' };
+  },
+};
+
+function buildEmptyDay(equipmentId, date, now) {
+  if (!equipmentId || !validDate(date)) throw new Error('Некорректное оборудование или дата');
+  const elapsedMinutes = elapsedMinutesOf(date, now);
+  return {
+    equipmentId,
+    date,
+    source: 'none',
+    timezone: MONITORING_TIMEZONE,
+    intervals: elapsedMinutes > 0 ? [{ startMinute: 0, endMinute: elapsedMinutes, state: 'unknown' }] : [],
+    minutes: { working: 0, idle: 0, off: 0, fault: 0, unknown: elapsedMinutes },
+    elapsedMinutes,
+    utilization: null,
+  };
+}
+
+/** Пустой график, когда демо отключено и станок не подключён. Это не состояние «выключено». */
+export const emptyMonitoringSource = {
+  id: 'none',
+  label: 'Нет данных',
+  async getDay(equipmentId, date, now = new Date()) { return buildEmptyDay(equipmentId, date, now); },
+  async getRange(equipmentIds, from, to, now = new Date()) {
+    const dates = dateRange(from, to);
+    return equipmentIds.map((equipmentId) => ({ equipmentId, days: dates.map((date) => buildEmptyDay(equipmentId, date, now)) }));
+  },
+  async getSnapshot(equipmentId, now = new Date()) {
+    return { equipmentId, source: 'none', asOf: now.toISOString(), state: 'unknown' };
   },
 };

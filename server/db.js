@@ -654,6 +654,10 @@ async function migrate() {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS use_rca BOOLEAN DEFAULT true`);
     });
 
+    await withSavepoint(client, 'company_monitoring_demo', async () => {
+      await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS monitoring_demo_enabled BOOLEAN DEFAULT true`);
+    });
+
     await withSavepoint(client, 'equipment_map', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS map_buildings (
