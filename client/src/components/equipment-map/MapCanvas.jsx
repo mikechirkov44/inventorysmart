@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, LocateFixed } from 'lucide-react';
-import { clamp, snap, createMapId, createWallFromPoints, createWallRectangle, createRoomBox, cutWall, projectOnWall, resizeEquipment, resizeRoom, roomsOverlap, statusPresentation } from './mapEditor';
+import { clamp, snap, createMapId, createWallFromPoints, createWallRectangle, createRoomBox, cutWall, projectOnWall, resizeEquipment, resizeRoom, roomsOverlap, statusPresentation, mapViewBox, MAP_VIEWPORT } from './mapEditor';
 
 const HANDLES = [['nw', 0, 0], ['n', .5, 0], ['ne', 1, 0], ['e', 1, .5], ['se', 1, 1], ['s', .5, 1], ['sw', 0, 1], ['w', 0, .5]];
 
@@ -38,7 +38,7 @@ export default function MapCanvas({ layout, machineStatuses = {}, bounds, editin
   const zoomAt = (factor, anchor) => {
     setView(old => {
       const zoom = clamp(old.zoom * factor, .5, 4);
-      const p = anchor || { x: old.x + bounds.width / old.zoom / 2, y: old.y + bounds.height / old.zoom / 2 };
+      const p = anchor || { x: old.x + MAP_VIEWPORT.width / old.zoom / 2, y: old.y + MAP_VIEWPORT.height / old.zoom / 2 };
       return { zoom, x: p.x - (p.x - old.x) * old.zoom / zoom, y: p.y - (p.y - old.y) * old.zoom / zoom };
     });
   };
@@ -47,7 +47,7 @@ export default function MapCanvas({ layout, machineStatuses = {}, bounds, editin
     const wheel = event => { event.preventDefault(); zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, rawPoint(event)); };
     element.addEventListener('wheel', wheel, { passive: false });
     return () => element.removeEventListener('wheel', wheel);
-  // bounds only affects button zoom; wheel supplies its own anchor.
+  // Wheel zoom supplies its own anchor.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -177,7 +177,7 @@ export default function MapCanvas({ layout, machineStatuses = {}, bounds, editin
     if (!editing) return; event.preventDefault(); const id = event.dataTransfer.getData('application/x-equipment-id');
     if (id) { onPlace(id, pointAt(event)); setTool('select'); }
   }}>
-    <svg ref={svg} className="map-canvas" viewBox={`${view.x} ${view.y} ${bounds.width / view.zoom} ${bounds.height / view.zoom}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={reset} aria-label="План этажа" onClick={() => {
+    <svg ref={svg} className="map-canvas" viewBox={mapViewBox(view)} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={reset} aria-label="План этажа" onClick={() => {
       if (editing) return; const id = clickedObject.current?.kind === 'equipment' ? clickedObject.current.id : null;
       if (id) onPreview(layout.placements.find(p => p.equipmentId === id)?.equipment);
     }} onDoubleClick={() => {
@@ -215,7 +215,7 @@ export default function MapCanvas({ layout, machineStatuses = {}, bounds, editin
       })}
       {guide && (guide.type === 'rectangle' ? <rect className="map-rectangle-preview" x={Math.min(guide.from.x, guide.to.x)} y={Math.min(guide.from.y, guide.to.y)} width={Math.abs(guide.from.x - guide.to.x)} height={Math.abs(guide.from.y - guide.to.y)} /> : <g className="map-guide"><line className={guide.type === 'opening' ? 'map-opening-preview' : 'map-wall-preview'} x1={guide.from.x} y1={guide.from.y} x2={guide.to.x} y2={guide.to.y} /><circle cx={guide.to.x} cy={guide.to.y} r="7" /></g>)}
     </svg>
-    <div className="map-navigation"><button className="btn btn-small" aria-label="Уменьшить" onClick={() => zoomAt(1 / 1.25)}><Minus size={16} /></button><span>{Math.round(view.zoom * 100)}%</span><button className="btn btn-small" aria-label="Увеличить" onClick={() => zoomAt(1.25)}><Plus size={16} /></button><button className="btn btn-small" title="Показать весь этаж" onClick={() => setView({ x: 0, y: 0, zoom: 1 })}><LocateFixed size={16} /></button></div>
+    <div className="map-navigation"><button className="btn btn-small" aria-label="Уменьшить" onClick={() => zoomAt(1 / 1.25)}><Minus size={16} /></button><span>{Math.round(view.zoom * 100)}%</span><button className="btn btn-small" aria-label="Увеличить" onClick={() => zoomAt(1.25)}><Plus size={16} /></button><button className="btn btn-small" title="Вернуться к началу плана" aria-label="Вернуться к началу плана" onClick={() => setView({ x: 0, y: 0, zoom: 1 })}><LocateFixed size={16} /></button></div>
     <span className="map-navigation-hint">Колесо — масштаб · Пробел + мышь — перемещение</span>
   </div>;
 }

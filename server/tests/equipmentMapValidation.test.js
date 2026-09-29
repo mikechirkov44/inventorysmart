@@ -28,6 +28,12 @@ test('rejects non-finite and out-of-bounds geometry', () => {
   assert.throws(() => validateLayoutPayload({ version: 0, elements: [], placements: [{ equipmentId: uuid(2), x: 'NaN', y: 1 }] }, { width: 100, height: 100 }), /числ/i);
 });
 
+test('accepts walls at the far edge of a 20000 by 20000 floor', () => {
+  const wall = { id: uuid(9), type: 'wall', geometry: { x1: 19980, y1: 19980, x2: 20000, y2: 20000 } };
+  const result = validateLayoutPayload({ version: 0, elements: [wall], placements: [] }, { width: 20000, height: 20000 });
+  assert.deepEqual(result.elements[0].geometry, wall.geometry);
+});
+
 test('rejects duplicate equipment placements', () => {
   assert.throws(() => validateLayoutPayload({ version: 0, elements: [], placements: [
     { equipmentId: uuid(2), x: 1, y: 1 }, { equipmentId: uuid(2), x: 2, y: 2 },

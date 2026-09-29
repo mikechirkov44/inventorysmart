@@ -707,8 +707,8 @@ async function migrate() {
           building_id UUID NOT NULL REFERENCES map_buildings(id) ON DELETE CASCADE,
           name VARCHAR(255) NOT NULL,
           sort_order INTEGER NOT NULL DEFAULT 0,
-          canvas_width INTEGER NOT NULL DEFAULT 1600 CHECK (canvas_width BETWEEN 400 AND 5000),
-          canvas_height INTEGER NOT NULL DEFAULT 900 CHECK (canvas_height BETWEEN 300 AND 5000),
+          canvas_width INTEGER NOT NULL DEFAULT 20000 CHECK (canvas_width BETWEEN 400 AND 20000),
+          canvas_height INTEGER NOT NULL DEFAULT 20000 CHECK (canvas_height BETWEEN 300 AND 20000),
           version INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -744,6 +744,14 @@ async function migrate() {
         CREATE INDEX IF NOT EXISTS idx_equipment_map_floor ON equipment_map_placements(company_id, floor_id);
         ALTER TABLE equipment_map_placements ADD COLUMN IF NOT EXISTS width NUMERIC NOT NULL DEFAULT 180;
         ALTER TABLE equipment_map_placements ADD COLUMN IF NOT EXISTS height NUMERIC NOT NULL DEFAULT 80;
+        ALTER TABLE map_floors DROP CONSTRAINT IF EXISTS map_floors_canvas_width_check;
+        ALTER TABLE map_floors DROP CONSTRAINT IF EXISTS map_floors_canvas_height_check;
+        ALTER TABLE map_floors ADD CONSTRAINT map_floors_canvas_width_check CHECK (canvas_width BETWEEN 400 AND 20000);
+        ALTER TABLE map_floors ADD CONSTRAINT map_floors_canvas_height_check CHECK (canvas_height BETWEEN 300 AND 20000);
+        ALTER TABLE map_floors ALTER COLUMN canvas_width SET DEFAULT 20000;
+        ALTER TABLE map_floors ALTER COLUMN canvas_height SET DEFAULT 20000;
+        UPDATE map_floors SET canvas_width = 20000, canvas_height = 20000
+          WHERE canvas_width <> 20000 OR canvas_height <> 20000;
       `);
     });
 

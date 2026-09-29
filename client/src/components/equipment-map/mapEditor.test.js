@@ -11,6 +11,10 @@ test('map IDs work on HTTP without randomUUID and remain valid UUID v4', () => {
 });
 
 test('snap rounds coordinates to the editor grid', () => assert.equal(snap(27, 20), 20));
+test('large floor opens at a usable drawing scale and can pan to the far edge', () => {
+  assert.equal(map.mapViewBox({ x: 0, y: 0, zoom: 1 }), '0 0 1600 900');
+  assert.equal(map.mapViewBox({ x: 18400, y: 19100, zoom: 1 }), '18400 19100 1600 900');
+});
 test('status presentation has a safe fallback', () => {
   assert.equal(statusPresentation('reserve').label, 'Резерв');
   assert.equal(statusPresentation('future').label, 'Статус не указан');

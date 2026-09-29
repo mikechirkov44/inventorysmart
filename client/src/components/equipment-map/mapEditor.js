@@ -1,4 +1,8 @@
 export const GRID_SIZE = 20;
+export const MAP_VIEWPORT = { width: 1600, height: 900 };
+export function mapViewBox(view) {
+  return `${view.x} ${view.y} ${MAP_VIEWPORT.width / view.zoom} ${MAP_VIEWPORT.height / view.zoom}`;
+}
 // randomUUID is unavailable on HTTP hosts; getRandomValues also works there.
 export function createMapId(source = globalThis.crypto) {
   if (typeof source.randomUUID === 'function') return source.randomUUID();
