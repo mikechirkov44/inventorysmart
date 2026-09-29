@@ -12,6 +12,7 @@ import MapLabelDialog from '../components/equipment-map/MapLabelDialog';
 import MapRoomDialog from '../components/equipment-map/MapRoomDialog';
 import UnplacedEquipmentPanel from '../components/equipment-map/UnplacedEquipmentPanel';
 import { createMapId, editorReducer, initialEditorState, clamp, roomsOverlap, statusPresentation } from '../components/equipment-map/mapEditor';
+import { useMachineStatuses } from '../components/monitoring/machineStatus';
 
 export default function EquipmentMap({ onUnsavedChange }) {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export default function EquipmentMap({ onUnsavedChange }) {
   const [saveState, setSaveState] = useState('saved');
   const [saving, setSaving] = useState(false);
   const [editor, dispatch] = useReducer(editorReducer, initialEditorState);
+  const machineStatuses = useMachineStatuses();
   const activeBuilding = buildings.find(item => item.id === buildingId);
   const bounds = { width: floor?.canvasWidth || 1600, height: floor?.canvasHeight || 900 };
   const blocked = editor.dirty || saving;
@@ -219,13 +221,13 @@ export default function EquipmentMap({ onUnsavedChange }) {
       {editing && <MapToolbar tool={tool} setTool={changeTool} placing={placing} onUndo={() => dispatch({ type: 'undo' })} onRedo={() => dispatch({ type: 'redo' })} canUndo={editor.past.length > 0} canRedo={editor.future.length > 0} />}
       <div className="map-workspace">
         <div className="map-stage">
-          <MapCanvas key={floor.id} layout={editor.present} bounds={bounds} editing={editing} tool={tool} setTool={changeTool} selected={selected} setSelected={setSelected} dispatch={dispatch} placing={placing} onPlace={placeEquipment} onLabel={setPendingLabel} onRoom={(geometry) => setPendingRoom({ geometry })} onRoomOverlap={() => toast.error('Помещения не должны пересекаться', 'Сдвиньте зону так, чтобы она не накрывала другое помещение.')} onPreview={equipment => equipment && setPreview({ equipment })} onDelete={deleteSelected} onCancel={() => { setPlacing(null); setSelected(null); }} />
-          {preview && <EquipmentMapPreview {...preview} onClose={() => setPreview(null)} />}
+          <MapCanvas key={floor.id} layout={editor.present} machineStatuses={machineStatuses} bounds={bounds} editing={editing} tool={tool} setTool={changeTool} selected={selected} setSelected={setSelected} dispatch={dispatch} placing={placing} onPlace={placeEquipment} onLabel={setPendingLabel} onRoom={(geometry) => setPendingRoom({ geometry })} onRoomOverlap={() => toast.error('Помещения не должны пересекаться', 'Сдвиньте зону так, чтобы она не накрывала другое помещение.')} onPreview={equipment => equipment && setPreview({ equipment })} onDelete={deleteSelected} onCancel={() => { setPlacing(null); setSelected(null); }} />
+          {preview && <EquipmentMapPreview {...preview} equipment={{ ...preview.equipment, status: machineStatuses[preview.equipment.id]?.state || preview.equipment.status }} onClose={() => setPreview(null)} />}
         </div>
         {editing && <div className="map-sidebar">
           {selection && <aside className="map-properties">
             <div className="map-properties-heading"><h3>{selectedEquipment ? 'Оборудование' : selectedElement.type === 'wall' ? 'Стена' : selectedElement.type === 'room' ? 'Помещение' : 'Метка'}</h3><button className="btn btn-small" aria-label="Снять выделение" onClick={() => setSelected(null)}>×</button></div>
-            {selectedEquipment ? <><strong>{selectedEquipment.equipment?.name}</strong><p>{selectedEquipment.equipment?.inventoryNumber || 'Без инв. номера'} · {statusPresentation(selectedEquipment.equipment?.status).label}</p><p>Размер: {selectedEquipment.width || 180} × {selectedEquipment.height || 80} усл. ед.</p><p>Тяните за рамку по углам или сторонам. За середину — перемещайте.</p></> : selectedElement.type === 'room' ? <><strong>{selectedElement.label || selectedElement.roomName}</strong><p>Тяните за рамку, чтобы изменить размер. За середину — переместить.</p><button className="btn btn-small" onClick={() => setPendingRoom({ geometry: selectedElement.geometry, elementId: selectedElement.id, roomId: selectedElement.roomId })}>Сменить помещение</button></> : selectedElement.type === 'wall' ? <><p>За конец — изменить длину.<br />За середину — переместить.</p><button className="btn btn-small" onClick={() => changeTool('opening')}>Сделать проём</button></> : <><strong>{selectedElement.label}</strong><button className="btn btn-small" onClick={() => setPendingLabel(selectedElement)}>Изменить название</button></>}
+            {selectedEquipment ? <><strong>{selectedEquipment.equipment?.name}</strong><p>{selectedEquipment.equipment?.inventoryNumber || 'Без инв. номера'} · {statusPresentation(machineStatuses[selectedEquipment.equipmentId]?.state || selectedEquipment.equipment?.status).label}</p><p>Размер: {selectedEquipment.width || 180} × {selectedEquipment.height || 80} усл. ед.</p><p>Тяните за рамку по углам или сторонам. За середину — перемещайте.</p></> : selectedElement.type === 'room' ? <><strong>{selectedElement.label || selectedElement.roomName}</strong><p>Тяните за рамку, чтобы изменить размер. За середину — переместить.</p><button className="btn btn-small" onClick={() => setPendingRoom({ geometry: selectedElement.geometry, elementId: selectedElement.id, roomId: selectedElement.roomId })}>Сменить помещение</button></> : selectedElement.type === 'wall' ? <><p>За конец — изменить длину.<br />За середину — переместить.</p><button className="btn btn-small" onClick={() => changeTool('opening')}>Сделать проём</button></> : <><strong>{selectedElement.label}</strong><button className="btn btn-small" onClick={() => setPendingLabel(selectedElement)}>Изменить название</button></>}
             <button className="btn btn-small btn-danger-outline" onClick={deleteSelected}>{selectedEquipment ? 'Убрать с плана' : 'Удалить выбранное'}</button>
           </aside>}
           <UnplacedEquipmentPanel items={available} search={search} setSearch={setSearch} selectedId={placing} onChoose={id => { changeTool('select'); setSelected(null); setPlacing(id); }} />

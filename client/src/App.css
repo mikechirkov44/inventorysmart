@@ -2345,6 +2345,7 @@ input, textarea, select { font-family: inherit; }
 .map-equipment-number { fill: var(--gray-500) !important; font-size: 12px; font-weight: 600; }
 .map-equipment-marker.selected .map-equipment-card { stroke: var(--primary); stroke-width: 5; }
 .map-status-working { color: #10b981; background-color: #10b981; }
+.map-status-idle { color: #f59e0b; background-color: #f59e0b; }
 .map-status-reserve { color: #64748b; background-color: #64748b; }
 .map-status-repair { color: #ef4444; background-color: #ef4444; }
 .map-status-alert { color: #f59e0b; background-color: #f59e0b; }

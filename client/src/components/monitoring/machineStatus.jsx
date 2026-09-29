@@ -42,6 +42,17 @@ export function MachineStatusBadge({ status }) {
   return <span className="machine-status"><i className={state.className} />{label}</span>;
 }
 
+export function EquipmentStatusBadge({ equipment, machineStatus }) {
+  if (machineStatus) return <MachineStatusBadge status={machineStatus} />;
+  const fallback = {
+    working: { label: 'Работает', className: 'status-working' },
+    under_repair: { label: 'В ремонте', className: 'status-under-repair' },
+    needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
+    reserve: { label: 'Резерв', className: 'status-reserve' },
+  }[equipment.status] || { label: 'Неизвестно', className: 'status-reserve' };
+  return <span className={`status-badge ${fallback.className}`}>{fallback.label}</span>;
+}
+
 export function statusSummary(statuses) {
   const list = Object.values(statuses || {});
   return {

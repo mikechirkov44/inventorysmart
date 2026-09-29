@@ -75,6 +75,22 @@ export default function EquipmentConnection({ equipmentId }) {
     }
   };
 
+  const connectSimulator = async () => {
+    const simulator = { ...EMPTY, enabled: true, host: '127.0.0.1', port: 1502, pollIntervalSec: 10 };
+    setSaving(true);
+    try {
+      const response = await monitoringAPI.saveLink(equipmentId, simulator);
+      setForm(simulator);
+      setStatus(response.data);
+      invalidateMonitoringSource();
+      toast.success('Эмулятор подключён. Состояние обновится после опроса.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Не удалось подключить эмулятор');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const test = async () => {
     try {
       const response = await monitoringAPI.testLink(equipmentId, {
@@ -128,6 +144,7 @@ export default function EquipmentConnection({ equipmentId }) {
       </div>
       <div className="monitor-connection-actions">
         <button type="button" className="btn btn-primary btn-small" onClick={save} disabled={saving}>Сохранить</button>
+        {!status?.enabled && !form.host && <button type="button" className="btn btn-small" onClick={connectSimulator} disabled={saving}>Подключить эмулятор</button>}
         <button type="button" className="btn btn-small" onClick={test}><RefreshCw size={14} />Проверить связь</button>
         {status?.lastPolledAt && <span className="monitor-muted">Последний опрос: {new Date(status.lastPolledAt).toLocaleString('ru-RU')} · {status.lastError || status.lastState || 'нет состояния'}</span>}
       </div>

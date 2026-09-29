@@ -4,7 +4,8 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { equipmentAPI, roomsAPI, worksAPI, equipmentCategoriesAPI } from '../services/api';
+import { equipmentAPI, roomsAPI, worksAPI, equipmentCategoriesAPI, monitoringAPI } from '../services/api';
+import { EquipmentStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
@@ -44,6 +45,8 @@ const STATUS_OPTIONS = [
 
 function EquipmentForm() {
   const { id } = useParams();
+  const machineStatuses = useMachineStatuses(Boolean(id));
+  const [connectionEnabled, setConnectionEnabled] = useState(null);
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
@@ -78,6 +81,15 @@ function EquipmentForm() {
     Promise.all([roomsAPI.getAll(), worksAPI.getAll(), equipmentCategoriesAPI.getAll()])
       .then(([r, w, c]) => { setRooms(r.data); setWorks(w.data); setCategories(c.data); });
     if (isEditing) fetchEquipment();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    let cancelled = false;
+    monitoringAPI.getLink(id).then(({ data }) => {
+      if (!cancelled) setConnectionEnabled(Boolean(data.enabled));
+    }).catch(() => { if (!cancelled) setConnectionEnabled(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   /** Загрузка данных редактируемого оборудования */
@@ -286,7 +298,7 @@ function EquipmentForm() {
 
             <div className="form-group">
               <label>Состояние</label>
-              <CustomSelect value={formData.status} onChange={(val) => setFormData(prev => ({ ...prev, status: val }))} options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))} />
+              {connectionEnabled === null && isEditing ? <span>Проверка подключения…</span> : connectionEnabled ? <><EquipmentStatusBadge equipment={formData} machineStatus={machineStatuses[id] || { state: 'unknown' }} /><small>Состояние считывается со станка при каждом опросе.</small></> : <CustomSelect value={formData.status} onChange={(val) => setFormData(prev => ({ ...prev, status: val }))} options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))} />}
             </div>
 
             <div className="form-group">

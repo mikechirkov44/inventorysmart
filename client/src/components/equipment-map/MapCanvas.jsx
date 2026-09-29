@@ -4,7 +4,7 @@ import { clamp, snap, createMapId, createWallFromPoints, createWallRectangle, cr
 
 const HANDLES = [['nw', 0, 0], ['n', .5, 0], ['ne', 1, 0], ['e', 1, .5], ['se', 1, 1], ['s', .5, 1], ['sw', 0, 1], ['w', 0, .5]];
 
-export default function MapCanvas({ layout, bounds, editing, tool, setTool, selected, setSelected, dispatch, placing, onPlace, onLabel, onRoom, onRoomOverlap, onPreview, onDelete, onCancel }) {
+export default function MapCanvas({ layout, machineStatuses = {}, bounds, editing, tool, setTool, selected, setSelected, dispatch, placing, onPlace, onLabel, onRoom, onRoomOverlap, onPreview, onDelete, onCancel }) {
   const svg = useRef(null);
   const gesture = useRef(null);
   const clickedObject = useRef(null);
@@ -203,7 +203,7 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
       {current.placements.map(item => {
         if (!item.equipment) return null;
         const w = item.width || 180; const h = item.height || 80; const equipment = item.equipment;
-        const status = statusPresentation(equipment.status);
+        const status = statusPresentation(machineStatuses[item.equipmentId]?.state || equipment.status);
         return <g key={item.equipmentId} data-id={item.equipmentId} data-kind="equipment" className={`map-equipment-marker ${status.className} ${selected?.id === item.equipmentId ? 'selected' : ''}`} transform={`translate(${item.x} ${item.y})`}>
           <title>{equipment.name} · {equipment.inventoryNumber || 'Без номера'} · {status.label}</title>
           <rect className="map-equipment-card" width={w} height={h} rx="8" />

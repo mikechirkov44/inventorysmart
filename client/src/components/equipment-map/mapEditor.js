@@ -86,6 +86,10 @@ export function createWallRectangle(start, end, makeId) {
 
 const STATUS = {
   working: { label: 'Работает', className: 'map-status-working' },
+  idle: { label: 'Простаивает', className: 'map-status-idle' },
+  off: { label: 'Выключено', className: 'map-status-reserve' },
+  fault: { label: 'Авария', className: 'map-status-repair' },
+  unknown: { label: 'Нет связи', className: 'map-status-unknown' },
   reserve: { label: 'Резерв', className: 'map-status-reserve' },
   under_repair: { label: 'В ремонте', className: 'map-status-repair' },
   needs_repair: { label: 'Требует ремонта', className: 'map-status-alert' },

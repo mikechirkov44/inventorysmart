@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import EquipmentMonitoring from '../components/monitoring/EquipmentMonitoring';
 import EquipmentConnection from '../components/monitoring/EquipmentConnection';
+import { EquipmentStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 import { equipmentAPI, workOrderAPI, roomsAPI, worksAPI, sparePartsAPI, incidentsAPI, operatingHoursAPI, commonFaultsAPI } from '../services/api';
 import { isHourUnit } from '../services/monitoring/model';
 const EquipmentPassport = lazy(() => import('../components/EquipmentPassport'));
@@ -38,15 +39,9 @@ function getFrequencyLabel(days) {
   return opt ? opt.label : `каждые ${days} дн.`;
 }
 
-const STATUS_MAP = {
-  working: { label: 'Работает', className: 'status-working' },
-  under_repair: { label: 'В ремонте', className: 'status-under-repair' },
-  needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
-  reserve: { label: 'Резерв', className: 'status-reserve' },
-};
-
 function EquipmentDetail() {
   const { id } = useParams();
+  const machineStatuses = useMachineStatuses();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState(null);
@@ -326,7 +321,6 @@ function EquipmentDetail() {
   if (error) return null;
   if (!equipment) return null;
 
-  const st = STATUS_MAP[equipment.status] || STATUS_MAP.working;
 
   return (
     <div className="equipment-detail">
@@ -385,7 +379,7 @@ function EquipmentDetail() {
               </div>
               <div className="info-row">
                 <span className="label">Состояние:</span>
-                <span className="value"><span className={`status-badge ${st.className}`}>{st.label}</span></span>
+                <span className="value"><EquipmentStatusBadge equipment={equipment} machineStatus={machineStatuses[id]} /></span>
               </div>
               <div className="info-row">
                 <span className="label">Инвентарный номер:</span>

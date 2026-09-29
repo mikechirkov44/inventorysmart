@@ -15,7 +15,7 @@ import ActionsMenu from '../components/ActionsMenu';
 import { useTableSettings } from '../hooks/useTableSettings';
 import TableColumnManager from '../components/TableColumnManager';
 import UploadImage from '../components/UploadImage';
-import { MachineStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
+import { EquipmentStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 
 /** Маппинг статусов оборудования */
 const STATUS_MAP = {
@@ -23,6 +23,10 @@ const STATUS_MAP = {
   under_repair: { label: 'В ремонте', className: 'status-under-repair' },
   needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
   reserve: { label: 'Резерв', className: 'status-reserve' },
+  idle: { label: 'Простой' },
+  off: { label: 'Выключено' },
+  fault: { label: 'Авария' },
+  unknown: { label: 'Нет связи' },
 };
 
 /** Дефолтные колонки таблицы */
@@ -113,12 +117,13 @@ function EquipmentTable({ embedded }) {
     }
     if (filterCategory) result = result.filter(e => e.categoryId === filterCategory);
     if (filterRoom) result = result.filter(e => e.roomId === filterRoom);
-    if (filterStatus) result = result.filter(e => e.status === filterStatus);
+    if (filterStatus) result = result.filter(e => (machineStatuses[e.id]?.state || e.status) === filterStatus);
 
     result.sort((a, b) => {
       let valA = a[sortField] || '';
       let valB = b[sortField] || '';
       if (sortField === 'roomName') { valA = roomMap[a.roomId] || ''; valB = roomMap[b.roomId] || ''; }
+      if (sortField === 'status') { valA = machineStatuses[a.id]?.state || a.status; valB = machineStatuses[b.id]?.state || b.status; }
       if (typeof valA === 'string') valA = valA.toLowerCase();
       if (typeof valB === 'string') valB = valB.toLowerCase();
       if (valA < valB) return sortDir === 'asc' ? -1 : 1;
@@ -127,7 +132,7 @@ function EquipmentTable({ embedded }) {
     });
 
     return result;
-  }, [equipment, search, filterCategory, filterRoom, filterStatus, sortField, sortDir, roomMap]);
+  }, [equipment, search, filterCategory, filterRoom, filterStatus, sortField, sortDir, roomMap, machineStatuses]);
 
   /** Переключение направления сортировки */
   const handleSort = (field) => {
@@ -247,7 +252,6 @@ function EquipmentTable({ embedded }) {
                 </tr>
               ) : (
                 filtered.map(item => {
-                  const st = STATUS_MAP[item.status] || STATUS_MAP.working;
                   return (
                     <tr key={item.id}>
                       {visibleColumns.map(col => {
@@ -256,7 +260,6 @@ function EquipmentTable({ embedded }) {
                             return (
                               <td key={col.key}>
                                 <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
-                                {machineStatuses[item.id] && <div><MachineStatusBadge status={machineStatuses[item.id]} /></div>}
                               </td>
                             );
                           case 'inventoryNumber':
@@ -264,7 +267,7 @@ function EquipmentTable({ embedded }) {
                           case 'status':
                             return (
                               <td key={col.key}>
-                                <span className={`status-badge ${st.className}`}>{st.label}</span>
+                                <EquipmentStatusBadge equipment={item} machineStatus={machineStatuses[item.id]} />
                               </td>
                             );
                           case 'category':
@@ -316,12 +319,10 @@ function EquipmentTable({ embedded }) {
             <div className="no-results">Оборудование не найдено</div>
           ) : (
             filtered.map((item) => {
-              const st = STATUS_MAP[item.status] || STATUS_MAP.working;
               return (
                 <div key={item.id} className="mobile-data-card">
                   <div className="mobile-data-card-title">
                     <Link to={`/equipment/${item.id}`} className="table-link">{item.name}</Link>
-                    {machineStatuses[item.id] && <MachineStatusBadge status={machineStatuses[item.id]} />}
                   </div>
                   <div className="mobile-data-card-row">
                     <span className="mobile-data-card-label">Инв. №</span>
@@ -329,7 +330,7 @@ function EquipmentTable({ embedded }) {
                   </div>
                   <div className="mobile-data-card-row">
                     <span className="mobile-data-card-label">Статус</span>
-                    <span className={`status-badge ${st.className}`}>{st.label}</span>
+                    <EquipmentStatusBadge equipment={item} machineStatus={machineStatuses[item.id]} />
                   </div>
                   <div className="mobile-data-card-row">
                     <span className="mobile-data-card-label">Помещение</span>

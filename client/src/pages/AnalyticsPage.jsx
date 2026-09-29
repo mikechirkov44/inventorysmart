@@ -11,6 +11,7 @@ import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import { formatDate, toDateInputValue } from '../utils/date';
 import { buildRoomFilterOptions } from './analyticsFilters';
+import { EquipmentStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 import PageHeader from '../components/PageHeader';
 import { SkeletonTable, SkeletonPage } from '../components/Skeleton';
 import {
@@ -257,6 +258,7 @@ function StockReport() {
 /** Компонент отчёта по оборудованию и инцидентам */
 function EquipmentReport() {
   const [equipment, setEquipment] = useState([]);
+  const machineStatuses = useMachineStatuses();
   const [incidents, setIncidents] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -321,10 +323,10 @@ function EquipmentReport() {
       );
     }
     if (filterCategory) result = result.filter(e => e.category === filterCategory);
-    if (filterStatus) result = result.filter(e => e.status === filterStatus);
+    if (filterStatus) result = result.filter(e => (machineStatuses[e.id]?.state || e.status) === filterStatus);
     if (filterRoom) result = result.filter(e => e.roomId === filterRoom);
     return result;
-  }, [equipment, search, filterCategory, filterStatus, filterRoom]);
+  }, [equipment, machineStatuses, search, filterCategory, filterStatus, filterRoom]);
 
   /** Статистика */
   const stats = useMemo(() => {
@@ -366,6 +368,10 @@ function EquipmentReport() {
           <CustomSelect value={filterCategory} onChange={setFilterCategory} placeholder="Все категории" options={categories.map(c => ({ value: c, label: c }))} />
           <CustomSelect value={filterStatus} onChange={setFilterStatus} placeholder="Все статусы" options={[
             { value: 'working', label: 'Работает' },
+            { value: 'idle', label: 'Простаивает' },
+            { value: 'off', label: 'Выключено' },
+            { value: 'fault', label: 'Авария' },
+            { value: 'unknown', label: 'Нет связи' },
             { value: 'under_repair', label: 'В ремонте' },
             { value: 'needs_repair', label: 'Требует ремонта' },
             { value: 'reserve', label: 'Резерв' }
@@ -394,20 +400,13 @@ function EquipmentReport() {
               ) : (
                 filtered.map(item => {
                   const incCount = incidentCountByEquipment[item.id] || 0;
-                  const statusMap = {
-                    working: { label: 'Работает', className: 'status-working' },
-                    under_repair: { label: 'В ремонте', className: 'status-under-repair' },
-                    needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
-                    reserve: { label: 'Резерв', className: 'status-reserve' }
-                  };
-                  const st = statusMap[item.status] || statusMap.working;
                   return (
                     <tr key={item.id}>
                       <td className="td-bold">{item.name}</td>
                       <td>{item.inventoryNumber || '—'}</td>
                       <td>{item.category || '—'}</td>
                       <td>{roomMap[item.roomId] || '—'}</td>
-                      <td><span className={`status-badge ${st.className}`}>{st.label}</span></td>
+                      <td><EquipmentStatusBadge equipment={item} machineStatus={machineStatuses[item.id]} /></td>
                       <td>
                         {incCount > 0 ? (
                           <span className={`overdue-badge ${incCount >= 3 ? 'overdue' : incCount >= 1 ? 'new' : 'ok'}`}>
@@ -428,18 +427,12 @@ function EquipmentReport() {
       <MobileDataCards empty={filtered.length === 0} emptyMessage="Оборудование не найдено">
         {filtered.map((item) => {
           const incCount = incidentCountByEquipment[item.id] || 0;
-          const statusMap = {
-            working: 'Работает',
-            under_repair: 'В ремонте',
-            needs_repair: 'Требует ремонта',
-            reserve: 'Резерв',
-          };
           return (
             <MobileDataCard key={item.id}>
               <MobileDataCardTitle>{item.name}</MobileDataCardTitle>
               <MobileDataCardRow label="Инв. №">{item.inventoryNumber || '—'}</MobileDataCardRow>
               <MobileDataCardRow label="Помещение">{roomMap[item.roomId] || '—'}</MobileDataCardRow>
-              <MobileDataCardRow label="Статус">{statusMap[item.status] || 'Работает'}</MobileDataCardRow>
+              <MobileDataCardRow label="Статус"><EquipmentStatusBadge equipment={item} machineStatus={machineStatuses[item.id]} /></MobileDataCardRow>
               <MobileDataCardRow label="Инциденты">{incCount}</MobileDataCardRow>
             </MobileDataCard>
           );

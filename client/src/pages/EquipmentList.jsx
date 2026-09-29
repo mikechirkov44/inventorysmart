@@ -12,15 +12,7 @@ import { SkeletonCardGrid } from '../components/Skeleton';
 import ActionsMenu from '../components/ActionsMenu';
 import UploadImage from '../components/UploadImage';
 import EmptyState from '../components/EmptyState';
-import { MachineStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
-
-/** Маппинг статусов оборудования на метки и CSS-классы */
-const STATUS_MAP = {
-  working: { label: 'Работает', className: 'status-working' },
-  under_repair: { label: 'В ремонте', className: 'status-under-repair' },
-  needs_repair: { label: 'Требует ремонта', className: 'status-needs-repair' },
-  reserve: { label: 'Резерв', className: 'status-reserve' },
-};
+import { EquipmentStatusBadge, useMachineStatuses } from '../components/monitoring/machineStatus';
 
 function EquipmentList({ embedded }) {
   /** Состояние списка оборудования, помещений, загрузки, ошибки, поиска и свёрнутых групп */
@@ -151,7 +143,6 @@ function EquipmentList({ embedded }) {
                 {!isCollapsed && (
                   <div className="equipment-grid">
                     {group.items.map(item => {
-                      const st = STATUS_MAP[item.status] || STATUS_MAP.working;
                       return (
                         <div
                           key={item.id}
@@ -184,8 +175,7 @@ function EquipmentList({ embedded }) {
                               </div>
                             )}
                             <div className="card-status-row">
-                              {machineStatuses[item.id] && <MachineStatusBadge status={machineStatuses[item.id]} />}
-                              <span className={`status-badge ${st.className}`}>{st.label}</span>
+                              <EquipmentStatusBadge equipment={item} machineStatus={machineStatuses[item.id]} />
                               <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                                 <ActionsMenu items={[
                                   { icon: <Eye size={14} />, label: 'Подробнее', onClick: () => window.location.href = `/equipment/${item.id}` },
@@ -207,7 +197,6 @@ function EquipmentList({ embedded }) {
       </div>
 
       {viewingEquipment && (() => {
-        const status = STATUS_MAP[viewingEquipment.status] || STATUS_MAP.working;
         return (
           <div className="modal-overlay" onClick={() => setViewingEquipment(null)}>
             <div className="modal equipment-preview-modal" role="dialog" aria-modal="true" aria-label={`Оборудование ${viewingEquipment.name}`} onClick={(event) => event.stopPropagation()}>
@@ -229,7 +218,7 @@ function EquipmentList({ embedded }) {
                   )}
                 </div>
                 <div className="equipment-preview-content">
-                  <span className={`status-badge ${status.className}`}>{status.label}</span>
+                  <EquipmentStatusBadge equipment={viewingEquipment} machineStatus={machineStatuses[viewingEquipment.id]} />
                   <div className="equipment-preview-grid">
                     <div><Hash size={15} /><span><small>Инвентарный номер</small>{viewingEquipment.inventoryNumber || '—'}</span></div>
                     <div><MapPin size={15} /><span><small>Помещение</small>{roomMap[viewingEquipment.roomId] || 'Без помещения'}</span></div>

@@ -1,6 +1,7 @@
 const EquipmentMonitor = require('../models/equipmentMonitor');
 const { applyPollEffects } = require('./monitoringEffects');
 const { readMachineState } = require('./machineReader');
+const { isSimulatorLink } = require('./simulatedState');
 
 const due = new Map();
 let timer = null;
@@ -13,10 +14,12 @@ async function pollLink(link, reader) {
     reading = { state: 'unknown', value: null, error: error.message || 'Нет ответа от шлюза' };
   }
   const context = await EquipmentMonitor.recordPoll(link, reading);
-  try {
-    await applyPollEffects(link, reading, context);
-  } catch (error) {
-    console.error('Monitoring effects error:', error);
+  if (!isSimulatorLink(link)) {
+    try {
+      await applyPollEffects(link, reading, context);
+    } catch (error) {
+      console.error('Monitoring effects error:', error);
+    }
   }
   return reading;
 }
