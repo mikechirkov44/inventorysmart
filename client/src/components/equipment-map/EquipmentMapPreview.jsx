@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Hash, MapPin, X } from 'lucide-react';
+import UploadImage from '../UploadImage';
 import { statusPresentation } from './mapEditor';
 
 export default function EquipmentMapPreview({ equipment, roomName, onClose }) {
@@ -8,7 +9,7 @@ export default function EquipmentMapPreview({ equipment, roomName, onClose }) {
   return (
     <div className="map-preview" role="dialog" aria-label={`Оборудование ${equipment.name}`}>
       <button type="button" className="btn-icon map-preview-close" onClick={onClose} aria-label="Закрыть"><X size={16} /></button>
-      {equipment.photo && <img src={equipment.photo} alt="" />}
+      {equipment.photo && <UploadImage item={equipment} field="photo" alt={equipment.name} />}
       <div className="map-preview-content">
         <span className={`map-status ${status.className}`}>{status.label}</span>
         <h3>{equipment.name}</h3>
