@@ -2308,8 +2308,8 @@ input, textarea, select { font-family: inherit; }
 /* Equipment map */
 .equipment-map { display: flex; flex-direction: column; gap: 12px; min-height: 620px; }
 .map-topbar, .map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; box-shadow: var(--shadow-sm); }
-.map-selectors, .map-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.map-selectors .cs-wrapper { min-width: 190px; }
+.map-selectors, .map-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; }
+.map-selectors .cs-wrapper { width: 220px; min-width: 160px; flex: 0 0 auto; }
 .map-manage { position: relative; }
 .map-manage-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; display: grid; gap: 8px; min-width: 230px; padding: 12px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; box-shadow: var(--shadow-lg); }
 .map-selectors select, .map-toolbar select { min-width: 160px; height: 36px; padding: 0 34px 0 11px; color: var(--gray-800); background: var(--white); border: 1px solid var(--gray-300); border-radius: 8px; }
