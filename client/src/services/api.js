@@ -285,6 +285,9 @@ export const monitoringAPI = {
   getSnapshot: (equipmentId) => api.get('/monitoring/snapshot', { params: { equipmentId } }),
   downtime: (equipmentId) => api.get(`/monitoring/downtime/${equipmentId}`),
   assignDowntime: (id, causeId) => api.put(`/monitoring/downtime/${id}`, { causeId }),
+  operator: (equipmentId) => api.get(`/monitoring/operator/${equipmentId}`),
+  assignOperator: (equipmentId, employeeId) => api.put(`/monitoring/operator/${equipmentId}`, { employeeId }),
+  releaseOperator: (equipmentId) => api.delete(`/monitoring/operator/${equipmentId}`),
 };
 
 /** API для управления наработкой оборудования */

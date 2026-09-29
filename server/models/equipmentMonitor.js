@@ -24,6 +24,8 @@ function mapLink(row) {
     alertSince: row.alert_since,
     alertNotified: row.alert_notified === true,
     alertIncidentId: row.alert_incident_id,
+    operatorAlertSince: row.operator_alert_since,
+    operatorAlertNotified: row.operator_alert_notified === true,
     hoursRemainder: Number(row.hours_remainder) || 0,
     template: row.protocol || 'modbus',
   };
@@ -130,6 +132,74 @@ const EquipmentMonitor = {
        SET alert_since = $2, alert_notified = $3, alert_incident_id = $4, updated_at = NOW()
        WHERE equipment_id = $1`,
       [equipmentId, alertSince, Boolean(alertNotified), alertIncidentId || null],
+    );
+  },
+
+  async setOperatorAlert(equipmentId, { alertSince, alertNotified }) {
+    await query(
+      `UPDATE equipment_monitor_links
+       SET operator_alert_since = $2, operator_alert_notified = $3, updated_at = NOW()
+       WHERE equipment_id = $1`,
+      [equipmentId, alertSince, Boolean(alertNotified)],
+    );
+  },
+
+  async currentOperator(companyId, equipmentId, since) {
+    if (!since) return null;
+    await query(
+      `UPDATE equipment_operator_sessions
+       SET ended_at = NOW()
+       WHERE company_id = $1 AND equipment_id = $2 AND ended_at IS NULL AND started_at < $3`,
+      [companyId, equipmentId, since],
+    );
+    const { rows } = await query(
+      `SELECT s.employee_id, s.started_at, e.last_name, e.first_name
+       FROM equipment_operator_sessions s
+       JOIN employees e ON e.id = s.employee_id AND e.company_id = s.company_id
+       WHERE s.company_id = $1 AND s.equipment_id = $2 AND s.ended_at IS NULL
+       ORDER BY s.started_at DESC LIMIT 1`,
+      [companyId, equipmentId],
+    );
+    if (!rows[0]) return null;
+    return {
+      employeeId: rows[0].employee_id,
+      employeeName: `${rows[0].last_name} ${rows[0].first_name}`.trim(),
+      startedAt: rows[0].started_at,
+    };
+  },
+
+  async assignOperator(companyId, equipmentId, employeeId) {
+    const employee = await query(
+      'SELECT id, last_name, first_name FROM employees WHERE id = $1 AND company_id = $2',
+      [employeeId, companyId],
+    );
+    if (!employee.rows[0]) {
+      const error = new Error('Сотрудник не найден');
+      error.statusCode = 400;
+      throw error;
+    }
+    await query(
+      `UPDATE equipment_operator_sessions SET ended_at = NOW()
+       WHERE company_id = $1 AND equipment_id = $2 AND ended_at IS NULL`,
+      [companyId, equipmentId],
+    );
+    await query(
+      `INSERT INTO equipment_operator_sessions (company_id, equipment_id, employee_id) VALUES ($1, $2, $3)`,
+      [companyId, equipmentId, employeeId],
+    );
+    await module.exports.setOperatorAlert(equipmentId, { alertSince: null, alertNotified: false });
+    return {
+      employeeId,
+      employeeName: `${employee.rows[0].last_name} ${employee.rows[0].first_name}`.trim(),
+      startedAt: new Date(),
+    };
+  },
+
+  async releaseOperator(companyId, equipmentId) {
+    await query(
+      `UPDATE equipment_operator_sessions SET ended_at = NOW()
+       WHERE company_id = $1 AND equipment_id = $2 AND ended_at IS NULL`,
+      [companyId, equipmentId],
     );
   },
 

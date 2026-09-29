@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const EquipmentMonitor = require('../models/equipmentMonitor');
+const Company = require('../models/company');
 const { requirePermission } = require('../middleware/auth');
+const { operatorWindowStart } = require('../utils/monitoringOps');
 const { validateMonitorLink } = require('../utils/monitoringTimeline');
 const { readMachineState } = require('../services/machineReader');
 const { pollLink } = require('../services/monitoringCollector');
@@ -90,6 +92,38 @@ router.put('/downtime/:id', requirePermission('equipment', 'edit'), async (req, 
     res.json({ ok: true });
   } catch (error) {
     console.error('Monitoring cause error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.get('/operator/:equipmentId', requirePermission('equipment', 'view'), async (req, res) => {
+  try {
+    const company = await Company.get(req.user.companyId);
+    const since = operatorWindowStart(new Date(), company.shiftStart, company.shiftEnd);
+    const operator = await EquipmentMonitor.currentOperator(req.user.companyId, req.params.equipmentId, since);
+    res.json({ operator, shiftStart: company.shiftStart, shiftEnd: company.shiftEnd });
+  } catch (error) {
+    console.error('Monitoring operator error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.put('/operator/:equipmentId', requirePermission('equipment', 'edit'), async (req, res) => {
+  try {
+    const operator = await EquipmentMonitor.assignOperator(req.user.companyId, req.params.equipmentId, req.body.employeeId);
+    res.json({ operator });
+  } catch (error) {
+    console.error('Monitoring operator assign error:', error);
+    res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.delete('/operator/:equipmentId', requirePermission('equipment', 'edit'), async (req, res) => {
+  try {
+    await EquipmentMonitor.releaseOperator(req.user.companyId, req.params.equipmentId);
+    res.json({ operator: null });
+  } catch (error) {
+    console.error('Monitoring operator release error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   applyShiftView, planAlert, planDowntime, segmentNeedsReason,
   isHourUnit, workingHoursDelta, splitHours, offlineMinutes, validateMonitoringPrefs,
-  maintenanceAction, summarizeTimeFund,
+  maintenanceAction, summarizeTimeFund, planOperatorAlert, inShift, operatorWindowStart,
 } = require('../utils/monitoringOps');
 
 test('shift utilization counts only the configured window', () => {
@@ -31,6 +31,29 @@ test('shift that has not started has no utilization', () => {
   }, { start: '08:00', end: '20:00', now: new Date('2026-09-01T06:00:00+03:00') });
   assert.equal(day.elapsedMinutes, 0);
   assert.equal(day.utilization, null);
+});
+
+test('idle time during a shift without an operator raises one alert', () => {
+  const now = new Date('2026-09-29T07:00:00Z');
+  assert.equal(inShift(now, '08:00', '20:00'), true);
+  assert.equal(operatorWindowStart(now, '08:00', '20:00').toISOString(), '2026-09-28T17:00:00.000Z');
+  assert.equal(inShift(new Date('2026-09-29T04:00:00Z'), '08:00', '20:00'), false);
+  const waiting = planOperatorAlert({
+    state: 'idle', inShift: true, hasOperator: false,
+    alertSince: new Date(now.getTime() - 4 * 60000), alertNotified: false, now, thresholdMinutes: 5,
+  });
+  assert.equal(waiting.notify, false);
+  const due = planOperatorAlert({
+    state: 'idle', inShift: true, hasOperator: false,
+    alertSince: new Date(now.getTime() - 6 * 60000), alertNotified: false, now, thresholdMinutes: 5,
+  });
+  assert.equal(due.notify, true);
+  assert.equal(planOperatorAlert({
+    state: 'idle', inShift: true, hasOperator: true, alertSince: due.alertSince, alertNotified: false, now, thresholdMinutes: 5,
+  }).alertSince, null);
+  assert.equal(planOperatorAlert({
+    state: 'working', inShift: true, hasOperator: false, alertSince: due.alertSince, alertNotified: true, now, thresholdMinutes: 5,
+  }).notify, false);
 });
 
 test('alert fires once after the threshold and clears when the machine recovers', () => {

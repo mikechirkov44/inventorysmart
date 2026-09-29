@@ -3,7 +3,8 @@ import { Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CustomDatePicker from '../CustomDatePicker';
 import CustomSelect from '../CustomSelect';
-import { monitoringAPI } from '../../services/api';
+import { employeesAPI, monitoringAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { monitoringSource } from '../../services/monitoring/source';
 import { MONITORING_STATES, displayDate, loadLabel, minutesLabel, monitoringToday, shiftDate, validDate } from '../../services/monitoring/model';
 import MonitoringDay from './MonitoringDay';
@@ -43,6 +44,11 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
   const [downtime, setDowntime] = useState(null);
   const [causeById, setCauseById] = useState({});
   const [savingId, setSavingId] = useState(null);
+  const [operator, setOperator] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [operatorId, setOperatorId] = useState('');
+  const [operatorSaving, setOperatorSaving] = useState(false);
+  const { canEdit } = useAuth();
   const [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
   useEffect(() => { onDateChange?.(date); }, [date, onDateChange]);
@@ -84,6 +90,39 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
     const timer = setInterval(load, REFRESH_MS);
     return () => { cancelled = true; clearInterval(timer); };
   }, [equipmentId, live]);
+  useEffect(() => {
+    if (!live) return undefined;
+    let cancelled = false;
+    Promise.all([monitoringAPI.operator(equipmentId), employeesAPI.getAll()])
+      .then(([operatorResponse, employeesResponse]) => {
+        if (cancelled) return;
+        setOperator(operatorResponse.data.operator);
+        setEmployees(employeesResponse.data);
+        setOperatorId(operatorResponse.data.operator?.employeeId || '');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [equipmentId, live, reload]);
+  const saveOperator = async () => {
+    if (!operatorId) return;
+    setOperatorSaving(true);
+    try {
+      const response = await monitoringAPI.assignOperator(equipmentId, operatorId);
+      setOperator(response.data.operator);
+    } finally {
+      setOperatorSaving(false);
+    }
+  };
+  const clearOperator = async () => {
+    setOperatorSaving(true);
+    try {
+      await monitoringAPI.releaseOperator(equipmentId);
+      setOperator(null);
+      setOperatorId('');
+    } finally {
+      setOperatorSaving(false);
+    }
+  };
   const saveReason = async (id) => {
     const causeId = causeById[id];
     if (!causeId) return;
@@ -113,6 +152,15 @@ export default function EquipmentMonitoring({ equipmentId, initialDate, onDateCh
       </div>
       {state && <div className="monitor-snapshot"><span><i className={state.className} />Сейчас{data.snapshot.source === 'demo' ? ' (демо)' : ''}: <strong>{data.snapshot.state === 'unknown' && live ? 'Нет связи' : state.label}</strong></span><small>Снимок на {new Date(data.snapshot.asOf).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' })} МСК{data.snapshot.source === 'demo' ? ' · Не онлайн' : ''}</small>{log && <small>{log}</small>}</div>}
     </div>
+    {live && <section className="monitor-operator" aria-label="Оператор смены">
+      <h3>Оператор смены</h3>
+      <p className="monitor-muted">{operator ? `${operator.employeeName} с ${moscowStamp(operator.startedAt)} МСК` : 'На смене никто не отмечен. Простой без оператора даст уведомление.'}</p>
+      {canEdit('equipment') && <form onSubmit={(event) => { event.preventDefault(); saveOperator(); }}>
+        <CustomSelect value={operatorId} onChange={setOperatorId} placeholder="Выберите сотрудника" searchable options={employees.map((employee) => ({ value: employee.id, label: `${employee.lastName} ${employee.firstName}`.trim() }))} />
+        <button className="btn btn-small" type="submit" disabled={!operatorId || operatorSaving}>Назначить</button>
+        {operator && <button className="btn btn-small" type="button" disabled={operatorSaving} onClick={clearOperator}>Снять</button>}
+      </form>}
+    </section>}
     {downtime?.pending?.length > 0 && <section className="monitor-reasons" aria-label="Причины простоя">
       <h3>Укажите причину простоя</h3>
       {downtime.pending.map((item) => <form key={item.id} onSubmit={(event) => { event.preventDefault(); saveReason(item.id); }}>

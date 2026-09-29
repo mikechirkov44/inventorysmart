@@ -6,7 +6,7 @@ const Incident = require('../models/incident');
 const Notification = require('../models/notification');
 const OperatingHours = require('../models/operatingHours');
 const {
-  isHourUnit, planAlert, planDowntime, splitHours, workingHoursDelta,
+  isHourUnit, inShift, operatorWindowStart, planAlert, planOperatorAlert, planDowntime, splitHours, workingHoursDelta,
 } = require('../utils/monitoringOps');
 
 function canSeeEquipment(row) {
@@ -133,6 +133,41 @@ async function applyPollEffects(link, reading, context, now = new Date()) {
     alertSince: plan.alertSince,
     alertNotified: plan.alertNotified,
     alertIncidentId: incidentId,
+  });
+
+  const duringShift = inShift(now, company.shiftStart, company.shiftEnd);
+  const operator = await EquipmentMonitor.currentOperator(
+    link.companyId,
+    link.equipmentId,
+    operatorWindowStart(now, company.shiftStart, company.shiftEnd),
+  );
+  const operatorPlan = planOperatorAlert({
+    state: reading.state,
+    inShift: duringShift,
+    hasOperator: Boolean(operator),
+    alertSince: previous?.operatorAlertSince,
+    alertNotified: previous?.operatorAlertNotified,
+    now,
+    thresholdMinutes: threshold,
+  });
+  if (operatorPlan.notify) {
+    const equipment = await Equipment.findById(link.equipmentId, link.companyId);
+    const name = equipment?.name || 'Станок';
+    const inventory = equipment?.inventoryNumber ? ` (${equipment.inventoryNumber})` : '';
+    const users = await notifyUsers(link.companyId);
+    for (const userId of users) {
+      await Notification.create({
+        userId,
+        type: 'monitor_no_operator',
+        title: `Нет оператора: ${name}`,
+        message: `${name}${inventory} простаивает дольше ${threshold} мин. без оператора смены.`,
+        equipmentId: link.equipmentId,
+      });
+    }
+  }
+  await EquipmentMonitor.setOperatorAlert(link.equipmentId, {
+    alertSince: operatorPlan.alertSince,
+    alertNotified: operatorPlan.alertNotified,
   });
 }
 

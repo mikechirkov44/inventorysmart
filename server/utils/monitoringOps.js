@@ -64,6 +64,46 @@ function applyShiftView(day, { start = '08:00', end = '20:00', now = new Date() 
   };
 }
 
+const MOSCOW_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function moscowParts(now) {
+  const shifted = new Date(now.getTime() + MOSCOW_OFFSET_MS);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    day: shifted.getUTCDate(),
+    minute: shifted.getUTCHours() * 60 + shifted.getUTCMinutes(),
+  };
+}
+
+function moscowDate(year, month, day, minute) {
+  return new Date(Date.UTC(year, month, day, Math.floor(minute / 60), minute % 60) - MOSCOW_OFFSET_MS);
+}
+
+function inShift(now, startClock, endClock) {
+  const shift = shiftRanges(startClock, endClock);
+  const { minute } = moscowParts(now);
+  return shift.ranges.some(([from, to]) => minute >= from && minute < to);
+}
+
+function operatorWindowStart(now, startClock, endClock) {
+  const shift = shiftRanges(startClock, endClock);
+  const parts = moscowParts(now);
+  if (shift.start === shift.end) return moscowDate(parts.year, parts.month, parts.day, 0);
+  const yesterday = new Date(Date.UTC(parts.year, parts.month, parts.day) - 24 * 60 * 60 * 1000);
+  if (parts.minute >= shift.end) return moscowDate(parts.year, parts.month, parts.day, shift.end);
+  return moscowDate(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), shift.end);
+}
+
+function planOperatorAlert({ state, inShift: duringShift, hasOperator, alertSince, alertNotified, now, thresholdMinutes }) {
+  if (state !== 'idle' || !duringShift || hasOperator) {
+    return { alertSince: null, alertNotified: false, notify: false };
+  }
+  const since = alertSince ? new Date(alertSince) : now;
+  const notify = !alertNotified && now.getTime() - since.getTime() >= thresholdMinutes * 60000;
+  return { alertSince: since, alertNotified: Boolean(alertNotified) || notify, notify };
+}
+
 function planAlert({ previousState, state, alertSince, alertNotified, now, thresholdMinutes }) {
   if (!PROBLEM_STATES.has(state)) {
     return { alertSince: null, alertNotified: false, notify: false, kind: null };
@@ -170,6 +210,9 @@ function validateMonitoringPrefs(input = {}) {
 module.exports = {
   applyShiftView,
   planAlert,
+  planOperatorAlert,
+  inShift,
+  operatorWindowStart,
   planDowntime,
   segmentNeedsReason,
   isHourUnit,
