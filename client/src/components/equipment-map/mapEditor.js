@@ -44,6 +44,34 @@ export function createWallFromPoints(start, end, id, snapToGrid = true) {
   return { id, type: 'wall', geometry: { x1, y1, x2, y2 }, style: {} };
 }
 
+export function createRoomBox(start, end, bounds) {
+  const x = Math.min(snap(start.x), snap(end.x));
+  const y = Math.min(snap(start.y), snap(end.y));
+  let width = Math.abs(snap(end.x) - snap(start.x));
+  let height = Math.abs(snap(end.y) - snap(start.y));
+  if (bounds) {
+    width = Math.min(width, bounds.width - x);
+    height = Math.min(height, bounds.height - y);
+  }
+  if (width < GRID_SIZE || height < GRID_SIZE) return null;
+  return { x, y, width, height };
+}
+
+export function roomsOverlap(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+export function resizeRoom(geometry, edge, point, bounds) {
+  let { x, y } = geometry;
+  let right = x + geometry.width;
+  let bottom = y + geometry.height;
+  if (edge.includes('w')) x = clamp(point.x, 0, right - GRID_SIZE);
+  if (edge.includes('e')) right = clamp(point.x, x + GRID_SIZE, bounds.width);
+  if (edge.includes('n')) y = clamp(point.y, 0, bottom - GRID_SIZE);
+  if (edge.includes('s')) bottom = clamp(point.y, y + GRID_SIZE, bounds.height);
+  return { x, y, width: right - x, height: bottom - y };
+}
+
 export function createWallRectangle(start, end, makeId) {
   const left = Math.min(snap(start.x), snap(end.x)); const right = Math.max(snap(start.x), snap(end.x));
   const top = Math.min(snap(start.y), snap(end.y)); const bottom = Math.max(snap(start.y), snap(end.y));

@@ -1,8 +1,9 @@
-import { BoxSelect, MousePointer2, Minus, Tag, Undo2, Redo2 } from 'lucide-react';
+import { BoxSelect, MousePointer2, Minus, Square, Tag, Undo2, Redo2 } from 'lucide-react';
 
-const TOOLS = [['select', 'Выбор', MousePointer2], ['wall', 'Стена', Minus], ['rectangle', 'Прямоугольник', BoxSelect], ['label', 'Метка', Tag]];
+const TOOLS = [['select', 'Выбор', MousePointer2], ['room', 'Помещение', Square], ['wall', 'Стена', Minus], ['rectangle', 'Контур', BoxSelect], ['label', 'Метка', Tag]];
 const HINTS = {
   select: 'Нажмите объект, чтобы выделить. Потяните за него, чтобы переместить.',
+  room: 'Зажмите мышь и растяните зону помещения. Затем выберите его в справочнике.',
   wall: 'Нажмите начало стены, затем конец. Esc — отмена.',
   rectangle: 'Зажмите мышь и растяните прямоугольник из четырёх стен.',
   label: 'Нажмите место на плане и введите название.',

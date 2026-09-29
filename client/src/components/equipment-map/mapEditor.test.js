@@ -45,6 +45,13 @@ test('equipment cards receive defaults and can be resized', () => {
   assert.equal(state.present.placements[0].width, 260);
   assert.equal(state.present.placements[0].height, 120);
 });
+test('room tool creates one zone and rejects a box that is too small', () => {
+  const box = map.createRoomBox({ x: 21, y: 19 }, { x: 221, y: 139 }, { width: 1600, height: 900 });
+  assert.deepEqual(box, { x: 20, y: 20, width: 200, height: 120 });
+  assert.equal(map.createRoomBox({ x: 20, y: 20 }, { x: 25, y: 25 }), null);
+  assert.equal(map.roomsOverlap(box, { x: 100, y: 40, width: 40, height: 40 }), true);
+  assert.equal(map.roomsOverlap(box, { x: 400, y: 400, width: 40, height: 40 }), false);
+});
 test('rectangle tool creates four independent wall segments', () => {
   const walls = createWallRectangle({ x: 21, y: 19 }, { x: 221, y: 139 }, () => `wall-${Math.random()}`);
   assert.equal(walls.length, 4);

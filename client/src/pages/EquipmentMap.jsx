@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Building2, Edit3, Save } from 'lucide-react';
-import { equipmentMapAPI } from '../services/api';
+import { equipmentMapAPI, roomsAPI } from '../services/api';
+import CustomSelect from '../components/CustomSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -8,8 +9,9 @@ import EquipmentMapPreview from '../components/equipment-map/EquipmentMapPreview
 import MapToolbar from '../components/equipment-map/MapToolbar';
 import MapCanvas from '../components/equipment-map/MapCanvas';
 import MapLabelDialog from '../components/equipment-map/MapLabelDialog';
+import MapRoomDialog from '../components/equipment-map/MapRoomDialog';
 import UnplacedEquipmentPanel from '../components/equipment-map/UnplacedEquipmentPanel';
-import { createMapId, createWallRectangle, editorReducer, initialEditorState, clamp, statusPresentation } from '../components/equipment-map/mapEditor';
+import { createMapId, editorReducer, initialEditorState, clamp, roomsOverlap, statusPresentation } from '../components/equipment-map/mapEditor';
 
 export default function EquipmentMap({ onUnsavedChange }) {
   const { user } = useAuth();
@@ -28,6 +30,10 @@ export default function EquipmentMap({ onUnsavedChange }) {
   const [editing, setEditing] = useState(false);
   const [tool, setTool] = useState('select');
   const [pendingLabel, setPendingLabel] = useState(null);
+  const [pendingRoom, setPendingRoom] = useState(null);
+  const [namePrompt, setNamePrompt] = useState(null);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [rooms, setRooms] = useState([]);
   const [placing, setPlacing] = useState(null);
   const [selected, setSelected] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -49,6 +55,7 @@ export default function EquipmentMap({ onUnsavedChange }) {
     if (!nextFloor) setLoading(false);
   }, []);
   useEffect(() => { refreshBuildings().catch(() => { setLoadError(true); setLoading(false); }); }, [refreshBuildings]);
+  useEffect(() => { roomsAPI.getAll().then(({ data }) => setRooms(data)).catch(() => {}); }, [floorId]);
   useEffect(() => {
     let cancelled = false;
     setFloor(null); setSelected(null); setPreview(null); setPlacing(null); setPendingLabel(null); setTool('select');
@@ -58,7 +65,7 @@ export default function EquipmentMap({ onUnsavedChange }) {
     Promise.all([equipmentMapAPI.getFloor(floorId), equipmentMapAPI.getUnplaced('')]).then(([{ data }, { data: available }]) => {
       if (cancelled) return;
       setFloor(data);
-      const elements = data.elements.flatMap(item => item.type === 'room' ? createWallRectangle(item.geometry, { x: item.geometry.x + item.geometry.width, y: item.geometry.y + item.geometry.height }, createMapId) : [item]);
+      const elements = data.elements.map(item => item.type === 'room' ? { ...item, label: item.label || item.roomName || '' } : item);
       dispatch({ type: 'load', elements, placements: data.placements });
       setInventory([...new Map([...available, ...data.placements.map(item => item.equipment).filter(Boolean)].map(item => [item.id, item])).values()]);
       setSaveState('saved');
@@ -128,16 +135,54 @@ export default function EquipmentMap({ onUnsavedChange }) {
   const manage = async action => {
     try { await action(); } catch (error) { toast.error('Ошибка', error.response?.data?.error || 'Не удалось изменить здание или этаж'); }
   };
-  const addBuilding = () => { const name = window.prompt('Название здания'); if (name?.trim()) manage(async () => { const { data } = await equipmentMapAPI.createBuilding({ name: name.trim() }); await refreshBuildings(data.id); }); };
-  const addFloor = () => { const name = window.prompt('Название этажа'); if (name?.trim()) manage(async () => { const { data } = await equipmentMapAPI.createFloor(buildingId, { name: name.trim() }); await refreshBuildings(buildingId, data.id); }); };
-  const rename = kind => {
-    const current = kind === 'building' ? activeBuilding : floor;
-    const name = window.prompt(kind === 'building' ? 'Название здания' : 'Название этажа', current?.name);
-    if (name?.trim()) manage(async () => { await (kind === 'building' ? equipmentMapAPI.updateBuilding : equipmentMapAPI.updateFloor)(current.id, { name: name.trim() }); await refreshBuildings(buildingId, floorId); if (kind === 'floor') setFloor(value => ({ ...value, name: name.trim() })); });
+  const askName = (options) => new Promise((resolve) => {
+    setNamePrompt({ ...options, settle: (value) => { setNamePrompt(null); resolve(value); } });
+  });
+  const addBuilding = async () => {
+    const name = await askName({ title: 'Новое здание', message: 'Название появится в списке зданий.', fieldLabel: 'Название здания', submitLabel: 'Добавить', placeholder: 'Например, Корпус 1' });
+    if (name) manage(async () => { const { data } = await equipmentMapAPI.createBuilding({ name }); await refreshBuildings(data.id); });
   };
-  const remove = kind => {
-    if (!window.confirm(kind === 'building' ? 'Удалить здание и все этажи? Оборудование не будет удалено.' : 'Удалить этаж? Оборудование вернётся в список «Не размещено».')) return;
-    manage(async () => { await (kind === 'building' ? equipmentMapAPI.deleteBuilding : equipmentMapAPI.deleteFloor)(kind === 'building' ? buildingId : floorId); setEditing(false); await refreshBuildings(buildingId); });
+  const addFloor = async () => {
+    const name = await askName({ title: 'Новый этаж', message: 'Этаж появится в выбранном здании.', fieldLabel: 'Название этажа', submitLabel: 'Добавить', placeholder: 'Например, 1 этаж' });
+    if (name) manage(async () => { const { data } = await equipmentMapAPI.createFloor(buildingId, { name }); await refreshBuildings(buildingId, data.id); });
+  };
+  const rename = async (kind) => {
+    const current = kind === 'building' ? activeBuilding : floor;
+    const name = await askName({ title: kind === 'building' ? 'Название здания' : 'Название этажа', message: 'Новое название заменит текущее.', fieldLabel: 'Название', submitLabel: 'Сохранить', initialName: current?.name || '', placeholder: current?.name || '' });
+    if (name) manage(async () => { await (kind === 'building' ? equipmentMapAPI.updateBuilding : equipmentMapAPI.updateFloor)(current.id, { name }); await refreshBuildings(buildingId, floorId); if (kind === 'floor') setFloor(value => ({ ...value, name })); });
+  };
+  const remove = async (kind) => {
+    const ok = await confirm({ title: kind === 'building' ? 'Удалить здание?' : 'Удалить этаж?', message: kind === 'building' ? 'Здание и все этажи будут удалены. Оборудование останется в справочнике.' : 'Этаж будет удалён. Оборудование вернётся в список «Не размещено».', confirmText: 'Удалить', type: 'danger' });
+    if (!ok) return;
+    manage(async () => { await (kind === 'building' ? equipmentMapAPI.deleteBuilding : equipmentMapAPI.deleteFloor)(kind === 'building' ? buildingId : floorId); setEditing(false); setManageOpen(false); await refreshBuildings(buildingId); });
+  };
+  const commitRoom = async ({ roomId, name }) => {
+    try {
+    let linkedId = roomId;
+    let label = rooms.find((room) => room.id === roomId)?.name || '';
+    if (name) {
+      const { data } = await roomsAPI.create({ name, building: activeBuilding?.name || '', floor: floor?.name || '' });
+      linkedId = data.id;
+      label = data.name;
+      setRooms((current) => [...current, data]);
+    }
+    const geometry = pendingRoom.geometry;
+    const others = editor.present.elements.filter((item) => item.type === 'room' && item.id !== pendingRoom.elementId);
+    if (others.some((item) => item.roomId === linkedId)) {
+      toast.error('Помещение уже на плане', 'Выберите другое или создайте новое.');
+      return;
+    }
+    if (others.some((item) => roomsOverlap(item.geometry, geometry))) {
+      toast.error('Помещения не должны пересекаться', 'Нарисуйте зону в свободном месте.');
+      return;
+    }
+    const element = { id: pendingRoom.elementId || createMapId(), type: 'room', roomId: linkedId, label, roomName: label, geometry, style: {} };
+    dispatch({ type: 'commit', present: { ...editor.present, elements: pendingRoom.elementId ? editor.present.elements.map((item) => item.id === element.id ? { ...item, ...element } : item) : [...editor.present.elements, element] } });
+    setPendingRoom(null);
+    setSelected({ kind: 'element', id: element.id });
+    } catch (error) {
+      toast.error('Ошибка', error.response?.data?.error || 'Не удалось сохранить помещение');
+    }
   };
   const available = inventory.filter(item => !editor.present.placements.some(p => p.equipmentId === item.id) && `${item.name} ${item.inventoryNumber || ''}`.toLowerCase().includes(search.toLowerCase()));
   const stateText = saving ? 'Сохранение…' : saveState === 'conflict' ? 'План изменён другим пользователем. Ваши изменения не сохранены.' : saveState === 'error' ? 'Не удалось сохранить' : editor.dirty ? 'Есть изменения' : 'Сохранено';
@@ -145,17 +190,19 @@ export default function EquipmentMap({ onUnsavedChange }) {
   return <section className={`equipment-map ${editing ? 'is-editing' : ''}`}>
     <div className="map-topbar">
       <div className="map-selectors">
-        <select disabled={blocked} value={buildingId} aria-label="Здание" onChange={event => { setBuildingId(event.target.value); setFloorId(buildings.find(item => item.id === event.target.value)?.floors[0]?.id || ''); }}>
-          {!buildings.length && <option value="">Нет зданий</option>}{buildings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
-        <select disabled={blocked} value={floorId} aria-label="Этаж" onChange={event => setFloorId(event.target.value)}>
-          {!activeBuilding?.floors.length && <option value="">Нет этажей</option>}{activeBuilding?.floors.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
-        {isAdmin && <details className="map-management"><summary>Здания и этажи</summary><div>
-          <button className="btn btn-small" disabled={blocked} onClick={addBuilding}>+ Здание</button><button className="btn btn-small" disabled={blocked || !buildingId} onClick={addFloor}>+ Этаж</button>
-          <button className="btn btn-small" disabled={blocked || !buildingId} onClick={() => rename('building')}>Переименовать здание</button><button className="btn btn-small" disabled={blocked || !floor} onClick={() => rename('floor')}>Переименовать этаж</button>
-          <button className="btn btn-small btn-danger-outline" disabled={blocked || !floor} onClick={() => remove('floor')}>Удалить этаж</button><button className="btn btn-small btn-danger-outline" disabled={blocked || !buildingId} onClick={() => remove('building')}>Удалить здание</button>
-        </div></details>}
+        <CustomSelect disabled={blocked} value={buildingId} placeholder="Нет зданий" aria-label="Здание" options={buildings.map(item => ({ value: item.id, label: item.name }))} onChange={value => { setBuildingId(value); setFloorId(buildings.find(item => item.id === value)?.floors[0]?.id || ''); }} />
+        <CustomSelect disabled={blocked || !activeBuilding?.floors.length} value={floorId} placeholder="Нет этажей" options={(activeBuilding?.floors || []).map(item => ({ value: item.id, label: item.name }))} onChange={setFloorId} />
+        {isAdmin && <div className="map-manage">
+          <button type="button" className="btn btn-small" disabled={blocked} onClick={() => setManageOpen(value => !value)}>Здания и этажи</button>
+          {manageOpen && <div className="map-manage-panel">
+            <button className="btn btn-small" disabled={blocked} onClick={() => { setManageOpen(false); addBuilding(); }}>+ Здание</button>
+            <button className="btn btn-small" disabled={blocked || !buildingId} onClick={() => { setManageOpen(false); addFloor(); }}>+ Этаж</button>
+            <button className="btn btn-small" disabled={blocked || !buildingId} onClick={() => { setManageOpen(false); rename('building'); }}>Переименовать здание</button>
+            <button className="btn btn-small" disabled={blocked || !floor} onClick={() => { setManageOpen(false); rename('floor'); }}>Переименовать этаж</button>
+            <button className="btn btn-small btn-danger-outline" disabled={blocked || !floor} onClick={() => { setManageOpen(false); remove('floor'); }}>Удалить этаж</button>
+            <button className="btn btn-small btn-danger-outline" disabled={blocked || !buildingId} onClick={() => { setManageOpen(false); remove('building'); }}>Удалить здание</button>
+          </div>}
+        </div>}
       </div>
       <div className="map-actions">
         {floor && <span role="status" className={`map-save-state ${saveState}`}>{stateText}</span>}
@@ -172,13 +219,13 @@ export default function EquipmentMap({ onUnsavedChange }) {
       {editing && <MapToolbar tool={tool} setTool={changeTool} placing={placing} onUndo={() => dispatch({ type: 'undo' })} onRedo={() => dispatch({ type: 'redo' })} canUndo={editor.past.length > 0} canRedo={editor.future.length > 0} />}
       <div className="map-workspace">
         <div className="map-stage">
-          <MapCanvas key={floor.id} layout={editor.present} bounds={bounds} editing={editing} tool={tool} setTool={changeTool} selected={selected} setSelected={setSelected} dispatch={dispatch} placing={placing} onPlace={placeEquipment} onLabel={setPendingLabel} onPreview={equipment => equipment && setPreview({ equipment })} onDelete={deleteSelected} onCancel={() => { setPlacing(null); setSelected(null); }} />
+          <MapCanvas key={floor.id} layout={editor.present} bounds={bounds} editing={editing} tool={tool} setTool={changeTool} selected={selected} setSelected={setSelected} dispatch={dispatch} placing={placing} onPlace={placeEquipment} onLabel={setPendingLabel} onRoom={(geometry) => setPendingRoom({ geometry })} onRoomOverlap={() => toast.error('Помещения не должны пересекаться', 'Сдвиньте зону так, чтобы она не накрывала другое помещение.')} onPreview={equipment => equipment && setPreview({ equipment })} onDelete={deleteSelected} onCancel={() => { setPlacing(null); setSelected(null); }} />
           {preview && <EquipmentMapPreview {...preview} onClose={() => setPreview(null)} />}
         </div>
         {editing && <div className="map-sidebar">
           {selection && <aside className="map-properties">
-            <div className="map-properties-heading"><h3>{selectedEquipment ? 'Оборудование' : selectedElement.type === 'wall' ? 'Стена' : 'Метка'}</h3><button className="btn btn-small" aria-label="Снять выделение" onClick={() => setSelected(null)}>×</button></div>
-            {selectedEquipment ? <><strong>{selectedEquipment.equipment?.name}</strong><p>{selectedEquipment.equipment?.inventoryNumber || 'Без инв. номера'} · {statusPresentation(selectedEquipment.equipment?.status).label}</p><p>Размер: {selectedEquipment.width || 180} × {selectedEquipment.height || 80} усл. ед.</p><p>Тяните за рамку по углам или сторонам. За середину — перемещайте.</p></> : selectedElement.type === 'wall' ? <><p>За конец — изменить длину.<br />За середину — переместить.</p><button className="btn btn-small" onClick={() => changeTool('opening')}>Сделать проём</button></> : <><strong>{selectedElement.label}</strong><button className="btn btn-small" onClick={() => setPendingLabel(selectedElement)}>Изменить название</button></>}
+            <div className="map-properties-heading"><h3>{selectedEquipment ? 'Оборудование' : selectedElement.type === 'wall' ? 'Стена' : selectedElement.type === 'room' ? 'Помещение' : 'Метка'}</h3><button className="btn btn-small" aria-label="Снять выделение" onClick={() => setSelected(null)}>×</button></div>
+            {selectedEquipment ? <><strong>{selectedEquipment.equipment?.name}</strong><p>{selectedEquipment.equipment?.inventoryNumber || 'Без инв. номера'} · {statusPresentation(selectedEquipment.equipment?.status).label}</p><p>Размер: {selectedEquipment.width || 180} × {selectedEquipment.height || 80} усл. ед.</p><p>Тяните за рамку по углам или сторонам. За середину — перемещайте.</p></> : selectedElement.type === 'room' ? <><strong>{selectedElement.label || selectedElement.roomName}</strong><p>Тяните за рамку, чтобы изменить размер. За середину — переместить.</p><button className="btn btn-small" onClick={() => setPendingRoom({ geometry: selectedElement.geometry, elementId: selectedElement.id, roomId: selectedElement.roomId })}>Сменить помещение</button></> : selectedElement.type === 'wall' ? <><p>За конец — изменить длину.<br />За середину — переместить.</p><button className="btn btn-small" onClick={() => changeTool('opening')}>Сделать проём</button></> : <><strong>{selectedElement.label}</strong><button className="btn btn-small" onClick={() => setPendingLabel(selectedElement)}>Изменить название</button></>}
             <button className="btn btn-small btn-danger-outline" onClick={deleteSelected}>{selectedEquipment ? 'Убрать с плана' : 'Удалить выбранное'}</button>
           </aside>}
           <UnplacedEquipmentPanel items={available} search={search} setSearch={setSearch} selectedId={placing} onChoose={id => { changeTool('select'); setSelected(null); setPlacing(id); }} />
@@ -186,6 +233,8 @@ export default function EquipmentMap({ onUnsavedChange }) {
       </div>
       <div className="map-legend"><span><i className="map-status-working" />Работает</span><span><i className="map-status-reserve" />Резерв</span><span><i className="map-status-repair" />В ремонте</span><span><i className="map-status-alert" />Требует внимания</span></div>
     </>}
+    {pendingRoom && <MapRoomDialog rooms={rooms} usedRoomIds={editor.present.elements.filter(item => item.type === 'room' && item.id !== pendingRoom.elementId).map(item => item.roomId)} initialRoomId={pendingRoom.roomId || ''} onClose={() => setPendingRoom(null)} onSubmit={commitRoom} />}
+    {namePrompt && <MapLabelDialog title={namePrompt.title} message={namePrompt.message} fieldLabel={namePrompt.fieldLabel} submitLabel={namePrompt.submitLabel} placeholder={namePrompt.placeholder} initialName={namePrompt.initialName || ''} onClose={() => namePrompt.settle(null)} onSubmit={namePrompt.settle} />}
     {pendingLabel && <MapLabelDialog initialName={pendingLabel.label || ''} editingLabel={Boolean(pendingLabel.id)} onClose={() => setPendingLabel(null)} onSubmit={label => {
       const item = { ...pendingLabel, id: pendingLabel.id || createMapId(), type: 'label', label, style: pendingLabel.style || {} };
       dispatch({ type: 'commit', present: { ...editor.present, elements: pendingLabel.id ? editor.present.elements.map(element => element.id === item.id ? item : element) : [...editor.present.elements, item] } });

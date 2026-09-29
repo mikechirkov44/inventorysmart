@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, LocateFixed } from 'lucide-react';
-import { clamp, snap, createMapId, createWallFromPoints, createWallRectangle, cutWall, projectOnWall, resizeEquipment, statusPresentation } from './mapEditor';
+import { clamp, snap, createMapId, createWallFromPoints, createWallRectangle, createRoomBox, cutWall, projectOnWall, resizeEquipment, resizeRoom, roomsOverlap, statusPresentation } from './mapEditor';
 
 const HANDLES = [['nw', 0, 0], ['n', .5, 0], ['ne', 1, 0], ['e', 1, .5], ['se', 1, 1], ['s', .5, 1], ['sw', 0, 1], ['w', 0, .5]];
 
-export default function MapCanvas({ layout, bounds, editing, tool, setTool, selected, setSelected, dispatch, placing, onPlace, onLabel, onPreview, onDelete, onCancel }) {
+export default function MapCanvas({ layout, bounds, editing, tool, setTool, selected, setSelected, dispatch, placing, onPlace, onLabel, onRoom, onRoomOverlap, onPreview, onDelete, onCancel }) {
   const svg = useRef(null);
   const gesture = useRef(null);
   const clickedObject = useRef(null);
@@ -115,6 +115,10 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
             const my = clamp(dy, -Math.min(geometry.y1, geometry.y2), bounds.height - Math.max(geometry.y1, geometry.y2));
             geometry = { x1: geometry.x1 + mx, y1: geometry.y1 + my, x2: geometry.x2 + mx, y2: geometry.y2 + my };
           }
+        } else if (item.type === 'room') {
+          geometry = g.edge
+            ? resizeRoom(item.geometry, g.edge, point, bounds)
+            : { ...item.geometry, x: clamp(item.geometry.x + dx, 0, bounds.width - item.geometry.width), y: clamp(item.geometry.y + dy, 0, bounds.height - item.geometry.height) };
         } else geometry = { x: clamp(geometry.x + dx, 0, bounds.width), y: clamp(geometry.y + dy, 0, bounds.height) };
         item = { ...item, geometry };
         g.present = { ...g.base, elements: g.base.elements.map(p => p.id === g.id ? item : p) };
@@ -123,7 +127,7 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
     }
     if (g) { g.to = point; g.moved ||= Math.hypot(point.x - g.from.x, point.y - g.from.y) >= 20; }
     if (tool === 'wall' && (start.current || g)) setGuide({ type: 'wall', from: start.current || g.from, to: point });
-    if (tool === 'rectangle' && g) setGuide({ type: 'rectangle', from: g.from, to: point });
+    if ((tool === 'rectangle' || tool === 'room') && g) setGuide({ type: 'rectangle', from: g.from, to: point });
     if (tool === 'opening' && start.current) {
       const wall = layout.elements.find(p => p.id === selected?.id);
       if (wall) setGuide({ type: 'opening', from: start.current, to: projectOnWall(wall, point) });
@@ -133,7 +137,14 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
     const g = gesture.current; gesture.current = null;
     if (!g || g.kind === 'pan') return;
     const point = pointAt(event, g.id);
-    if (g.kind === 'object') { if (g.present) dispatch({ type: 'commit', present: g.present }); setDraft(null); return; }
+    if (g.kind === 'object') {
+      const movedRoom = g.present?.elements.find((item) => item.id === g.id && item.type === 'room');
+      const blocked = movedRoom && g.present.elements.some((item) => item.type === 'room' && item.id !== movedRoom.id && roomsOverlap(item.geometry, movedRoom.geometry));
+      if (blocked) onRoomOverlap?.();
+      else if (g.present) dispatch({ type: 'commit', present: g.present });
+      setDraft(null);
+      return;
+    }
     if (placing) { onPlace(placing, point); reset(); setTool('select'); return; }
     if (tool === 'label') { onLabel({ geometry: point }); return; }
     if (tool === 'wall') {
@@ -141,6 +152,11 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
       if (!from) { start.current = point; setGuide({ type: 'wall', from: point, to: point }); return; }
       const wall = createWallFromPoints(from, point, createMapId(), false);
       if (wall) { finish({ ...layout, elements: [...layout.elements, wall] }); setSelected({ kind: 'element', id: wall.id }); }
+    }
+    if (tool === 'room') {
+      const box = createRoomBox(g.from, point, bounds);
+      if (box) { onRoom(box); reset(); setTool('select'); }
+      else setGuide(null);
     }
     if (tool === 'rectangle') {
       const walls = createWallRectangle(g.from, point, createMapId);
@@ -172,7 +188,14 @@ export default function MapCanvas({ layout, bounds, editing, tool, setTool, sele
     }}>
       <defs><pattern id="map-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" /></pattern></defs>
       <rect width={bounds.width} height={bounds.height} className="map-grid-bg" />
-      {current.elements.map(item => item.type === 'wall' ? <g key={item.id} data-id={item.id} data-kind="element">
+      {current.elements.filter(item => item.type === 'room').map(item => (
+        <g key={item.id} data-id={item.id} data-kind="element" className={`map-room ${selected?.id === item.id ? 'selected' : ''}`}>
+          <rect x={item.geometry.x} y={item.geometry.y} width={item.geometry.width} height={item.geometry.height} rx="6" />
+          <text x={item.geometry.x + 14} y={item.geometry.y + 28}>{item.label || item.roomName || 'Помещение'}</text>
+          {editing && selected?.id === item.id && tool === 'select' && HANDLES.map(([edge, hx, hy]) => <rect key={edge} data-id={item.id} data-kind="element" data-edge={edge} className="map-resize-handle" x={item.geometry.x + item.geometry.width * hx - 6 / view.zoom} y={item.geometry.y + item.geometry.height * hy - 6 / view.zoom} width={12 / view.zoom} height={12 / view.zoom} rx="2" style={{ cursor: `${edge}-resize` }} />)}
+        </g>
+      ))}
+      {current.elements.filter(item => item.type !== 'room').map(item => item.type === 'wall' ? <g key={item.id} data-id={item.id} data-kind="element">
         <line className="map-wall-hit" {...item.geometry} />
         <line className={`map-wall ${selected?.id === item.id ? 'selected' : ''}`} {...item.geometry} />
         {editing && selected?.id === item.id && tool === 'select' && ['start', 'end'].map((edge, index) => <circle key={edge} data-id={item.id} data-kind="element" data-edge={edge} className="map-wall-handle" cx={item.geometry[index ? 'x2' : 'x1']} cy={item.geometry[index ? 'y2' : 'y1']} r={8 / view.zoom} />)}
