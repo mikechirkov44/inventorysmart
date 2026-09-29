@@ -117,6 +117,7 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
         isOverdue,
         completedCount: completedOrders.length,
         spareParts: workSpareParts,
+        checklist: work.checklist || [],
       };
 
       if (isOverdue) {
@@ -155,7 +156,7 @@ router.get('/:code', requirePermission('scanner', 'view'), async (req, res) => {
  */
 router.post('/complete', requirePermission('scanner', 'edit'), async (req, res) => {
   try {
-    const { equipmentId, workId, masterName, notes, sparePartsUsed } = req.body;
+    const { equipmentId, workId, masterName, notes, sparePartsUsed, checklist } = req.body;
 
     const equipment = await Equipment.findById(equipmentId, req.user.companyId);
     if (!equipment) {
@@ -177,6 +178,7 @@ router.post('/complete', requirePermission('scanner', 'edit'), async (req, res) 
       masterName,
       notes,
       sparePartsUsed: sparePartsUsed || [],
+      checklist,
       status: 'completed'
     }, req.user.companyId);
 
@@ -188,7 +190,7 @@ router.post('/complete', requirePermission('scanner', 'edit'), async (req, res) 
     res.status(201).json({ workOrder, sparePartsDeducted });
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Внутренняя ошибка сервера' });
   }
 });
 

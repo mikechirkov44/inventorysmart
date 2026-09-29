@@ -10,6 +10,7 @@ import { scanAPI, employeesAPI } from '../services/api';
 import ReportFailureModal from '../components/ReportFailureModal';
 import CustomSelect from '../components/CustomSelect';
 import UploadImage from '../components/UploadImage';
+import { ChecklistSteps } from '../components/WorkChecklist';
 
 /** Варианты периодичности работ для отображения */
 const FREQUENCY_OPTIONS = [
@@ -45,6 +46,7 @@ function ScanResult() {
   const [checkedTasks, setCheckedTasks] = useState({});
   const [taskComments, setTaskComments] = useState({});
   const [taskSpareParts, setTaskSpareParts] = useState({});
+  const [taskChecklist, setTaskChecklist] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showFailureModal, setShowFailureModal] = useState(false);
@@ -77,6 +79,11 @@ function ScanResult() {
         const task = (scanRes.data.dueTasks || []).find((t) => t.workId === focusWorkId);
         if (task) {
           setCheckedTasks({ [focusWorkId]: true });
+          if (task.checklist?.length > 0) {
+            setTaskChecklist({
+              [focusWorkId]: task.checklist.map((text) => ({ text, done: false })),
+            });
+          }
           if (task.spareParts?.length > 0) {
             setTaskSpareParts({
               [focusWorkId]: task.spareParts.map((sp) => ({
@@ -109,6 +116,12 @@ function ScanResult() {
     setCheckedTasks(prev => ({ ...prev, [workId]: !prev[workId] }));
     if (!checkedTasks[workId] && data) {
       const task = [...(data.dueTasks || []), ...(data.notDueTasks || [])].find(t => t.workId === workId);
+      if (task?.checklist?.length > 0) {
+        setTaskChecklist(prev => ({
+          ...prev,
+          [workId]: prev[workId] || task.checklist.map(text => ({ text, done: false })),
+        }));
+      }
       if (task && task.spareParts && task.spareParts.length > 0) {
         setTaskSpareParts(prev => ({
           ...prev,
@@ -154,6 +167,16 @@ function ScanResult() {
       setError('Отметьте хотя бы одну выполненную работу');
       return;
     }
+    const stepsFor = (workId) => {
+      if (taskChecklist[workId]) return taskChecklist[workId];
+      const task = [...(data.dueTasks || []), ...(data.notDueTasks || [])].find((item) => item.workId === workId);
+      return (task?.checklist || []).map((text) => ({ text, done: false }));
+    };
+    const unfinished = toSubmit.find((workId) => stepsFor(workId).some((step) => !step.done));
+    if (unfinished) {
+      setError('Отметьте все шаги чек-листа');
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -170,6 +193,7 @@ function ScanResult() {
           masterName: execName,
           notes: taskComments[workId] || '',
           sparePartsUsed: spUsed,
+          ...(stepsFor(workId).length ? { checklist: stepsFor(workId) } : {}),
         });
       }
 
@@ -177,11 +201,12 @@ function ScanResult() {
       setCheckedTasks({});
       setTaskComments({});
       setTaskSpareParts({});
+      setTaskChecklist({});
       fetchData();
 
       setTimeout(() => setSuccessMessage(''), 4000);
-    } catch {
-      setError('Ошибка сохранения');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Ошибка сохранения');
     } finally {
       setSubmitting(false);
     }
@@ -258,6 +283,20 @@ function ScanResult() {
                     </span>
                   </div>
                   {task.description && <p className="today-task-desc">{task.description}</p>}
+                  {checkedTasks[task.workId] && task.checklist?.length > 0 && (
+                    <ChecklistSteps
+                      steps={taskChecklist[task.workId] || task.checklist.map((text) => ({ text, done: false }))}
+                      onToggle={(index) => setTaskChecklist((prev) => {
+                        const steps = prev[task.workId] || task.checklist.map((text) => ({ text, done: false }));
+                        return {
+                          ...prev,
+                          [task.workId]: steps.map((step, stepIndex) => (
+                            stepIndex === index ? { ...step, done: !step.done } : step
+                          )),
+                        };
+                      })}
+                    />
+                  )}
                   <div className="today-task-dates">
                     {task.lastCompleted && <span>Последнее: {formatDate(task.lastCompleted)}</span>}
                     {task.nextDue && <span>Следующее: {formatDate(task.nextDue)}</span>}

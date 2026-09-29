@@ -2195,6 +2195,28 @@ input, textarea, select { font-family: inherit; }
   margin-bottom: 12px;
 }
 
+.wo-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wo-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.wo-checklist-progress {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
 .wo-complete-actions {
   display: flex;
   gap: 6px;

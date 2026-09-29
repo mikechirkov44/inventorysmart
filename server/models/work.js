@@ -7,8 +7,9 @@
 
 const { query } = require('../db');
 const { pickAllowed } = require('../utils/allowlist');
+const { normalizeTemplate } = require('../utils/workChecklist');
 
-const WORK_UPDATE_FIELDS = ['name', 'description', 'frequencyDays', 'category', 'priority'];
+const WORK_UPDATE_FIELDS = ['name', 'description', 'frequencyDays', 'category', 'priority', 'checklist'];
 
 /**
  * Преобразует строку из БД в объект работы.
@@ -24,6 +25,7 @@ function mapRow(row) {
     frequencyDays: row.frequency_days,
     category: row.category,
     priority: row.priority || 'B',
+    checklist: normalizeTemplate(row.checklist),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -63,8 +65,8 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const { rows } = await query(
-      'INSERT INTO works (name, description, frequency_days, category, priority, company_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '', data.priority || 'B', companyId]
+      'INSERT INTO works (name, description, frequency_days, category, priority, checklist, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [data.name || '', data.description || '', parseInt(data.frequencyDays) || 30, data.category || '', data.priority || 'B', JSON.stringify(normalizeTemplate(data.checklist)), companyId]
     );
     return mapRow(rows[0]);
   },
@@ -86,7 +88,7 @@ module.exports = {
       if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       fields.push(`${col} = $${i}`);
-      values.push(val);
+      values.push(key === 'checklist' ? JSON.stringify(normalizeTemplate(val)) : val);
       i++;
     }
     if (fields.length === 0) return null;

@@ -83,7 +83,7 @@ router.post('/', requirePermission('workOrders', 'edit'), imageUpload.array('pho
     res.status(201).json(workOrder);
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -166,7 +166,7 @@ router.put('/:id', requirePermission('workOrders', 'edit'), imageUpload.array('p
     res.json(workOrder);
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -206,7 +206,7 @@ router.post('/:id/accept', requirePermission('workOrders', 'edit'), async (req, 
     res.json(workOrder);
   } catch (error) {
     console.error('Route error:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Внутренняя ошибка сервера' });
   }
 });
 

@@ -6,6 +6,7 @@
  */
 
 const { query } = require('../db');
+const { mergeMarks, parseOrderChecklist, checklistReady } = require('../utils/workChecklist');
 
 function serializeTimestamp(value) {
   if (value == null || value === '') return null;
@@ -58,7 +59,28 @@ function mapRow(row) {
     completedOnTime: row.completed_on_time,
     priority: row.priority,
     incidentId: row.incident_id,
+    checklist: parseOrderChecklist(row.checklist),
   };
+}
+
+function checklistError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
+async function checklistForCreate(data, companyId) {
+  let template = [];
+  if (data.taskId) {
+    const { rows } = await query(
+      'SELECT checklist FROM works WHERE id = $1 AND company_id = $2',
+      [data.taskId, companyId],
+    );
+    template = rows[0]?.checklist || [];
+  }
+  const checklist = mergeMarks(template, data.checklist);
+  if (!checklist) throw checklistError('Чек-лист не совпадает с работой');
+  return checklist;
 }
 
 module.exports = {
@@ -140,9 +162,13 @@ module.exports = {
    */
   create: async (data, companyId) => {
     const status = data.status || 'pending';
+    const checklist = await checklistForCreate(data, companyId);
+    if (status === 'completed' && !checklistReady(checklist)) {
+      throw checklistError('Отметьте все шаги чек-листа');
+    }
     const { rows } = await query(
-      `INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id, cause_id, due_date, incident_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      `INSERT INTO work_orders (equipment_id, task_id, task_name, status, master_name, notes, photos, spare_parts_used, completed_at, company_id, cause_id, due_date, incident_id, checklist)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [
         data.equipmentId,
         data.taskId || null,
@@ -157,6 +183,7 @@ module.exports = {
         data.causeId || null,
         data.dueDate || null,
         data.incidentId || null,
+        JSON.stringify(checklist),
       ]
     );
     return mapRow(rows[0]);
@@ -171,14 +198,25 @@ module.exports = {
    * @returns {Promise<Object|null>} Обновлённый наряд-заказ или null
    */
   update: async (id, data, companyId) => {
+    const existing = await module.exports.findById(id, companyId);
+    if (!existing) return null;
     const fieldMap = {
       equipmentId: 'equipment_id', taskId: 'task_id', taskName: 'task_name',
       masterName: 'master_name', sparePartsUsed: 'spare_parts_used', completedAt: 'completed_at'
     };
     const mapped = {};
+    if (data.checklist != null) {
+      const checklist = mergeMarks(existing.checklist, data.checklist);
+      if (!checklist) throw checklistError('Чек-лист не совпадает с нарядом');
+      mapped.checklist = JSON.stringify(checklist);
+    }
+    const nextChecklist = mapped.checklist ? JSON.parse(mapped.checklist) : existing.checklist;
+    if (data.status === 'completed' && !checklistReady(nextChecklist)) {
+      throw checklistError('Отметьте все шаги чек-листа');
+    }
 
     for (const [key, val] of Object.entries(data)) {
-      if (key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
+      if (key === 'id' || key === 'createdAt' || key === 'updatedAt' || key === 'checklist') continue;
       const col = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase();
       if (col === 'spare_parts_used' && typeof val === 'string') {
         try { mapped[col] = JSON.stringify(JSON.parse(val)); } catch (_) { mapped[col] = '[]'; }
@@ -239,6 +277,7 @@ module.exports = {
   accept: async (id, companyId, userId, overdueReasonId) => {
     const wo = await module.exports.findById(id, companyId);
     if (!wo) return null;
+    if (!checklistReady(wo.checklist)) throw checklistError('Отметьте все шаги чек-листа');
 
     const completedOnTime = wo.dueDate ? new Date(wo.completedAt || wo.createdAt) <= new Date(wo.dueDate) : true;
     const isOverdue = !completedOnTime;

@@ -24,6 +24,15 @@ import ActionsMenu from '../components/ActionsMenu';
 import FrequencyBadge from '../components/FrequencyBadge';
 import { FREQUENCY_OPTIONS } from '../utils/frequency';
 
+function stepsCountLabel(count) {
+  const n = Math.abs(count) % 100;
+  const last = n % 10;
+  if (n > 10 && n < 20) return `${count} шагов`;
+  if (last > 1 && last < 5) return `${count} шага`;
+  if (last === 1) return `${count} шаг`;
+  return `${count} шагов`;
+}
+
 const PRIORITY_FILTER_OPTIONS = [
   { value: 'A', label: 'A — Высокий' },
   { value: 'B', label: 'B — Средний' },
@@ -43,6 +52,7 @@ function WorksDirectory() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    checklistText: '',
     frequencyDays: 30,
     category: '',
     priority: 'B'
@@ -112,7 +122,7 @@ function WorksDirectory() {
 
   /** Сброс формы и закрытие */
   const resetForm = () => {
-    setFormData({ name: '', description: '', frequencyDays: 30, category: '', priority: 'B' });
+    setFormData({ name: '', description: '', checklistText: '', frequencyDays: 30, category: '', priority: 'B' });
     setEditId(null);
     setShowForm(false);
   };
@@ -122,6 +132,7 @@ function WorksDirectory() {
     setFormData({
       name: work.name,
       description: work.description || '',
+      checklistText: (work.checklist || []).join('\n'),
       frequencyDays: work.frequencyDays || 30,
       category: work.category || '',
       priority: work.priority || 'B'
@@ -135,6 +146,7 @@ function WorksDirectory() {
     setFormData({
       name: work.name + ' (копия)',
       description: work.description || '',
+      checklistText: (work.checklist || []).join('\n'),
       frequencyDays: work.frequencyDays || 30,
       category: work.category || '',
       priority: work.priority || 'B'
@@ -147,12 +159,17 @@ function WorksDirectory() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) { toast.error('Введите название работы'); return; }
+    const payload = {
+      ...formData,
+      checklist: formData.checklistText.split(/\r?\n/).map((step) => step.trim()).filter(Boolean),
+    };
+    delete payload.checklistText;
     try {
       if (editId) {
-        await worksAPI.update(editId, formData);
+        await worksAPI.update(editId, payload);
         toast.success('Работа обновлена');
       } else {
-        await worksAPI.create(formData);
+        await worksAPI.create(payload);
         toast.success('Работа добавлена');
       }
       resetForm();
@@ -231,6 +248,15 @@ function WorksDirectory() {
                 <label>Описание</label>
                 <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Описание работы" />
               </div>
+            </div>
+            <div className="form-group">
+              <label>Чек-лист</label>
+              <textarea
+                value={formData.checklistText}
+                onChange={(e) => setFormData({ ...formData, checklistText: e.target.value })}
+                placeholder="Каждый шаг с новой строки, до 30 шагов"
+                rows={4}
+              />
             </div>
             <div className="form-actions-inline">
               <button type="submit" className="btn btn-primary">{editId ? 'Обновить' : 'Добавить'}</button>
@@ -391,7 +417,10 @@ function WorksDirectory() {
                     <td>{work.category || '—'}</td>
                     <td><FrequencyBadge days={work.frequencyDays} /></td>
                     <td><span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span></td>
-                    <td className="td-muted">{work.description || '—'}</td>
+                    <td className="td-muted">
+                      {work.description || '—'}
+                      {work.checklist?.length > 0 && <div className="wo-checklist-progress">{stepsCountLabel(work.checklist.length)}</div>}
+                    </td>
                     <td>
                       <ActionsMenu items={[
                         { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(work) },
@@ -419,6 +448,9 @@ function WorksDirectory() {
               <span className={`priority-badge priority-${(work.priority || 'B').toLowerCase()}`}>{work.priority || 'B'}</span>
             </MobileDataCardRow>
             <MobileDataCardRow label="Описание">{work.description || '—'}</MobileDataCardRow>
+            {work.checklist?.length > 0 && (
+              <MobileDataCardRow label="Чек-лист">{stepsCountLabel(work.checklist.length)}</MobileDataCardRow>
+            )}
             <MobileDataCardActions>
               <ActionsMenu items={[
                 { icon: <Copy size={14} />, label: 'Дублировать', onClick: () => handleDuplicate(work) },

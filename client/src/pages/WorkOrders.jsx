@@ -4,7 +4,8 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, CheckCircle, Trash2 } from 'lucide-react';
+import { ClipboardList, CheckCircle, ListChecks, Trash2 } from 'lucide-react';
+import { ChecklistSteps, checklistProgress } from '../components/WorkChecklist';
 import { workOrderAPI, equipmentAPI, sparePartsAPI, worksAPI, companyAPI, causesAPI, overdueReasonsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
@@ -39,6 +40,11 @@ function WorkOrders() {
   const [acceptModalWo, setAcceptModalWo] = useState(null);
   const [acceptOverdueReasonId, setAcceptOverdueReasonId] = useState('');
   const [acceptSubmitting, setAcceptSubmitting] = useState(false);
+  const [completeChecklist, setCompleteChecklist] = useState([]);
+  const [addChecklist, setAddChecklist] = useState([]);
+  const [checklistOrder, setChecklistOrder] = useState(null);
+  const [checklistDraft, setChecklistDraft] = useState([]);
+  const [checklistSaving, setChecklistSaving] = useState(false);
   const addModalRef = useRef(null);
   const acceptModalRef = useRef(null);
 
@@ -129,6 +135,7 @@ function WorkOrders() {
     window.requestAnimationFrame(() => {
       setCompletingId(wo.id);
       setSparePartsSelection(selection);
+      setCompleteChecklist((wo.checklist || []).map((step) => ({ ...step })));
     });
   };
 
@@ -158,17 +165,26 @@ function WorkOrders() {
 
   /** Подтверждение завершения наряда со списанием ЗИП */
   const confirmComplete = async () => {
+    if (completeChecklist.some((step) => !step.done)) {
+      toast.error('Ошибка', 'Отметьте все шаги чек-листа');
+      return;
+    }
     const used = sparePartsSelection.filter(sp => sp.quantity > 0).map(sp => ({
       sparePartId: sp.sparePartId,
       quantity: sp.quantity
     }));
     try {
-      await workOrderAPI.update(completingId, { status: 'completed', sparePartsUsed: JSON.stringify(used) });
+      await workOrderAPI.update(completingId, {
+        status: 'completed',
+        sparePartsUsed: JSON.stringify(used),
+        ...(completeChecklist.length ? { checklist: completeChecklist } : {}),
+      });
       setCompletingId(null);
       setSparePartsSelection([]);
+      setCompleteChecklist([]);
       fetchData();
     } catch (err) {
-      toast.error('Ошибка', 'Не удалось обновить статус');
+      toast.error('Ошибка', err?.response?.data?.error || 'Не удалось обновить статус');
     }
   };
 
@@ -176,6 +192,33 @@ function WorkOrders() {
   const cancelComplete = () => {
     setCompletingId(null);
     setSparePartsSelection([]);
+    setCompleteChecklist([]);
+  };
+
+  const toggleDraftStep = (index) => {
+    setChecklistDraft((prev) => prev.map((step, stepIndex) => (
+      stepIndex === index ? { ...step, done: !step.done } : step
+    )));
+  };
+
+  const openChecklist = (wo) => {
+    setChecklistOrder(wo);
+    setChecklistDraft((wo.checklist || []).map((step) => ({ ...step })));
+  };
+
+  const saveChecklist = async () => {
+    if (!checklistOrder) return;
+    setChecklistSaving(true);
+    try {
+      await workOrderAPI.update(checklistOrder.id, { checklist: checklistDraft });
+      setChecklistOrder(null);
+      setChecklistDraft([]);
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка', err?.response?.data?.error || 'Не удалось сохранить чек-лист');
+    } finally {
+      setChecklistSaving(false);
+    }
   };
 
   /** Удаление записи журнала работ */
@@ -247,6 +290,10 @@ function WorkOrders() {
       return;
     }
     const work = allWorks.find(w => w.id === newWorkId);
+    if (newStatus === 'completed' && addChecklist.some((step) => !step.done)) {
+      toast.error('Ошибка', 'Отметьте все шаги чек-листа');
+      return;
+    }
     setAddSubmitting(true);
     try {
       const payload = {
@@ -256,6 +303,7 @@ function WorkOrders() {
         status: newStatus,
         causeId: newCauseId || undefined,
         dueDate: newDueDate || undefined,
+        ...(newStatus === 'completed' && addChecklist.length ? { checklist: addChecklist } : {}),
       };
       if (newDate && newStatus === 'completed') {
         payload.completedAt = newDate;
@@ -269,6 +317,7 @@ function WorkOrders() {
       setNewStatus('pending');
       setNewCauseId('');
       setNewDueDate('');
+      setAddChecklist([]);
       fetchData();
     } catch (err) {
       toast.error('Ошибка', 'Не удалось создать запись');
@@ -341,7 +390,12 @@ function WorkOrders() {
                         {getEquipmentName(wo.equipmentId)}
                       </Link>
                     </td>
-                    <td>{wo.taskName}</td>
+                    <td>
+                      {wo.taskName}
+                      {checklistProgress(wo.checklist) && (
+                        <span className="wo-checklist-progress">{checklistProgress(wo.checklist)}</span>
+                      )}
+                    </td>
                     <td><span className={`priority-badge priority-${(wo.priority || 'B').toLowerCase()}`}>{wo.priority || 'B'}</span></td>
                     <td>
                       <span className={`status-badge ${wo.status === 'completed' ? 'status-working' : 'status-needs-repair'}`}>
@@ -364,6 +418,7 @@ function WorkOrders() {
                     </td>
                     <td>
                       <ActionsMenu items={[
+                        ...(wo.checklist?.length && wo.status === 'pending' ? [{ icon: <ListChecks size={14} />, label: 'Чек-лист', onClick: () => openChecklist(wo) }] : []),
                         ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
                         ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo) }] : []),
                         { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
@@ -390,7 +445,12 @@ function WorkOrders() {
               </div>
               <div className="mobile-data-card-row">
                 <span className="mobile-data-card-label">Работа</span>
-                <span>{wo.taskName}</span>
+                <span>
+                  {wo.taskName}
+                  {checklistProgress(wo.checklist) && (
+                    <span className="wo-checklist-progress">{checklistProgress(wo.checklist)}</span>
+                  )}
+                </span>
               </div>
               <div className="mobile-data-card-row">
                 <span className="mobile-data-card-label">Дата</span>
@@ -404,6 +464,7 @@ function WorkOrders() {
               </div>
               <div className="mobile-data-card-actions">
                 <ActionsMenu items={[
+                  ...(wo.checklist?.length && wo.status === 'pending' ? [{ icon: <ListChecks size={14} />, label: 'Чек-лист', onClick: () => openChecklist(wo) }] : []),
                   ...(wo.status === 'pending' ? [{ icon: <CheckCircle size={14} />, label: 'Выполнено', onClick: () => handleStatusChange(wo.id, 'completed') }] : []),
                   ...(wo.status === 'completed' && !wo.acceptedBy ? [{ icon: <CheckCircle size={14} />, label: 'Принять', onClick: () => handleAccept(wo) }] : []),
                   { icon: <Trash2 size={14} />, label: 'Удалить', onClick: () => handleDelete(wo.id), danger: true },
@@ -432,7 +493,11 @@ function WorkOrders() {
               <label>Работа *</label>
               <CustomSelect
                 value={newWorkId}
-                onChange={setNewWorkId}
+                onChange={(workId) => {
+                  setNewWorkId(workId);
+                  const selected = allWorks.find((work) => work.id === workId);
+                  setAddChecklist((selected?.checklist || []).map((text) => ({ text, done: false })));
+                }}
                 placeholder="Выберите работу"
                 options={allWorks.map(w => ({ value: w.id, label: w.name }))}
               />
@@ -458,6 +523,17 @@ function WorkOrders() {
                 ]}
               />
             </div>
+            {newStatus === 'completed' && addChecklist.length > 0 && (
+              <div className="form-group">
+                <label>Чек-лист</label>
+                <ChecklistSteps
+                  steps={addChecklist}
+                  onToggle={(index) => setAddChecklist((prev) => prev.map((step, stepIndex) => (
+                    stepIndex === index ? { ...step, done: !step.done } : step
+                  )))}
+                />
+              </div>
+            )}
             {newStatus === 'completed' && (
               <div className="form-group">
                 <label>Дата выполнения</label>
@@ -486,6 +562,17 @@ function WorkOrders() {
         >
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Списание ЗИП</h3>
+            {completeChecklist.length > 0 && (
+              <>
+                <div className="wo-complete-title">Чек-лист</div>
+                <ChecklistSteps
+                  steps={completeChecklist}
+                  onToggle={(index) => setCompleteChecklist((prev) => prev.map((step, stepIndex) => (
+                    stepIndex === index ? { ...step, done: !step.done } : step
+                  )))}
+                />
+              </>
+            )}
             {sparePartsSelection.length > 0 ? (
               <div className="wo-sp-select-list">
                 {sparePartsSelection.map(sp => (
@@ -515,11 +602,28 @@ function WorkOrders() {
       )}
 
       {/* Модалка принятия работы руководителем (с причиной просрочки) */}
+      {checklistOrder && (
+        <div className="complete-task-modal" onClick={(e) => { if (e.target === e.currentTarget) setChecklistOrder(null); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Чек-лист</h3>
+            <p><strong>{checklistOrder.taskName}</strong></p>
+            <ChecklistSteps steps={checklistDraft} onToggle={toggleDraftStep} />
+            <div className="modal-actions">
+              <button onClick={saveChecklist} className="btn btn-primary" disabled={checklistSaving}>
+                {checklistSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button onClick={() => setChecklistOrder(null)} className="btn">Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {acceptModalWo && (
         <div ref={acceptModalRef} className="complete-task-modal" onClick={(e) => { if (e.target === acceptModalRef.current) setAcceptModalWo(null); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Подтверждение работы</h3>
             <p><strong>Работа:</strong> {acceptModalWo.taskName}</p>
+            <ChecklistSteps steps={acceptModalWo.checklist} readOnly />
             {acceptModalWo.dueDate && (
               <p><strong>Срок устранения:</strong> {formatDate(acceptModalWo.dueDate)}</p>
             )}

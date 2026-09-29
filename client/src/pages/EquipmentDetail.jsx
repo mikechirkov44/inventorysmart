@@ -563,7 +563,10 @@ function EquipmentDetail() {
                     {workOrders.map(wo => (
                       <li key={wo.id} className={`history-item ${wo.status}`}>
                         <span className="history-date">{formatDate(wo.completedAt || wo.createdAt)}</span>
-                        <span className="history-task">{wo.taskName}</span>
+                        <span className="history-task">
+                          {wo.taskName}
+                          {wo.checklist?.length > 0 && ` (${wo.checklist.filter((step) => step.done).length} из ${wo.checklist.length})`}
+                        </span>
                         <span className="history-master">{wo.masterName || '—'}</span>
                       </li>
                     ))}

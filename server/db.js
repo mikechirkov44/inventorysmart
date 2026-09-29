@@ -668,6 +668,11 @@ async function migrate() {
       await client.query(`ALTER TABLE equipment_maintenance_intervals ADD COLUMN IF NOT EXISTS open_work_order_id UUID REFERENCES work_orders(id) ON DELETE SET NULL`);
     });
 
+    await withSavepoint(client, 'work_checklist', async () => {
+      await client.query(`ALTER TABLE works ADD COLUMN IF NOT EXISTS checklist JSONB DEFAULT '[]'`);
+      await client.query(`ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS checklist JSONB DEFAULT '[]'`);
+    });
+
     await withSavepoint(client, 'equipment_map', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS map_buildings (
