@@ -29,6 +29,27 @@ export const displayDate = value => validDate(value) ? `${value.slice(8, 10)}.${
 export const minutesLabel = minutes => `${Math.floor(minutes / 60)} ч ${Math.round(minutes % 60)} мин`;
 export const timeLabel = minute => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 export const loadLabel = value => value == null ? 'Нет данных' : `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+export function hoursLabel(minutes) {
+  const hours = Math.round((Number(minutes) || 0) / 60 * 10) / 10;
+  return `${hours.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ч`;
+}
+export function summarizeTimeFund(days = []) {
+  const minutes = { working: 0, idle: 0, off: 0, fault: 0, unknown: 0 };
+  let elapsedMinutes = 0;
+  for (const day of days) {
+    if (!day) continue;
+    elapsedMinutes += day.elapsedMinutes || 0;
+    for (const state of Object.keys(minutes)) minutes[state] += day.minutes?.[state] || 0;
+  }
+  const known = elapsedMinutes - minutes.unknown;
+  const ready = minutes.working + minutes.idle + minutes.off;
+  return {
+    minutes,
+    elapsedMinutes,
+    poweredMinutes: minutes.working + minutes.idle,
+    readiness: known > 0 ? Math.round(ready / known * 1000) / 10 : null,
+  };
+}
 const MODE_KEY = 'monitoring-view';
 export function readMonitoringMode() {
   try { return localStorage.getItem(MODE_KEY) === 'shift' ? 'shift' : 'day'; } catch { return 'day'; }

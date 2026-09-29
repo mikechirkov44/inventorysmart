@@ -5,6 +5,8 @@
  */
 
 const { query } = require('../db');
+const WorkOrder = require('./workOrder');
+const { maintenanceAction } = require('../utils/monitoringOps');
 
 /**
  * Преобразует строку из БД в объект наработки
@@ -331,5 +333,69 @@ module.exports = {
       [companyId, threshold]
     );
     return rows;
+  },
+
+  completeMaintenanceOrder: async (workOrderId) => {
+    await query(
+      `UPDATE equipment_maintenance_intervals emi
+       SET last_maintenance_value = eoh.current_value,
+           open_work_order_id = NULL,
+           updated_at = NOW()
+       FROM equipment_operating_hours eoh
+       WHERE emi.open_work_order_id = $1 AND eoh.id = emi.operating_hours_id`,
+      [workOrderId],
+    );
+  },
+
+  createDueOrders: async (equipmentId) => {
+    const hours = await module.exports.getWithIntervals(equipmentId);
+    if (!hours?.autoCreateTasks) return [];
+    const { rows } = await query(
+      `SELECT emi.*, wo.status AS order_status
+       FROM equipment_maintenance_intervals emi
+       LEFT JOIN work_orders wo ON wo.id = emi.open_work_order_id
+       WHERE emi.operating_hours_id = $1`,
+      [hours.id],
+    );
+    let taskNameFromWork = '';
+    if (hours.workIds?.[0]) {
+      const work = await query('SELECT name FROM works WHERE id = $1', [hours.workIds[0]]);
+      taskNameFromWork = work.rows[0]?.name || '';
+    }
+    let masterName = '';
+    if (hours.assignedTo) {
+      const employee = await query('SELECT last_name, first_name FROM employees WHERE id = $1', [hours.assignedTo]);
+      if (employee.rows[0]) masterName = `${employee.rows[0].last_name} ${employee.rows[0].first_name}`.trim();
+    }
+    const created = [];
+    for (const row of rows) {
+      const interval = {
+        intervalValue: row.interval_value,
+        lastMaintenanceValue: row.last_maintenance_value,
+        openWorkOrderId: row.open_work_order_id,
+        orderStatus: row.order_status,
+      };
+      const action = maintenanceAction(interval, hours.currentValue);
+      if (action === 'close') {
+        await module.exports.completeMaintenanceOrder(row.open_work_order_id);
+        continue;
+      }
+      if (action !== 'create') continue;
+      const description = String(row.description || '').trim();
+      const taskName = description || taskNameFromWork || `ТО по наработке ${row.interval_value} ${hours.unit}`;
+      const order = await WorkOrder.create({
+        equipmentId,
+        taskId: hours.workIds?.[0] || null,
+        taskName,
+        masterName,
+        notes: `Наработка достигла ${hours.currentValue} ${hours.unit}. Интервал ${row.interval_value}.`,
+      }, hours.companyId);
+      await query(
+        'UPDATE equipment_maintenance_intervals SET open_work_order_id = $2, updated_at = NOW() WHERE id = $1',
+        [row.id, order.id],
+      );
+      created.push(order);
+    }
+    return created;
   }
 };

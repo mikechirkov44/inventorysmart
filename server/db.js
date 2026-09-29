@@ -664,6 +664,10 @@ async function migrate() {
       await client.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS shift_end VARCHAR(5) DEFAULT '20:00'`);
     });
 
+    await withSavepoint(client, 'maintenance_open_order', async () => {
+      await client.query(`ALTER TABLE equipment_maintenance_intervals ADD COLUMN IF NOT EXISTS open_work_order_id UUID REFERENCES work_orders(id) ON DELETE SET NULL`);
+    });
+
     await withSavepoint(client, 'equipment_map', async () => {
       await client.query(`
         CREATE TABLE IF NOT EXISTS map_buildings (

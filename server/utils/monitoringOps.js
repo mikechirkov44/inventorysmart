@@ -101,6 +101,33 @@ function isHourUnit(unit) {
   return /(^|[^a-zа-яё])час(а|ов|ы)?(?![a-zа-яё])/i.test(text);
 }
 
+function maintenanceAction(interval, currentValue) {
+  const step = Number(interval.intervalValue);
+  const last = Number(interval.lastMaintenanceValue) || 0;
+  const due = step > 0 && Number(currentValue) - last >= step;
+  if (interval.openWorkOrderId && interval.orderStatus === 'completed') return 'close';
+  if (interval.openWorkOrderId && interval.orderStatus) return 'wait';
+  return due ? 'create' : 'none';
+}
+
+function summarizeTimeFund(days = []) {
+  const minutes = { working: 0, idle: 0, off: 0, fault: 0, unknown: 0 };
+  let elapsedMinutes = 0;
+  for (const day of days) {
+    if (!day) continue;
+    elapsedMinutes += day.elapsedMinutes || 0;
+    for (const state of Object.keys(minutes)) minutes[state] += day.minutes?.[state] || 0;
+  }
+  const known = elapsedMinutes - minutes.unknown;
+  const ready = minutes.working + minutes.idle + minutes.off;
+  return {
+    minutes,
+    elapsedMinutes,
+    poweredMinutes: minutes.working + minutes.idle,
+    readiness: known > 0 ? Math.round(ready / known * 1000) / 10 : null,
+  };
+}
+
 function workingHoursDelta({ previousState, gapMs, staleMs }) {
   if (previousState !== 'working' || !(gapMs > 0)) return 0;
   return Math.min(gapMs, Math.max(0, staleMs)) / 3600000;
@@ -146,6 +173,8 @@ module.exports = {
   planDowntime,
   segmentNeedsReason,
   isHourUnit,
+  maintenanceAction,
+  summarizeTimeFund,
   workingHoursDelta,
   splitHours,
   offlineMinutes,

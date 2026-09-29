@@ -3,7 +3,7 @@ import { Activity, Search, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-r
 import { Link } from 'react-router-dom';
 import { equipmentAPI, monitoringAPI, roomsAPI } from '../services/api';
 import { monitoringDemoEnabled, monitoringSource } from '../services/monitoring/source';
-import { dateRange, displayDate, loadLabel, monitoringToday, shiftDate } from '../services/monitoring/model';
+import { dateRange, displayDate, hoursLabel, loadLabel, monitoringToday, shiftDate, summarizeTimeFund } from '../services/monitoring/model';
 import CustomDatePicker from '../components/CustomDatePicker';
 import CustomSelect from '../components/CustomSelect';
 import MonitoringDialog from '../components/monitoring/MonitoringDialog';
@@ -88,6 +88,19 @@ export default function MonitoringPage() {
         </tbody></table>
       </div>
       <div className="monitor-table-footer"><span>{mode === 'shift' ? 'Процент времени работы внутри смены. Время смены задаётся в настройках компании.' : 'Процент времени работы за сутки. Сегодня — за прошедшее время; будущие даты — без данных.'}</span><div><button className="btn btn-small" aria-label="Предыдущая страница" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={17} /></button><span>{currentPage + 1} / {pages}</span><button className="btn btn-small" aria-label="Следующая страница" disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}><ChevronRight size={17} /></button></div></div>
+      <section className="monitor-fund" aria-label="Фонд времени">
+        <div className="monitor-table-caption"><span>Фонд времени</span><small>{mode === 'shift' ? 'Часы внутри смены за выбранный период' : 'Часы за выбранный период'}</small></div>
+        <div className="monitor-table-scroll" tabIndex="0" role="region" aria-label="Справка по фонду времени">
+          <table className="monitor-table"><thead><tr><th scope="col">Оборудование</th><th scope="col">Работа</th><th scope="col">Простой</th><th scope="col">Выключен</th><th scope="col">Авария</th><th scope="col">Нет данных</th><th scope="col">Включен</th><th scope="col">Готовность</th></tr></thead><tbody>
+            {visible.map(item => {
+              const fund = rows ? summarizeTimeFund(byId.get(item.id)) : null;
+              return <tr key={item.id}><th scope="row"><Link to={`/equipment/${item.id}`}>{item.name}</Link></th>{fund ? <><td>{hoursLabel(fund.minutes.working)}</td><td>{hoursLabel(fund.minutes.idle)}</td><td>{hoursLabel(fund.minutes.off)}</td><td>{hoursLabel(fund.minutes.fault)}</td><td>{hoursLabel(fund.minutes.unknown)}</td><td>{hoursLabel(fund.poweredMinutes)}</td><td>{loadLabel(fund.readiness)}</td></> : <td colSpan={7}><span className="monitor-muted">…</span></td>}</tr>;
+            })}
+            {!visible.length && <tr><td colSpan={8}><div className="monitor-empty">Нет станков для справки.</div></td></tr>}
+          </tbody></table>
+        </div>
+        <p className="monitor-muted">Включен — работа и простой. Готовность — доля времени без аварии и без пропуска данных.</p>
+      </section>
     </>}
     {selected && <MonitoringDialog {...selected} onClose={() => setSelected(null)} />}
   </div>;

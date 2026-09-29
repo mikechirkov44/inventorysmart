@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   applyShiftView, planAlert, planDowntime, segmentNeedsReason,
   isHourUnit, workingHoursDelta, splitHours, offlineMinutes, validateMonitoringPrefs,
+  maintenanceAction, summarizeTimeFund,
 } = require('../utils/monitoringOps');
 
 test('shift utilization counts only the configured window', () => {
@@ -92,6 +93,21 @@ test('offline duration is counted from the last successful poll', () => {
   const now = new Date('2026-09-01T12:12:00Z');
   assert.equal(offlineMinutes({ state: 'unknown', lastSuccessAt: '2026-09-01T12:00:00Z', now }), 12);
   assert.equal(offlineMinutes({ state: 'working', lastSuccessAt: '2026-09-01T12:00:00Z', now }), null);
+});
+
+test('motor hour service is due once per interval and the time fund sums the states', () => {
+  assert.equal(maintenanceAction({ intervalValue: 100, lastMaintenanceValue: 0, openWorkOrderId: null }, 100), 'create');
+  assert.equal(maintenanceAction({ intervalValue: 100, lastMaintenanceValue: 0, openWorkOrderId: 'order-1', orderStatus: 'pending' }, 120), 'wait');
+  assert.equal(maintenanceAction({ intervalValue: 100, lastMaintenanceValue: 0, openWorkOrderId: 'order-1', orderStatus: 'completed' }, 120), 'close');
+  assert.equal(maintenanceAction({ intervalValue: 100, lastMaintenanceValue: 100, openWorkOrderId: null }, 150), 'none');
+  const fund = summarizeTimeFund([
+    { elapsedMinutes: 100, minutes: { working: 40, idle: 30, off: 10, fault: 10, unknown: 10 } },
+    { elapsedMinutes: 60, minutes: { working: 20, idle: 10, off: 10, fault: 20, unknown: 0 } },
+  ]);
+  assert.equal(fund.minutes.working, 60);
+  assert.equal(fund.minutes.fault, 30);
+  assert.equal(fund.poweredMinutes, 100);
+  assert.equal(fund.readiness, 80);
 });
 
 test('monitoring preferences reject an empty shift clock', () => {

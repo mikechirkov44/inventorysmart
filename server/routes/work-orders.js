@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const WorkOrder = require('../models/workOrder');
 const SparePart = require('../models/sparePart');
+const OperatingHours = require('../models/operatingHours');
 const Notification = require('../models/notification');
 const User = require('../models/user');
 const { imageUpload } = require('../utils/upload');
@@ -122,6 +123,9 @@ router.put('/:id', requirePermission('workOrders', 'edit'), imageUpload.array('p
     const workOrder = await WorkOrder.update(req.params.id, workOrderData, req.user.companyId);
     if (!workOrder) {
       return res.status(404).json({ error: 'Work order not found' });
+    }
+    if (existingOrder && existingOrder.status !== 'completed' && workOrder.status === 'completed') {
+      await OperatingHours.completeMaintenanceOrder(workOrder.id);
     }
 
     let sparePartsUsed = workOrder.sparePartsUsed;

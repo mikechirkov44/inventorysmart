@@ -31,6 +31,24 @@ async function notifyUsers(companyId) {
   return (allowed.length ? allowed : rows).map((row) => row.id);
 }
 
+async function notifyMaintenance(link, orders) {
+  const equipment = await Equipment.findById(link.equipmentId, link.companyId);
+  const name = equipment?.name || 'Станок';
+  const users = await notifyUsers(link.companyId);
+  for (const order of orders) {
+    for (const userId of users) {
+      await Notification.create({
+        userId,
+        type: 'maintenance_due',
+        title: `ТО по наработке: ${name}`,
+        message: order.taskName,
+        equipmentId: link.equipmentId,
+        workId: order.taskId,
+      });
+    }
+  }
+}
+
 async function applyPollEffects(link, reading, context, now = new Date()) {
   const previous = context?.previous;
   const prior = context?.priorSample;
@@ -48,7 +66,11 @@ async function applyPollEffects(link, reading, context, now = new Date()) {
     const hours = delta > 0 ? await OperatingHours.getByEquipmentId(link.equipmentId) : null;
     if (hours && isHourUnit(hours.unit)) {
       const split = splitHours(previous?.hoursRemainder || 0, delta);
-      if (split.applied > 0) await OperatingHours.addValue(link.equipmentId, split.applied);
+      if (split.applied > 0) {
+        await OperatingHours.addValue(link.equipmentId, split.applied);
+        const orders = await OperatingHours.createDueOrders(link.equipmentId);
+        if (orders.length) await notifyMaintenance(link, orders);
+      }
       await EquipmentMonitor.setHoursRemainder(link.equipmentId, split.remainder);
     }
   }
