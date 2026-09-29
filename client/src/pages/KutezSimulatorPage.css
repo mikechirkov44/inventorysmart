@@ -1,6 +1,6 @@
 .kutez-simulator-page { display: grid; gap: 16px; }
 .kutez-simulator-page .header { margin-bottom: 0; }
-.kutez-simulator-status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.kutez-simulator-status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
 .kutez-simulator-status > div { display: grid; align-content: start; gap: 8px; }
 .kutez-simulator-status h2 { margin: 0; }
 .kutez-duration { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0; }

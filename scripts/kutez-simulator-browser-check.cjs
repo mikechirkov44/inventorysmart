@@ -9,6 +9,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     const commands = [];
     let connected = false;
     let state = 'off';
+    let polledState = 'off';
     await page.addInitScript(() => localStorage.setItem('token', 'local-test'));
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/api/**', route => {
@@ -17,13 +18,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       if (url.pathname === '/api/auth/me') data = { id: 'admin', role: 'admin', permissions: { equipment: 'full' } };
       else if (url.pathname === '/api/company/license-status') data = { status: 'active' };
       else if (url.pathname === '/api/company') data = { companyName: 'Проверка' };
-      else if (url.pathname === '/api/monitoring/simulator/kutez-fc7') data = { equipmentId: '972a9d41-dcfa-4835-a23f-7c1efaa01e3d', connected, state };
-      else if (url.pathname === '/api/monitoring/simulator/kutez-fc7/connect') { connected = true; data = { connected, state }; }
+      else if (url.pathname === '/api/monitoring/simulator/kutez-fc7') data = { equipmentId: '972a9d41-dcfa-4835-a23f-7c1efaa01e3d', connected, state, polledState };
+      else if (url.pathname === '/api/monitoring/simulator/kutez-fc7/connect') { connected = true; data = { connected, state, polledState }; }
       else if (url.pathname === '/api/monitoring/simulator/kutez-fc7/command') {
         const payload = route.request().postDataJSON();
         commands.push(payload);
         state = { power_on: 'idle', start_work: 'working', power_off: 'off', fault: 'fault', restore: 'idle' }[payload.action];
-        data = { state };
+        data = { state, polledState };
       }
       return route.fulfill({ json: data });
     });
@@ -33,6 +34,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     await page.getByRole('button', { name: 'Включить' }).click();
     await page.getByLabel('Время работы, секунд').fill('45');
     await page.getByRole('button', { name: 'Начать работу' }).click();
+    await page.locator('.kutez-simulator-status > div').nth(0).getByText('Работа').waitFor();
+    await page.locator('.kutez-simulator-status > div').nth(1).getByText('Выключено').waitFor();
+    polledState = 'working';
+    await page.locator('.kutez-simulator-status > div').nth(1).getByText('Работа').waitFor();
     assert.deepEqual(commands.slice(0, 2), [{ action: 'power_on', durationSec: 60 }, { action: 'start_work', durationSec: 45 }]);
     await page.getByRole('button', { name: 'Авария' }).click();
     await page.getByRole('button', { name: 'Восстановить' }).click();

@@ -27,7 +27,8 @@ async function kutezContext(req, res, next) {
 }
 
 router.get('/simulator/kutez-fc7', requirePermission('equipment', 'edit'), requireAdministrator, kutezContext, (req, res) => {
-  res.json({ equipmentId: KUTEZ_FC7_ID, connected: isKutezDemoLink(req.kutezLink), ...kutezSimulator.snapshot() });
+  res.json({ equipmentId: KUTEZ_FC7_ID, connected: isKutezDemoLink(req.kutezLink) && req.kutezLink.pollIntervalSec === 15,
+    polledState: req.kutezLink?.lastState || null, lastPolledAt: req.kutezLink?.lastPolledAt || null, ...kutezSimulator.snapshot() });
 });
 
 router.post('/simulator/kutez-fc7/connect', requirePermission('equipment', 'edit'), requireAdministrator, kutezContext, async (req, res) => {
@@ -35,10 +36,10 @@ router.post('/simulator/kutez-fc7/connect', requirePermission('equipment', 'edit
     if (req.kutezLink?.enabled && !isSimulatorLink(req.kutezLink)) return res.status(409).json({ error: 'У станка уже есть подключение к реальному оборудованию. Отключите его перед тестом.' });
     const link = await EquipmentMonitor.save(req.user.companyId, KUTEZ_FC7_ID, {
       enabled: true, protocol: 'modbus', host: '127.0.0.1', port: Number(process.env.MONITORING_SIMULATOR_PORT || 1502),
-      unitId: 1, registerAddress: 0, signal: '', pollIntervalSec: 5,
+      unitId: 1, registerAddress: 0, signal: '', pollIntervalSec: 15,
     });
-    await pollLink(link);
-    res.json({ equipmentId: KUTEZ_FC7_ID, connected: true, ...kutezSimulator.snapshot() });
+    res.json({ equipmentId: KUTEZ_FC7_ID, connected: true,
+      polledState: link.lastState || null, lastPolledAt: link.lastPolledAt || null, ...kutezSimulator.snapshot() });
   } catch (error) {
     console.error('Kutez simulator connect error:', error);
     res.status(500).json({ error: 'Не удалось подключить эмулятор' });
@@ -49,8 +50,7 @@ router.post('/simulator/kutez-fc7/command', requirePermission('equipment', 'edit
   if (!isKutezDemoLink(req.kutezLink)) return res.status(409).json({ error: 'Сначала подключите тестовый сигнал Kutez FC7' });
   try {
     const state = kutezSimulator.command(req.body?.action, Number(req.body?.durationSec));
-    await pollLink(req.kutezLink);
-    res.json(state);
+    res.json({ ...state, polledState: req.kutezLink.lastState || null, lastPolledAt: req.kutezLink.lastPolledAt || null });
   } catch (error) {
     if (error.message?.includes('Не удалось')) return res.status(502).json({ error: 'Не удалось считать сигнал эмулятора' });
     res.status(400).json({ error: error.message });

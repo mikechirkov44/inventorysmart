@@ -80,7 +80,8 @@ export default function KutezSimulatorPage() {
     {!isAdmin ? <div className="monitor-panel">Управление эмулятором доступно только администратору.</div> : <>
       {error && <div className="kutez-error" role="alert">{error}</div>}
       <div className="monitor-panel kutez-simulator-status">
-        <div><span className="monitor-muted">Состояние по сигналу</span><h2>{status ? <MachineStatusBadge status={status} /> : 'Загрузка…'}</h2></div>
+        <div><span className="monitor-muted">Сигнал эмулятора (сразу)</span><h2>{status ? <MachineStatusBadge status={status} /> : 'Загрузка…'}</h2></div>
+        <div><span className="monitor-muted">Статус станка (после опроса)</span><h2>{status?.polledState ? <MachineStatusBadge status={{ state: status.polledState }} /> : 'Ожидает опроса'}</h2></div>
         <div><span className="monitor-muted">Подключение</span><strong>{status?.connected ? 'Тестовый Modbus подключён' : 'Не подключено'}</strong></div>
         <div><span className="monitor-muted">До окончания работы</span><strong>{remaining == null ? '—' : `${remaining} сек`}</strong></div>
       </div>
