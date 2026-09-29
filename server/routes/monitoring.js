@@ -35,7 +35,7 @@ router.post('/simulator/kutez-fc7/connect', requirePermission('equipment', 'edit
     if (req.kutezLink?.enabled && !isSimulatorLink(req.kutezLink)) return res.status(409).json({ error: 'У станка уже есть подключение к реальному оборудованию. Отключите его перед тестом.' });
     const link = await EquipmentMonitor.save(req.user.companyId, KUTEZ_FC7_ID, {
       enabled: true, protocol: 'modbus', host: '127.0.0.1', port: Number(process.env.MONITORING_SIMULATOR_PORT || 1502),
-      unitId: 1, registerAddress: 1, signal: '', pollIntervalSec: 5,
+      unitId: 1, registerAddress: 0, signal: '', pollIntervalSec: 5,
     });
     await pollLink(link);
     res.json({ equipmentId: KUTEZ_FC7_ID, connected: true, ...kutezSimulator.snapshot() });

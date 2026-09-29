@@ -5,7 +5,7 @@ function isKutezDemoLink(link, enabled = process.env.MONITORING_SIMULATOR === 't
   return Boolean(enabled && link?.enabled && (link.protocol || 'modbus') === 'modbus'
     && ['127.0.0.1', 'localhost'].includes(link.host)
     && Number(link.port) === Number(process.env.MONITORING_SIMULATOR_PORT || 1502)
-    && Number(link.unitId) === 1 && Number(link.registerAddress) === 1);
+    && Number(link.unitId) === 1 && Number(link.registerAddress) === 0);
 }
 
 function createKutezSimulator(now = Date.now) {

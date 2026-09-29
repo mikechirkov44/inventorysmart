@@ -1,14 +1,12 @@
 const fs = require('fs');
 const ModbusRTU = require('modbus-serial');
-const { simulatedStateAt } = require('./simulatedState');
 const { kutezSimulator } = require('./kutezSimulator');
 
 let started = false;
 
-function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.now, kutez = kutezSimulator } = {}) {
+function startModbusSimulator({ stdin = false, exitOnError = false, kutez = kutezSimulator } = {}) {
   if (started) return;
   started = true;
-  const startedAt = now();
   let manualState = null;
   const stateFile = process.env.MONITORING_SIMULATOR_FILE;
   const currentState = () => {
@@ -16,13 +14,12 @@ function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.n
       try {
         const raw = fs.readFileSync(stateFile, 'utf8').trim();
         if (['0', '1', '2', '3'].includes(raw)) return Number(raw);
-      } catch { /* Файл не задан: автоматический цикл. */ }
+      } catch { /* Файл не задан: используем ручное или исходное состояние. */ }
     }
-    return manualState ?? simulatedStateAt(now() - startedAt);
+    return manualState ?? kutez.snapshot().value;
   };
   const vector = {
     getHoldingRegister(addr) {
-      if (addr === 1) return kutez.snapshot().value;
       return addr === 0 ? currentState() : 0;
     },
     setRegister(addr, value) {
@@ -36,7 +33,7 @@ function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.n
     if (exitOnError) process.exit(1);
   });
   server.on('initialized', () => {
-    console.log(`Modbus simulator listening on 127.0.0.1:${port}; register 0 cycles 2 → 1 → 0 → 3 every 30 seconds`);
+    console.log(`Modbus simulator listening on 127.0.0.1:${port}; register 0 stays off until changed explicitly`);
   });
 
   if (stdin) {
@@ -45,7 +42,7 @@ function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.n
       const input = String(chunk).trim();
       if (input === 'auto') {
         manualState = null;
-        console.log('Автоматический цикл возобновлён');
+        console.log('Регистр 0 снова следует командам страницы эмулятора');
         return;
       }
       if (!['0', '1', '2', '3'].includes(input)) {
