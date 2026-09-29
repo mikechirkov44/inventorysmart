@@ -77,6 +77,8 @@ async function start() {
   // Public API routes (require API key, not JWT)
   const publicApiRoutes = require('./routes/publicApi');
   app.use('/api/public', publicApiRoutes);
+  const publicSimulatorRoutes = require('./routes/publicSimulator');
+  app.use('/api/simulator-public', publicSimulatorRoutes);
 
   const uploadsRoutes = require('./routes/uploads');
   app.use('/api/uploads', uploadsRoutes);
@@ -100,6 +102,7 @@ async function start() {
     if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
     if (req.path === '/health') return next();
     if (req.path === '/superadmin' || req.path.startsWith('/superadmin/')) return next();
+    if (req.path === '/simulator-public' || req.path.startsWith('/simulator-public/')) return next();
     if (req.path === '/uploads' || req.path.startsWith('/uploads/')) return next();
     authenticate(req, res, next);
   });
@@ -127,6 +130,7 @@ async function start() {
     if (req.path === '/auth' || req.path.startsWith('/auth/')) return next();
     if (req.path === '/setup' || req.path.startsWith('/setup/')) return next();
     if (req.path === '/health') return next();
+    if (req.path === '/simulator-public' || req.path.startsWith('/simulator-public/')) return next();
     if (!req.user || !req.user.companyId) return next();
 
     try {

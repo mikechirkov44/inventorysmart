@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101828" />
+    <title>Эмулятор Kutez FC7</title>
+    <link rel="stylesheet" href="/simulator/style.css" />
+    <script defer src="/simulator/app.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="heading">
+        <span class="eyebrow">ТЕСТОВЫЙ СТЕНД · MODBUS TCP</span>
+        <h1>Эмулятор Kutez FC7</h1>
+        <p>Самостоятельный интерфейс управления тестовым сигналом. Это не управление настоящим станком.</p>
+      </header>
+
+      <section class="status-grid" aria-label="Состояние эмулятора">
+        <div class="status-card">
+          <span class="label">Сигнал эмулятора</span>
+          <strong id="state" class="state" aria-live="polite"><span class="status-dot"></span><span id="state-label">Загрузка…</span></strong>
+          <span class="hint">Код регистра: <span id="register-value">—</span></span>
+        </div>
+        <div class="status-card">
+          <span class="label">До окончания работы</span>
+          <strong id="remaining" class="value">—</strong>
+          <span class="hint">Затем автоматически — простой</span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="controls-title">
+        <div class="panel-heading"><div><span class="eyebrow">УПРАВЛЕНИЕ</span><h2 id="controls-title">Команды станка</h2></div><span class="demo-pill">Только тестовый сигнал</span></div>
+        <label class="duration-label" for="duration">Время работы, секунд</label>
+        <div class="duration-row"><input id="duration" type="number" min="1" max="86400" step="1" value="60" inputmode="numeric" /><span>После запуска отсчёт начнётся автоматически</span></div>
+        <div class="actions">
+          <button type="button" data-action="power_on">Включить</button>
+          <button type="button" data-action="start_work" class="primary">Начать работу</button>
+          <button type="button" data-action="power_off">Выключить</button>
+          <button type="button" data-action="fault" class="danger">Авария</button>
+          <button type="button" data-action="restore">Восстановить</button>
+        </div>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </section>
+
+      <p class="footnote">Страница показывает сигнал сразу. Статус FC7 в основном приложении обновляется после очередного опроса, настроенного на 15 секунд. Любой посетитель этой страницы может менять тестовый сигнал.</p>
+    </main>
+  </body>
+</html>

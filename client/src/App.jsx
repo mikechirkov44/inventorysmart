@@ -32,7 +32,6 @@ import LicenseBanner from './components/LicenseBanner';
 import MobileMoreMenu from './components/MobileMoreMenu';
 import { Activity } from 'lucide-react';
 const MonitoringPage = lazy(() => import('./pages/MonitoringPage'));
-const KutezSimulatorPage = lazy(() => import('./pages/KutezSimulatorPage'));
 import NotificationBell from './components/NotificationBell';
 import { applyThemeColor, applyThemeMode } from './utils/theme';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -291,7 +290,6 @@ function AppRoutes() {
       <Route path="/equipment-table" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentDetail /></PageWrapper></ProtectedRoute>} />
       <Route path="/monitoring" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><MonitoringPage /></PageWrapper></ProtectedRoute>} />
-      <Route path="/monitoring/kutez-fc7-simulator" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><KutezSimulatorPage /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/new" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
       <Route path="/equipment/:id/edit" element={<ProtectedRoute requiredPermission="equipment"><PageWrapper><EquipmentForm /></PageWrapper></ProtectedRoute>} />
       <Route path="/scan" element={<ProtectedRoute requiredPermission="scanner"><PageWrapper><QRScanner /></PageWrapper></ProtectedRoute>} />

@@ -62,6 +62,11 @@ function presentStatus(link, now, reasonPending) {
 }
 
 const EquipmentMonitor = {
+  async companyIdForEquipment(equipmentId) {
+    const result = await query('SELECT company_id FROM equipment WHERE id = $1', [equipmentId]);
+    return result.rows[0]?.company_id || null;
+  },
+
   async listEnabled() {
     const result = await query('SELECT * FROM equipment_monitor_links WHERE enabled = true AND host <> \'\'');
     return result.rows.map(mapLink);
