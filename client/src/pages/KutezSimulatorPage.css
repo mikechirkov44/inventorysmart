@@ -1,0 +1,12 @@
+.kutez-simulator-page { display: grid; gap: 16px; }
+.kutez-simulator-page .header { margin-bottom: 0; }
+.kutez-simulator-status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.kutez-simulator-status > div { display: grid; align-content: start; gap: 8px; }
+.kutez-simulator-status h2 { margin: 0; }
+.kutez-duration { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0; }
+.kutez-duration label { font-weight: 600; }
+.kutez-duration input { width: 120px; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: 8px; background: var(--white); color: var(--gray-800); }
+.kutez-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.kutez-actions .btn { display: inline-flex; align-items: center; gap: 8px; }
+.kutez-error { padding: 12px 16px; border-radius: 10px; color: var(--danger, #dc2626); background: rgba(220, 38, 38, .09); }
+@media (max-width: 640px) { .kutez-simulator-status { grid-template-columns: 1fr; } .kutez-actions .btn { flex: 1 1 100%; justify-content: center; } }

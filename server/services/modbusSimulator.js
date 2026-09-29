@@ -1,10 +1,11 @@
 const fs = require('fs');
 const ModbusRTU = require('modbus-serial');
 const { simulatedStateAt } = require('./simulatedState');
+const { kutezSimulator } = require('./kutezSimulator');
 
 let started = false;
 
-function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.now } = {}) {
+function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.now, kutez = kutezSimulator } = {}) {
   if (started) return;
   started = true;
   const startedAt = now();
@@ -21,6 +22,7 @@ function startModbusSimulator({ stdin = false, exitOnError = false, now = Date.n
   };
   const vector = {
     getHoldingRegister(addr) {
+      if (addr === 1) return kutez.snapshot().value;
       return addr === 0 ? currentState() : 0;
     },
     setRegister(addr, value) {

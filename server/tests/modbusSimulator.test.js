@@ -4,6 +4,7 @@ const { simulatedStateAt, isSimulatorLink } = require('../services/simulatedStat
 const { startModbusSimulator } = require('../services/modbusSimulator');
 const { readGatewayState } = require('../services/modbusReader');
 const { once } = require('node:events');
+const { createKutezSimulator } = require('../services/kutezSimulator');
 
 test('simulator cycles through work, idle, off and fault without manual input', () => {
   assert.equal(simulatedStateAt(0), 2);
@@ -23,8 +24,9 @@ test('demo connection does not trigger real maintenance side effects', () => {
 
 test('Modbus reader receives automatic state changes from the emulator register', async () => {
   let now = 0;
+  const kutez = createKutezSimulator(() => now);
   process.env.MONITORING_SIMULATOR_PORT = '0';
-  const server = startModbusSimulator({ now: () => now });
+  const server = startModbusSimulator({ now: () => now, kutez });
   try {
     await once(server, 'initialized');
     const link = { host: '127.0.0.1', port: server._server.address().port, unitId: 1, registerAddress: 0 };
@@ -33,6 +35,13 @@ test('Modbus reader receives automatic state changes from the emulator register'
       const reading = await readGatewayState(link);
       assert.equal(reading.state, state);
     }
+    const kutezLink = { ...link, registerAddress: 1 };
+    assert.equal((await readGatewayState(kutezLink)).state, 'off');
+    kutez.command('power_on');
+    kutez.command('start_work', 45);
+    assert.equal((await readGatewayState(kutezLink)).state, 'working');
+    now = 165000;
+    assert.equal((await readGatewayState(kutezLink)).state, 'idle');
   } finally {
     await new Promise(resolve => server.close(resolve));
     delete process.env.MONITORING_SIMULATOR_PORT;

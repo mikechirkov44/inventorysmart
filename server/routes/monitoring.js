@@ -1,14 +1,61 @@
 const express = require('express');
 const router = express.Router();
 const EquipmentMonitor = require('../models/equipmentMonitor');
+const Equipment = require('../models/equipment');
 const Company = require('../models/company');
-const { requirePermission } = require('../middleware/auth');
+const { requirePermission, requireAdministrator } = require('../middleware/auth');
 const { operatorWindowStart } = require('../utils/monitoringOps');
 const { validateMonitorLink } = require('../utils/monitoringTimeline');
 const { readMachineState } = require('../services/machineReader');
 const { pollLink } = require('../services/monitoringCollector');
+const { KUTEZ_FC7_ID, kutezSimulator, isKutezDemoLink } = require('../services/kutezSimulator');
+const { isSimulatorLink } = require('../services/simulatedState');
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+async function kutezContext(req, res, next) {
+  if (process.env.MONITORING_SIMULATOR !== 'true') return res.status(404).json({ error: 'Эмулятор на сервере не включён' });
+  try {
+    const equipment = await Equipment.findById(KUTEZ_FC7_ID, req.user.companyId);
+    if (!equipment) return res.status(404).json({ error: 'Станок Kutez FC7 не найден в вашей компании' });
+    req.kutezLink = await EquipmentMonitor.find(req.user.companyId, KUTEZ_FC7_ID);
+    next();
+  } catch (error) {
+    console.error('Kutez simulator access error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+}
+
+router.get('/simulator/kutez-fc7', requirePermission('equipment', 'edit'), requireAdministrator, kutezContext, (req, res) => {
+  res.json({ equipmentId: KUTEZ_FC7_ID, connected: isKutezDemoLink(req.kutezLink), ...kutezSimulator.snapshot() });
+});
+
+router.post('/simulator/kutez-fc7/connect', requirePermission('equipment', 'edit'), requireAdministrator, kutezContext, async (req, res) => {
+  try {
+    if (req.kutezLink?.enabled && !isSimulatorLink(req.kutezLink)) return res.status(409).json({ error: 'У станка уже есть подключение к реальному оборудованию. Отключите его перед тестом.' });
+    const link = await EquipmentMonitor.save(req.user.companyId, KUTEZ_FC7_ID, {
+      enabled: true, protocol: 'modbus', host: '127.0.0.1', port: Number(process.env.MONITORING_SIMULATOR_PORT || 1502),
+      unitId: 1, registerAddress: 1, signal: '', pollIntervalSec: 5,
+    });
+    await pollLink(link);
+    res.json({ equipmentId: KUTEZ_FC7_ID, connected: true, ...kutezSimulator.snapshot() });
+  } catch (error) {
+    console.error('Kutez simulator connect error:', error);
+    res.status(500).json({ error: 'Не удалось подключить эмулятор' });
+  }
+});
+
+router.post('/simulator/kutez-fc7/command', requirePermission('equipment', 'edit'), requireAdministrator, kutezContext, async (req, res) => {
+  if (!isKutezDemoLink(req.kutezLink)) return res.status(409).json({ error: 'Сначала подключите тестовый сигнал Kutez FC7' });
+  try {
+    const state = kutezSimulator.command(req.body?.action, Number(req.body?.durationSec));
+    await pollLink(req.kutezLink);
+    res.json(state);
+  } catch (error) {
+    if (error.message?.includes('Не удалось')) return res.status(502).json({ error: 'Не удалось считать сигнал эмулятора' });
+    res.status(400).json({ error: error.message });
+  }
+});
 
 router.get('/live', requirePermission('equipment', 'view'), async (req, res) => {
   try {

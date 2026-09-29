@@ -275,6 +275,9 @@ export const kpiIndicatorsAPI = {
 
 /** API мониторинга станков. Демо-данные остаются на клиенте, если связь не включена. */
 export const monitoringAPI = {
+  kutezSimulator: () => api.get('/monitoring/simulator/kutez-fc7'),
+  connectKutezSimulator: () => api.post('/monitoring/simulator/kutez-fc7/connect'),
+  commandKutezSimulator: (action, durationSec) => api.post('/monitoring/simulator/kutez-fc7/command', { action, durationSec }),
   live: () => api.get('/monitoring/live'),
   statuses: () => api.get('/monitoring/statuses'),
   getLink: (equipmentId) => api.get(`/monitoring/links/${equipmentId}`),
